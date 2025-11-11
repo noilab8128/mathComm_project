@@ -24,6 +24,9 @@
 .DS_Store
 *.pem
 
+# macOS metadata files
+._*
+
 # debug
 npm-debug.log*
 yarn-debug.log*
