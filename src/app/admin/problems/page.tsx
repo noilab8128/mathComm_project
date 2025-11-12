@@ -50,19 +50,7 @@ interface RelatedProblem {
 }
 
 export default function ProblemManagementPage() {
-  const [problems, setProblems] = useState<Problem[]>([
-    {
-      id: "1",
-      title: "Sample Problem 1",
-      content: "Solve \\( x^2 + 5x + 6 = 0 \\)",
-      solution: "\\( x = -2 \\) or \\( x = -3 \\)",
-      difficulty: 3,
-      category: "Algebra",
-      linkedProblems: [],
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
-  ]);
+  const [problems, setProblems] = useState<Problem[]>([]);
   
   const [selectedProblem, setSelectedProblem] = useState<Problem | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -179,8 +167,8 @@ export default function ProblemManagementPage() {
     } catch (error: any) {
       console.error('Failed to load from Supabase:', error);
       setIsDbConnected(false);
-      // Keep using local mock data
-      showToast("⚠️ Database not connected. Using local data.", "error");
+      setProblems([]);
+      showToast("⚠️ Database not connected. No problems loaded.", "error");
     } finally {
       setIsLoadingFromDb(false);
     }
