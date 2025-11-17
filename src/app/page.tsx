@@ -6,12 +6,13 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Crown, Flame, Search, MessageSquare, Trophy, LineChart, LayoutDashboard, Network, Users, Brain } from "lucide-react";
+import { Crown, Flame, Search, MessageSquare, Trophy, LineChart, LayoutDashboard, Network, Users, Brain, Home } from "lucide-react";
 import Dashboard from "@/components/Dashboard";
 import Problems from "@/components/Problems";
 import Stats from "@/components/Stats";
 import Community, { CommunityTab } from "@/components/Community";
 import SkillTree from "@/components/SkillTree";
+import MainPage from "@/components/MainPage";
 
 // ------------------------------------------------------------
 // Navigation Components
@@ -25,6 +26,7 @@ import SkillTree from "@/components/SkillTree";
 function SideNav({ active, onChange }: { active: string; onChange: (k: string) => void }) {
   // Navigation menu items with icons and labels
   const items = [
+    { key: "main", label: "Home", icon: <Home className="h-4 w-4" /> },
     { key: "dashboard", label: "Dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
     { key: "skill-tree", label: "Skill Tree", icon: <Network className="h-4 w-4" /> },
     { key: "problems", label: "Problems", icon: <Brain className="h-4 w-4" /> },
@@ -120,7 +122,7 @@ function TopBar({ onCommunityNavigate }: { onCommunityNavigate: (tab: CommunityT
  */
 export default function MathQuestUIMock() {
   // State to track the currently active page/section
-  const [page, setPage] = useState("dashboard");
+  const [page, setPage] = useState("main");
   const [communityTab, setCommunityTab] = useState<CommunityTab>("discussions");
 
   const handleCommunityNavigate = (tab: CommunityTab) => {
@@ -155,6 +157,7 @@ export default function MathQuestUIMock() {
         {/* Main Content Area */}
         <main className="flex-1 overflow-auto">
           {/* Conditional Rendering based on active page */}
+          {page === "main" && <MainPage />}
           {page === "dashboard" && <Dashboard />}
           {page === "skill-tree" && <SkillTree />}
           {page === "problems" && <Problems />}
