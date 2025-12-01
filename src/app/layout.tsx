@@ -30,7 +30,7 @@ export default function RootLayout({
   children: React.ReactNode; // TypeScript type for React children
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
