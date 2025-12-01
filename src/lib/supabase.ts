@@ -82,7 +82,76 @@ export const problemsAPI = {
       .from('problems')
       .select('*')
       .order('created_at', { ascending: false });
-    
+
+    if (error) throw error;
+    return data as Problem[];
+  },
+
+  // Get paginated problems
+  async getPaginated(page: number, pageSize: number, filters?: {
+    difficulty?: number[];
+    category?: string;
+    level?: string;
+    isGenerated?: boolean;
+    search?: string;
+    onlyRoots?: boolean;
+    sortBy?: 'newest' | 'title' | 'difficulty';
+  }) {
+    let query = supabase.from('problems').select('*', { count: 'exact' });
+
+    if (filters?.onlyRoots) {
+      query = query.is('parent_problem_id', null);
+    }
+
+    if (filters?.difficulty && filters.difficulty.length > 0) {
+      query = query.in('difficulty', filters.difficulty);
+    }
+
+    if (filters?.category) {
+      query = query.ilike('category_path', `%${filters.category}%`);
+    }
+
+    if (filters?.level) {
+      query = query.eq('level', filters.level);
+    }
+
+    if (filters?.isGenerated !== undefined) {
+      query = query.eq('is_generated', filters.isGenerated);
+    }
+
+    if (filters?.search) {
+      query = query.or(`title.ilike.%${filters.search}%,content.ilike.%${filters.search}%`);
+    }
+
+    // Sorting
+    if (filters?.sortBy === 'title') {
+      query = query.order('title', { ascending: true });
+    } else if (filters?.sortBy === 'difficulty') {
+      query = query.order('difficulty', { ascending: false });
+    } else {
+      // Default: newest first
+      query = query.order('created_at', { ascending: false });
+    }
+
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+
+    const { data, error, count } = await query
+      .range(from, to);
+
+    if (error) throw error;
+    return { data: data as Problem[], count: count || 0 };
+  },
+
+  // Get children for a batch of problems
+  async getChildrenBatch(parentIds: string[]) {
+    if (parentIds.length === 0) return [];
+
+    const { data, error } = await supabase
+      .from('problems')
+      .select('*')
+      .in('parent_problem_id', parentIds);
+
     if (error) throw error;
     return data as Problem[];
   },
@@ -94,7 +163,7 @@ export const problemsAPI = {
       .select('*')
       .eq('id', id)
       .single();
-    
+
     if (error) throw error;
     return data as Problem;
   },
@@ -106,7 +175,7 @@ export const problemsAPI = {
       .insert([problem])
       .select()
       .single();
-    
+
     if (error) {
       console.error('Supabase create error:', error);
       throw new Error(`Failed to create problem: ${error.message || JSON.stringify(error)}`);
@@ -122,7 +191,7 @@ export const problemsAPI = {
       .eq('id', id)
       .select()
       .single();
-    
+
     if (error) {
       console.error('Supabase update error:', error);
       throw new Error(`Failed to update problem: ${error.message || JSON.stringify(error)}`);
@@ -136,7 +205,7 @@ export const problemsAPI = {
       .from('problems')
       .delete()
       .eq('id', id);
-    
+
     if (error) throw error;
   },
 
@@ -166,7 +235,7 @@ export const problemsAPI = {
     }
 
     const { data, error } = await query.order('created_at', { ascending: false });
-    
+
     if (error) throw error;
     return data as Problem[];
   },
@@ -222,7 +291,7 @@ export const problemRelationshipsAPI = {
       }])
       .select()
       .single();
-    
+
     if (error) {
       console.error('Failed to create problem relationship:', error);
       throw new Error(`Failed to create relationship: ${error.message || JSON.stringify(error)}`);
@@ -236,7 +305,7 @@ export const problemRelationshipsAPI = {
       .from('problem_relationships')
       .select('*')
       .eq('source_problem_id', sourceProblemId);
-    
+
     if (error) throw error;
     return data;
   },
@@ -251,7 +320,7 @@ export const problemRelationshipsAPI = {
       `)
       .eq('source_problem_id', parentProblemId)
       .eq('relationship_type', 'derived');
-    
+
     if (error) throw error;
     return data;
   },
@@ -267,7 +336,7 @@ export const problemRelationshipsAPI = {
       `)
       .or(`source_problem_id.eq.${problemId},target_problem_id.eq.${problemId}`)
       .eq('is_approved', true);
-    
+
     if (error) throw error;
     return data;
   },
@@ -284,7 +353,7 @@ export const problemRelationshipsAPI = {
       .eq('relationship_type', 'next')
       .eq('is_approved', true)
       .order('sequence_order', { ascending: true });
-    
+
     if (error) throw error;
     return data;
   },

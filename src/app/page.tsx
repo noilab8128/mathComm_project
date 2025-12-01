@@ -7,19 +7,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Crown, Flame, Search, MessageSquare, Trophy, LineChart, LayoutDashboard, Network, Users, Brain, Home } from "lucide-react";
-import UserHomePage from "@/components/User_home_page";
+// import UserHomePage from "@/components/User_home_page";
 import Problems from "@/components/Problems";
 import Stats from "@/components/Stats";
 import Community, { CommunityTab } from "@/components/Community";
 import SkillTree from "@/components/SkillTree";
-import MainPage from "@/components/MainPage";
+// import MainPage from "@/components/MainPage";
 
 // ------------------------------------------------------------
 // Navigation Components
 // ------------------------------------------------------------
 
-import HeaderSeo from "@/components/header_seo";
-import FooterSeo from "@/components/footer_seo";
+// import HeaderSeo from "@/components/header_seo";
+// import FooterSeo from "@/components/footer_seo";
 
 /**
  * SideNav Component - Left sidebar navigation
@@ -110,7 +110,7 @@ export default function MathQuestUIMock() {
   return (
     <div className="flex flex-col min-h-screen w-full bg-gradient-to-b from-slate-50 to-white text-slate-900">
       {/* Top Navigation Bar */}
-      <HeaderSeo />
+      {/* <HeaderSeo /> */}
 
       {/* Main Layout Container */}
       <div className="flex flex-1">
@@ -120,8 +120,8 @@ export default function MathQuestUIMock() {
         {/* Main Content Area */}
         <main className="flex-1 overflow-auto">
           {/* Conditional Rendering based on active page */}
-          {page === "main" && <MainPage />}
-          {page === "dashboard" && <UserHomePage />}
+          {/* {page === "main" && <MainPage />} */}
+          {/* {page === "dashboard" && <UserHomePage />} */}
           {page === "skill-tree" && <SkillTree />}
           {page === "problems" && <Problems />}
           {page === "stats" && <Stats />}
@@ -130,7 +130,7 @@ export default function MathQuestUIMock() {
       </div>
 
       {/* Footer */}
-      <FooterSeo />
+      {/* <FooterSeo /> */}
     </div>
   );
 }
