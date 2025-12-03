@@ -1,4 +1,12 @@
 import React from "react";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { Problem } from "../types";
 import { Input } from "@/components/ui/input";
 import { CardTitle } from "@/components/ui/card";
 
@@ -12,8 +20,8 @@ interface ProblemFiltersProps {
     setFilterCategory: (category: string) => void;
     filterDifficulty: string;
     setFilterDifficulty: (value: string) => void;
-    sortBy: "newest" | "title" | "difficulty";
-    setSortBy: (value: "newest" | "title" | "difficulty") => void;
+    sortBy: "newest" | "oldest" | "difficulty_asc" | "difficulty_desc";
+    setSortBy: (sort: "newest" | "oldest" | "difficulty_asc" | "difficulty_desc") => void;
     categories: any;
 }
 
@@ -87,6 +95,18 @@ export function ProblemFilters({
                     <option value="number theory">Number Theory</option>
                     <option value="combinatorics">Combinatorics</option>
                 </select>
+
+                <Select value={sortBy} onValueChange={(value: "newest" | "oldest" | "difficulty_asc" | "difficulty_desc") => setSortBy(value)}>
+                    <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Sort by" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="newest">Newest First</SelectItem>
+                        <SelectItem value="oldest">Oldest First</SelectItem>
+                        <SelectItem value="difficulty_asc">Difficulty (Low to High)</SelectItem>
+                        <SelectItem value="difficulty_desc">Difficulty (High to Low)</SelectItem>
+                    </SelectContent>
+                </Select>
 
                 <select
                     value={filterDifficulty}

@@ -95,7 +95,7 @@ export const problemsAPI = {
     isGenerated?: boolean;
     search?: string;
     onlyRoots?: boolean;
-    sortBy?: 'newest' | 'title' | 'difficulty';
+    sortBy?: 'newest' | 'oldest' | 'difficulty_asc' | 'difficulty_desc';
   }) {
     let query = supabase.from('problems').select('*', { count: 'exact' });
 
@@ -124,10 +124,12 @@ export const problemsAPI = {
     }
 
     // Sorting
-    if (filters?.sortBy === 'title') {
-      query = query.order('title', { ascending: true });
-    } else if (filters?.sortBy === 'difficulty') {
+    if (filters?.sortBy === 'difficulty_asc') {
+      query = query.order('difficulty', { ascending: true });
+    } else if (filters?.sortBy === 'difficulty_desc') {
       query = query.order('difficulty', { ascending: false });
+    } else if (filters?.sortBy === 'oldest') {
+      query = query.order('created_at', { ascending: true });
     } else {
       // Default: newest first
       query = query.order('created_at', { ascending: false });

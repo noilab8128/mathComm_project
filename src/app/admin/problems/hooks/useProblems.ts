@@ -14,7 +14,7 @@ export function useProblems() {
     // Filtering and sorting states
     const [filterCategory, setFilterCategory] = useState<string>("all");
     const [filterDifficulty, setFilterDifficulty] = useState<string>("all");
-    const [sortBy, setSortBy] = useState<"newest" | "title" | "difficulty">("newest");
+    const [sortBy, setSortBy] = useState<"newest" | "oldest" | "difficulty_asc" | "difficulty_desc">("newest");
     const [searchQuery, setSearchQuery] = useState("");
 
     // Supabase connection states
@@ -22,12 +22,34 @@ export function useProblems() {
     const [isLoadingFromDb, setIsLoadingFromDb] = useState(false);
     const [isSavingToDb, setIsSavingToDb] = useState(false);
 
-    // Toast notification state
     const [toast, setToast] = useState<{ show: boolean; message: string; type: "success" | "error" }>({
         show: false,
         message: "",
         type: "success"
     });
+
+    // Bulk Selection State
+    const [selectedProblemIds, setSelectedProblemIds] = useState<Set<string>>(new Set());
+
+    const toggleProblemSelection = useCallback((id: string) => {
+        setSelectedProblemIds(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(id)) {
+                newSet.delete(id);
+            } else {
+                newSet.add(id);
+            }
+            return newSet;
+        });
+    }, []);
+
+    const selectAllProblems = useCallback((ids: string[]) => {
+        setSelectedProblemIds(new Set(ids));
+    }, []);
+
+    const clearSelection = useCallback(() => {
+        setSelectedProblemIds(new Set());
+    }, []);
 
     const showToast = useCallback((message: string, type: "success" | "error" = "success") => {
         setToast({ show: true, message, type });
@@ -218,6 +240,10 @@ export function useProblems() {
         saveProblemToSupabase,
         deleteProblem,
         handleExportCSV,
+        selectedProblemIds,
+        toggleProblemSelection,
+        selectAllProblems,
+        clearSelection,
         totalPages: Math.ceil(totalCount / pageSize)
     };
 }

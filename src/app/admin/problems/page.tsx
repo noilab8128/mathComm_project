@@ -39,7 +39,11 @@ export default function ProblemManagementPage() {
     loadProblemsFromSupabase,
     saveProblemToSupabase,
     deleteProblem,
-    handleExportCSV
+    handleExportCSV,
+    selectedProblemIds,
+    toggleProblemSelection,
+    selectAllProblems,
+    clearSelection
   } = useProblems();
 
   // --- UI State ---
@@ -310,7 +314,7 @@ export default function ProblemManagementPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          content: problemContent,
+          problemContent: problemContent,
           category: category,
           difficulty: difficulty
         }),
@@ -318,12 +322,14 @@ export default function ProblemManagementPage() {
 
       if (!response.ok) throw new Error('Generation failed');
 
-      const data = await response.json();
-      if (data.problems) {
-        setRelatedProblems(prev => [...prev, ...data.problems]);
-        setConcepts(data.concepts || []);
+      const result = await response.json();
+      if (result.success && result.data?.relatedProblems) {
+        setRelatedProblems(prev => [...prev, ...result.data.relatedProblems]);
+        setConcepts(result.data.concepts || []);
         setShowRelatedProblems(true);
-        showToast(`Generated ${data.problems.length} related problems!`, "success");
+        showToast(`Generated ${result.data.relatedProblems.length} related problems!`, "success");
+      } else {
+        throw new Error(result.error || 'No problems generated');
       }
     } catch (error) {
       console.error('Generation error:', error);
@@ -333,33 +339,38 @@ export default function ProblemManagementPage() {
     }
   };
 
-  const handleAddRelatedProblem = (relatedProblem: RelatedProblem) => {
-    const newProblem: Problem = {
-      id: `temp-${Date.now()}-${Math.random()}`,
-      title: relatedProblem.title,
-      content: relatedProblem.content,
-      solution: relatedProblem.solution,
-      difficulty: relatedProblem.difficulty,
-      category: relatedProblem.category,
-      diagramImageUrl: undefined,
-      linkedProblems: [],
-      isGenerated: true,
-      parentProblemId: selectedProblem?.id, // Link to current problem
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
+  const handleAddRelatedProblem = async (relatedProblem: RelatedProblem) => {
+    if (!isDbConnected) {
+      showToast("Database not connected. Cannot add problem.", "error");
+      return;
+    }
 
-    // Add to local state immediately
-    setProblems(prev => [...prev, newProblem]);
-    setLinkedProblems(prev => [...prev, newProblem.id]);
+    try {
+      // Create problem object without ID (DB will generate it)
+      const newProblemData: Omit<Problem, 'id' | 'createdAt' | 'updatedAt'> = {
+        title: relatedProblem.title,
+        content: relatedProblem.content,
+        solution: relatedProblem.solution,
+        difficulty: relatedProblem.difficulty,
+        category: relatedProblem.category,
+        diagramImageUrl: undefined,
+        linkedProblems: [],
+        isGenerated: true,
+        parentProblemId: selectedProblem?.id, // Link to current problem
+      };
 
-    // Also save to DB if connected
-    if (isDbConnected) {
-      saveProblemToSupabase(newProblem).then(() => {
-        showToast(`Added "${newProblem.title}" to database`, "success");
-      });
-    } else {
-      showToast(`Added "${newProblem.title}" (local only)`, "success");
+      // Save to DB first to get real UUID
+      const savedProblem = await problemsAPI.create(newProblemData);
+
+      if (savedProblem) {
+        // Refresh the problems list to get the new problem
+        await fetchProblems();
+
+        showToast(`Added "${savedProblem.title}" to database`, "success");
+      }
+    } catch (error) {
+      console.error('Error adding related problem:', error);
+      showToast("Failed to add problem to database", "error");
     }
   };
 
@@ -596,6 +607,12 @@ export default function ProblemManagementPage() {
             onCancelLinkEdit={handleCancelLinkEdit}
             onChangeLinkParent={handleChangeLinkParent}
             onMouseMove={(e) => setMousePosition({ x: e.clientX, y: e.clientY })}
+            selectedProblemIds={selectedProblemIds}
+            toggleProblemSelection={toggleProblemSelection}
+            selectAllProblems={selectAllProblems}
+            clearSelection={clearSelection}
+            sortBy={sortBy}
+            onSortChange={setSortBy}
           />
         </div>
 
