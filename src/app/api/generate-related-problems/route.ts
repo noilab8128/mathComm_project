@@ -1,9 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import fs from 'fs';
+import path from 'path';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
+
+// Read the AI problem generation guide
+const GUIDE_PATH = path.join(process.cwd(), 'ai_problem_generation_guide.md');
+let AI_GUIDE_CONTENT = '';
+
+try {
+  AI_GUIDE_CONTENT = fs.readFileSync(GUIDE_PATH, 'utf-8');
+} catch (error) {
+  console.error('Failed to read AI problem generation guide:', error);
+  AI_GUIDE_CONTENT = 'Guide file not found. Generate problems based on best practices.';
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -30,36 +43,44 @@ export async function POST(request: NextRequest) {
           role: 'system',
           content: `You are an expert mathematics educator. You MUST respond with valid JSON only.
 
-Analyze the problem and:
-1. Identify 2-4 core mathematical concepts
-2. For each concept, generate 1-2 foundational problems
+PROBLEM GENERATION GUIDE:
+${AI_GUIDE_CONTENT}
+
+Based on the guide above, analyze the problem and:
+1. Break down the problem into logical stages (e.g., Stage 1: Variable Decomposition, Stage 2: Case Analysis, etc.)
+2. For each stage, generate 1-2 foundational sub-problems
 3. Problems should be easier than the original (lower difficulty)
-4. Each problem teaches a specific prerequisite concept
+4. Each problem should teach a specific prerequisite concept needed for that stage
+5. Follow the structured approach outlined in the guide
 
 CRITICAL: Respond ONLY with valid JSON in this exact format:
 {
-  "concepts": ["Concept1", "Concept2"],
+  "stages": ["Stage 1: Description", "Stage 2: Description", ...],
   "relatedProblems": [
     {
       "title": "Short problem title",
-      "content": "Problem with KaTeX formulas using \\\\( \\\\) or \\\\[ \\\\]",
+      "content": "Problem with KaTeX formulas using \\\\\\\\( \\\\\\\\) or \\\\\\\\[ \\\\\\\\]",
       "solution": "Step-by-step solution with KaTeX",
       "difficulty": 3,
       "category": "Algebra",
+      "stage": "Stage 1: Description",
       "concept": "Which concept this teaches",
-      "explanation": "Why this is foundational"
+      "explanation": "Why this is foundational for this stage"
     }
   ]
 }
 
-Use double backslashes in JSON: \\\\( x^2 \\\\) for inline, \\\\[ ... \\\\] for display.`,
+Use double backslashes in JSON: \\\\\\\\( x^2 \\\\\\\\) for inline, \\\\\\\\[ ... \\\\\\\\] for display.`,
         },
         {
           role: 'user',
-          content: `Original Problem (Difficulty: ${difficulty || 5}, Category: ${category || 'Math'}):\n${problemContent}\n\nGenerate 2-4 foundational problems. Respond with ONLY valid JSON.`,
+          content: `Original Problem (Difficulty: ${difficulty || 5}, Category: ${category || 'Math'}):
+${problemContent}
+
+Analyze this problem following the guide structure and generate 3-6 foundational sub-problems organized by stages. Respond with ONLY valid JSON.`,
         },
       ],
-      max_tokens: 3000,
+      max_tokens: 4000,
       temperature: 0.5,
       response_format: { type: "json_object" },
     });
@@ -82,7 +103,7 @@ Use double backslashes in JSON: \\\\( x^2 \\\\) for inline, \\\\[ ... \\\\] for 
     } catch (e) {
       console.error('Related Problems - JSON Parse Error:', e);
       console.error('Failed to parse:', aiResponse);
-      
+
       return NextResponse.json({
         success: false,
         error: 'Failed to parse AI response. Check server console for details.',

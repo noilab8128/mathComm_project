@@ -46,6 +46,7 @@ interface ProblemEditorProps {
     showRelatedProblems: boolean;
     setShowRelatedProblems: (show: boolean) => void;
     concepts: string[];
+    addedProblemTitles: Set<string>;
 
     // Handlers
     onSave: () => void;
@@ -57,6 +58,7 @@ interface ProblemEditorProps {
     onAIDifficulty: () => void;
     onGenerateRelated: () => void;
     onAddRelated: (problem: RelatedProblem) => void;
+    onRemoveRelated: (problem: RelatedProblem) => void;
     onSelectExtractedDiagram: (url: string) => void;
     onRemoveExtractedDiagram: (index: number) => void;
     onClearRelated: () => void;
@@ -96,6 +98,7 @@ export function ProblemEditor({
     showRelatedProblems,
     setShowRelatedProblems,
     concepts,
+    addedProblemTitles,
     onSave,
     onCancel,
     onFileUpload,
@@ -105,6 +108,7 @@ export function ProblemEditor({
     onAIDifficulty,
     onGenerateRelated,
     onAddRelated,
+    onRemoveRelated,
     onSelectExtractedDiagram,
     onRemoveExtractedDiagram,
     onClearRelated
@@ -556,49 +560,57 @@ export function ProblemEditor({
                                         </div>
                                     </div>
 
-                                    {/* Concepts Overview */}
+                                    {/* Stages Overview */}
                                     <div className="mb-4 p-3 bg-white border border-blue-200 rounded-md">
-                                        <h4 className="text-xs font-medium text-gray-700 mb-2">Identified Concepts:</h4>
+                                        <h4 className="text-xs font-medium text-gray-700 mb-2">Problem Solving Stages:</h4>
                                         <div className="flex flex-wrap gap-2">
-                                            {concepts.map((concept, idx) => (
+                                            {concepts.map((stage, idx) => (
                                                 <Badge key={idx} className="text-xs bg-blue-100 text-blue-800 border-blue-200">
-                                                    {concept}
+                                                    {stage}
                                                 </Badge>
                                             ))}
                                         </div>
                                     </div>
 
-                                    {/* Problems Grid - Organized by Concept */}
-                                    <div className="space-y-3">
-                                        {concepts.map((concept) => {
-                                            const conceptProblems = relatedProblems.filter(p => p.concept === concept);
-                                            if (conceptProblems.length === 0) return null;
+                                    {/* Problems Grid - Organized by Stage */}
+                                    <div className="space-y-6">
+                                        {concepts.map((stage, stageIdx) => {
+                                            const stageProblems = relatedProblems.filter(p => p.stage === stage);
+                                            if (stageProblems.length === 0) return null;
 
                                             return (
-                                                <div key={concept} className="p-3 bg-white border border-gray-200 rounded-md">
-                                                    <div className="flex items-center gap-2 mb-3">
-                                                        <Badge className="text-xs bg-purple-100 text-purple-800 border-purple-200">
-                                                            {concept}
-                                                        </Badge>
-                                                        <span className="text-xs text-gray-500">
-                                                            {conceptProblems.length} problem{conceptProblems.length > 1 ? 's' : ''}
-                                                        </span>
+                                                <div key={stage} className="p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
+                                                    <div className="flex items-center gap-3 mb-4">
+                                                        <div className="flex items-center justify-center w-8 h-8 bg-blue-600 text-white rounded-full font-semibold text-sm">
+                                                            {stageIdx + 1}
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <h4 className="text-base font-semibold text-gray-800">{stage}</h4>
+                                                            <span className="text-xs text-gray-500">
+                                                                {stageProblems.length} problem{stageProblems.length > 1 ? 's' : ''}
+                                                            </span>
+                                                        </div>
                                                     </div>
 
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                                        {conceptProblems.map((relProb, idx) => (
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                        {stageProblems.map((relProb, idx) => (
                                                             <div
                                                                 key={idx}
-                                                                className="p-3 border border-gray-200 rounded-md hover:border-green-400 transition-all bg-gray-50"
+                                                                className="p-4 border border-gray-200 rounded-md hover:border-blue-400 transition-all bg-gray-50 hover:shadow-sm"
                                                             >
                                                                 <div className="flex items-start justify-between mb-2">
                                                                     <div className="flex-1">
-                                                                        <h5 className="text-sm font-medium text-gray-800 line-clamp-1">
+                                                                        <h5 className="text-sm font-medium text-gray-800 mb-2">
                                                                             {relProb.title}
                                                                         </h5>
-                                                                        <Badge className="text-xs bg-gray-100 text-gray-700 border-gray-200 mt-1">
-                                                                            Difficulty {relProb.difficulty}/10
-                                                                        </Badge>
+                                                                        <div className="flex items-center gap-2">
+                                                                            <Badge className="text-xs bg-gray-100 text-gray-700 border-gray-200">
+                                                                                Difficulty {relProb.difficulty}/10
+                                                                            </Badge>
+                                                                            <Badge className="text-xs bg-purple-100 text-purple-800 border-purple-200">
+                                                                                {relProb.concept}
+                                                                            </Badge>
+                                                                        </div>
                                                                     </div>
                                                                 </div>
 
@@ -618,7 +630,7 @@ export function ProblemEditor({
                                                                                 View Details
                                                                             </Button>
                                                                         </DialogTrigger>
-                                                                        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto bg-white">
+                                                                        <DialogContent className="max-w-7xl max-h-[85vh] overflow-y-auto bg-white">
                                                                             <DialogHeader>
                                                                                 <DialogTitle className="text-lg font-semibold">
                                                                                     {relProb.title}
@@ -627,13 +639,16 @@ export function ProblemEditor({
                                                                             <div className="space-y-4">
                                                                                 <div>
                                                                                     <div className="flex items-center gap-2 mb-2">
+                                                                                        <Badge className="text-xs bg-blue-100 text-blue-800 border-blue-200">
+                                                                                            {relProb.stage}
+                                                                                        </Badge>
                                                                                         <Badge className="text-xs bg-purple-100 text-purple-800 border-purple-200">
                                                                                             {relProb.concept}
                                                                                         </Badge>
                                                                                         <Badge className="text-xs bg-gray-100 text-gray-700 border-gray-200">
                                                                                             Difficulty {relProb.difficulty}/10
                                                                                         </Badge>
-                                                                                        <Badge className="text-xs bg-blue-100 text-blue-800 border-blue-200">
+                                                                                        <Badge className="text-xs bg-gray-100 text-gray-700 border-gray-200">
                                                                                             {relProb.category}
                                                                                         </Badge>
                                                                                     </div>
@@ -666,13 +681,24 @@ export function ProblemEditor({
                                                                         </DialogContent>
                                                                     </Dialog>
 
-                                                                    <Button
-                                                                        onClick={() => onAddRelated(relProb)}
-                                                                        size="sm"
-                                                                        className="bg-green-600 text-white font-medium text-xs hover:bg-green-700"
-                                                                    >
-                                                                        Add
-                                                                    </Button>
+                                                                    {addedProblemTitles.has(relProb.title) ? (
+                                                                        <Button
+                                                                            onClick={() => onRemoveRelated(relProb)}
+                                                                            size="sm"
+                                                                            variant="outline"
+                                                                            className="border-red-300 text-red-600 font-medium text-xs hover:bg-red-50"
+                                                                        >
+                                                                            ✓ Added - Remove
+                                                                        </Button>
+                                                                    ) : (
+                                                                        <Button
+                                                                            onClick={() => onAddRelated(relProb)}
+                                                                            size="sm"
+                                                                            className="bg-green-600 text-white font-medium text-xs hover:bg-green-700"
+                                                                        >
+                                                                            Add
+                                                                        </Button>
+                                                                    )}
                                                                 </div>
                                                             </div>
                                                         ))}
@@ -684,16 +710,22 @@ export function ProblemEditor({
 
                                     {/* Bulk Actions */}
                                     <div className="mt-4 p-3 bg-white border border-gray-200 rounded-md">
-                                        <p className="text-xs text-gray-600 mb-2">Bulk Actions:</p>
+                                        <p className="text-xs text-gray-600 mb-2">
+                                            Bulk Actions: {addedProblemTitles.size} of {relatedProblems.length} problems added
+                                        </p>
                                         <div className="flex gap-2">
                                             <Button
                                                 onClick={() => {
-                                                    relatedProblems.forEach(prob => onAddRelated(prob));
+                                                    // Only add problems that haven't been added yet
+                                                    relatedProblems
+                                                        .filter(prob => !addedProblemTitles.has(prob.title))
+                                                        .forEach(prob => onAddRelated(prob));
                                                 }}
                                                 size="sm"
-                                                className="bg-green-600 text-white font-medium text-xs hover:bg-green-700"
+                                                disabled={addedProblemTitles.size === relatedProblems.length}
+                                                className="bg-green-600 text-white font-medium text-xs hover:bg-green-700 disabled:bg-gray-300"
                                             >
-                                                Add All ({relatedProblems.length})
+                                                Add All Remaining ({relatedProblems.length - addedProblemTitles.size})
                                             </Button>
                                             <Button
                                                 onClick={onClearRelated}
@@ -701,7 +733,7 @@ export function ProblemEditor({
                                                 size="sm"
                                                 className="text-xs text-gray-700 border-gray-300 hover:bg-gray-50"
                                             >
-                                                Clear All
+                                                Deselect All
                                             </Button>
                                         </div>
                                     </div>

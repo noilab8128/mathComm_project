@@ -80,6 +80,7 @@ export default function ProblemManagementPage() {
   const [relatedProblems, setRelatedProblems] = useState<RelatedProblem[]>([]);
   const [showRelatedProblems, setShowRelatedProblems] = useState(false);
   const [concepts, setConcepts] = useState<string[]>([]);
+  const [addedProblemTitles, setAddedProblemTitles] = useState<Set<string>>(new Set());
 
   // --- Drag & Drop / Linking State ---
   const [draggedProblemId, setDraggedProblemId] = useState<string | null>(null);
@@ -126,6 +127,7 @@ export default function ProblemManagementPage() {
     setExtractedDiagrams([]);
     setRelatedProblems([]);
     setConcepts([]);
+    setAddedProblemTitles(new Set());
     setIsEditorOpen(true);
   };
 
@@ -191,7 +193,32 @@ export default function ProblemManagementPage() {
     try {
       const saved = await saveProblemToSupabase(problemToSave, selectedLevel1, selectedLevel2, selectedLevel3);
       if (saved) {
-        showToast(isEditing ? "Problem updated successfully!" : "Problem created successfully!", "success");
+        // Now save all staged related problems
+        for (const relatedProblem of relatedProblems.filter(p => addedProblemTitles.has(p.title))) {
+          try {
+            const newProblemData: Omit<Problem, 'id' | 'created_at' | 'updated_at'> = {
+              title: relatedProblem.title,
+              content: relatedProblem.content,
+              solution: relatedProblem.solution,
+              difficulty: relatedProblem.difficulty,
+              category_path: relatedProblem.category,
+              diagram_image_url: undefined,
+              linked_problem_ids: [],
+              is_generated: true,
+              parent_problem_id: saved.id, // Link to the saved problem
+            };
+            await problemsAPI.create(newProblemData);
+          } catch (error) {
+            console.error('Error saving related problem:', error);
+          }
+        }
+
+        showToast(
+          isEditing
+            ? `Problem updated successfully! ${addedProblemTitles.size} related problems saved.`
+            : `Problem created successfully! ${addedProblemTitles.size} related problems saved.`,
+          "success"
+        );
         setIsEditorOpen(false);
         loadProblemsFromSupabase(); // Reload to get fresh data
       }
@@ -325,7 +352,8 @@ export default function ProblemManagementPage() {
       const result = await response.json();
       if (result.success && result.data?.relatedProblems) {
         setRelatedProblems(prev => [...prev, ...result.data.relatedProblems]);
-        setConcepts(result.data.concepts || []);
+        // Use stages instead of concepts
+        setConcepts(result.data.stages || []);
         setShowRelatedProblems(true);
         showToast(`Generated ${result.data.relatedProblems.length} related problems!`, "success");
       } else {
@@ -340,38 +368,19 @@ export default function ProblemManagementPage() {
   };
 
   const handleAddRelatedProblem = async (relatedProblem: RelatedProblem) => {
-    if (!isDbConnected) {
-      showToast("Database not connected. Cannot add problem.", "error");
-      return;
-    }
+    // Just mark as added, don't save to DB yet
+    setAddedProblemTitles(prev => new Set(prev).add(relatedProblem.title));
+    showToast(`"${relatedProblem.title}" will be saved when you click Update Problem`, "success");
+  };
 
-    try {
-      // Create problem object without ID (DB will generate it)
-      const newProblemData: Omit<Problem, 'id' | 'createdAt' | 'updatedAt'> = {
-        title: relatedProblem.title,
-        content: relatedProblem.content,
-        solution: relatedProblem.solution,
-        difficulty: relatedProblem.difficulty,
-        category: relatedProblem.category,
-        diagramImageUrl: undefined,
-        linkedProblems: [],
-        isGenerated: true,
-        parentProblemId: selectedProblem?.id, // Link to current problem
-      };
-
-      // Save to DB first to get real UUID
-      const savedProblem = await problemsAPI.create(newProblemData);
-
-      if (savedProblem) {
-        // Refresh the problems list to get the new problem
-        await fetchProblems();
-
-        showToast(`Added "${savedProblem.title}" to database`, "success");
-      }
-    } catch (error) {
-      console.error('Error adding related problem:', error);
-      showToast("Failed to add problem to database", "error");
-    }
+  const handleRemoveRelatedProblem = async (relatedProblem: RelatedProblem) => {
+    // Just remove from added set
+    setAddedProblemTitles(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(relatedProblem.title);
+      return newSet;
+    });
+    showToast(`"${relatedProblem.title}" removed from selection`, "success");
   };
 
   // --- Drag & Drop Handlers ---
@@ -651,6 +660,7 @@ export default function ProblemManagementPage() {
           showRelatedProblems={showRelatedProblems}
           setShowRelatedProblems={setShowRelatedProblems}
           concepts={concepts}
+          addedProblemTitles={addedProblemTitles}
           onSave={handleSaveProblem}
           onCancel={() => setIsEditorOpen(false)}
           onFileUpload={handleProblemFileUpload}
@@ -660,12 +670,12 @@ export default function ProblemManagementPage() {
           onAIDifficulty={handleAIDifficulty}
           onGenerateRelated={handleGenerateRelatedProblems}
           onAddRelated={handleAddRelatedProblem}
+          onRemoveRelated={handleRemoveRelatedProblem}
           onSelectExtractedDiagram={(url) => setDiagramImageUrl(url)}
           onRemoveExtractedDiagram={(index) => setExtractedDiagrams(prev => prev.filter((_, i) => i !== index))}
           onClearRelated={() => {
-            setRelatedProblems([]);
-            setConcepts([]);
-            setShowRelatedProblems(false);
+            // Only clear the added status, don't remove the generated problems
+            setAddedProblemTitles(new Set());
           }}
         />
 
@@ -718,6 +728,7 @@ export default function ProblemManagementPage() {
               <Button
                 variant="destructive"
                 onClick={confirmDialog.onConfirm}
+                className="bg-red-600 text-white hover:bg-red-700"
               >
                 Delete
               </Button>

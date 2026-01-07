@@ -19,6 +19,7 @@ export interface RelatedProblem {
     solution: string;
     difficulty: number;
     category: string;
+    stage: string;
     concept: string;
     explanation: string;
 }
