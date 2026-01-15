@@ -21,6 +21,9 @@
 ### Push
 -- git push                # Upload to GitHub
 
+### Commit and Push
+-- git commit -am "message" # Commit and push
+
 ## Download 
 git clone <url>     # Clone repo
 git fetch           # Get remote updates (safe)
