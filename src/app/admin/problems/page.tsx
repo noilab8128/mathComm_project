@@ -269,12 +269,15 @@ export default function ProblemManagementPage() {
 
     setIsAnalyzing(true);
     try {
-      const formData = new FormData();
-      formData.append('file', uploadedFile);
-
       const response = await fetch('/api/analyze-problem', {
         method: 'POST',
-        body: formData,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          imageBase64: uploadedFilePreview,
+          action: 'analyze',
+        }),
       });
 
       if (!response.ok) throw new Error('Analysis failed');
