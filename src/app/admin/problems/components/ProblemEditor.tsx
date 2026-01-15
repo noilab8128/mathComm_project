@@ -64,6 +64,16 @@ interface ProblemEditorProps {
     onClearRelated: () => void;
 }
 
+const GENERATION_STEPS = [
+    "Analyzing problem structure...",
+    "Reading problem generation guide...",
+    "Identifying key concepts and stages...",
+    "Generating foundational sub-problems...",
+    "Formatting mathematical formulas...",
+    "Finalizing stages and categories..."
+];
+
+
 export function ProblemEditor({
     isOpen,
     onOpenChange,
@@ -116,6 +126,40 @@ export function ProblemEditor({
     const problemFileInputRef = useRef<HTMLInputElement>(null);
     const diagramFileInputRef = useRef<HTMLInputElement>(null);
     const [selectedRelatedProblem, setSelectedRelatedProblem] = React.useState<RelatedProblem | null>(null);
+    const [progress, setProgress] = React.useState(0);
+    const [stepIndex, setStepIndex] = React.useState(0);
+
+    // AI Generation Progress Logic
+    React.useEffect(() => {
+        let interval: NodeJS.Timeout;
+        let stepInterval: NodeJS.Timeout;
+
+        if (isAnalyzing) {
+            setProgress(0);
+            setStepIndex(0);
+
+            // Increment progress bar
+            interval = setInterval(() => {
+                setProgress(prev => {
+                    if (prev >= 95) return prev; // Cap at 95% until finished
+                    return prev + Math.random() * 5;
+                });
+            }, 800);
+
+            // Cycle through steps
+            stepInterval = setInterval(() => {
+                setStepIndex(prev => (prev + 1) % GENERATION_STEPS.length);
+            }, 3000);
+        } else {
+            setProgress(0);
+            setStepIndex(0);
+        }
+
+        return () => {
+            if (interval) clearInterval(interval);
+            if (stepInterval) clearInterval(stepInterval);
+        };
+    }, [isAnalyzing]);
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -526,6 +570,40 @@ export function ProblemEditor({
                                     </p>
                                 </div>
                             </div>
+
+                            {/* AI Generation Progress Indicator */}
+                            {isAnalyzing && (
+                                <div className="mt-4 p-6 border border-blue-100 rounded-lg bg-blue-50/50 animate-in fade-in duration-500">
+                                    <div className="flex flex-col items-center text-center">
+                                        <div className="mb-4 relative">
+                                            <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+                                            <div className="absolute inset-0 flex items-center justify-center">
+                                                <span className="text-[10px] font-bold text-blue-600">{Math.floor(progress)}%</span>
+                                            </div>
+                                        </div>
+
+                                        <h4 className="text-sm font-semibold text-blue-900 mb-1">
+                                            {GENERATION_STEPS[stepIndex]}
+                                        </h4>
+                                        <p className="text-xs text-blue-700/70 mb-4 max-w-xs">
+                                            AI is carefully analyzing the problem based on the generation guide to create quality learning steps.
+                                        </p>
+
+                                        <div className="w-full max-w-md bg-blue-100 rounded-full h-1.5 overflow-hidden">
+                                            <div
+                                                className="bg-blue-600 h-full transition-all duration-500 ease-out"
+                                                style={{ width: `${progress}%` }}
+                                            ></div>
+                                        </div>
+
+                                        <div className="mt-3 flex gap-2">
+                                            <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce"></span>
+                                            <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce [animation-delay:0.2s]"></span>
+                                            <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
 
                             {/* AI-Generated Related Problems */}
                             {showRelatedProblems && relatedProblems.length > 0 && (
