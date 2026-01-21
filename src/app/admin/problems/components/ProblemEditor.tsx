@@ -53,7 +53,9 @@ interface ProblemEditorProps {
     onCancel: () => void;
     onFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
     onDiagramUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    onSolutionFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
     onAIAnalyze: () => void;
+    onAISolutionAnalyze: () => void;
     onAIGenerateSolution: () => void;
     onAIDifficulty: () => void;
     onGenerateRelated: () => void;
@@ -62,6 +64,8 @@ interface ProblemEditorProps {
     onSelectExtractedDiagram: (url: string) => void;
     onRemoveExtractedDiagram: (index: number) => void;
     onClearRelated: () => void;
+    uploadedSolutionFile?: File | null;
+    uploadedSolutionFilePreview?: string;
 }
 
 const GENERATION_STEPS = [
@@ -113,7 +117,9 @@ export function ProblemEditor({
     onCancel,
     onFileUpload,
     onDiagramUpload,
+    onSolutionFileUpload,
     onAIAnalyze,
+    onAISolutionAnalyze,
     onAIGenerateSolution,
     onAIDifficulty,
     onGenerateRelated,
@@ -121,10 +127,13 @@ export function ProblemEditor({
     onRemoveRelated,
     onSelectExtractedDiagram,
     onRemoveExtractedDiagram,
-    onClearRelated
+    onClearRelated,
+    uploadedSolutionFile,
+    uploadedSolutionFilePreview
 }: ProblemEditorProps) {
     const problemFileInputRef = useRef<HTMLInputElement>(null);
     const diagramFileInputRef = useRef<HTMLInputElement>(null);
+    const solutionFileInputRef = useRef<HTMLInputElement>(null);
     const [selectedRelatedProblem, setSelectedRelatedProblem] = React.useState<RelatedProblem | null>(null);
     const [progress, setProgress] = React.useState(0);
     const [stepIndex, setStepIndex] = React.useState(0);
@@ -414,6 +423,21 @@ export function ProblemEditor({
 
                             {/* Problem Content */}
                             <div>
+                                <h3 className="text-sm font-medium text-gray-800 mb-1">Preview</h3>
+                                <div className="p-4 border border-gray-200 rounded-md bg-gray-50 min-h-[100px] mb-2">
+                                    {diagramImageUrl && (
+                                        <div className="mb-4">
+                                            <p className="text-xs text-gray-600 mb-2">Diagram:</p>
+                                            <img
+                                                src={diagramImageUrl}
+                                                alt="Diagram"
+                                                className="max-w-full h-auto rounded-md"
+                                            />
+                                        </div>
+                                    )}
+                                    <MathPreview html={problemContent} />
+                                </div>
+
                                 <label htmlFor="problemContent" className="text-sm font-medium text-gray-800">
                                     Problem Content (KaTeX/MathJax) *
                                 </label>
@@ -480,23 +504,7 @@ export function ProblemEditor({
                                 )}
                             </div>
 
-                            {/* Preview */}
-                            <div>
-                                <h3 className="text-sm font-medium text-gray-800">Preview</h3>
-                                <div className="p-4 border border-gray-200 rounded-md mt-1 bg-gray-50 min-h-[120px]">
-                                    {diagramImageUrl && (
-                                        <div className="mb-4">
-                                            <p className="text-xs text-gray-600 mb-2">Diagram:</p>
-                                            <img
-                                                src={diagramImageUrl}
-                                                alt="Diagram"
-                                                className="max-w-full h-auto rounded-md"
-                                            />
-                                        </div>
-                                    )}
-                                    <MathPreview html={problemContent} />
-                                </div>
-                            </div>
+                            {/* Preview removed from here and moved above content */}
 
                             {/* Solution */}
                             <div>
@@ -514,12 +522,60 @@ export function ProblemEditor({
                                         Generate with AI
                                     </Button>
                                 </div>
+
+                                {/* Solution Image Upload Area */}
+                                <div className="mt-2 p-3 border border-dashed border-gray-300 rounded-md bg-gray-50/50">
+                                    <div className="flex items-center justify-between gap-4">
+                                        <div className="flex-1">
+                                            <p className="text-[11px] font-medium text-gray-600 mb-2 uppercase tracking-tight">Extract Solution from Image (AI)</p>
+                                            <div className="flex items-center gap-2">
+                                                <Input
+                                                    type="file"
+                                                    ref={solutionFileInputRef}
+                                                    onChange={onSolutionFileUpload}
+                                                    accept="image/*"
+                                                    className="hidden"
+                                                />
+                                                <Button
+                                                    onClick={() => solutionFileInputRef.current?.click()}
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="text-xs h-8 text-gray-700 bg-white border-gray-300 hover:bg-gray-100"
+                                                    disabled={isAnalyzing}
+                                                >
+                                                    Choose Solution Image
+                                                </Button>
+                                                {uploadedSolutionFile && (
+                                                    <span className="text-[10px] text-gray-500 truncate max-w-[150px]">{uploadedSolutionFile.name}</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <Button
+                                            onClick={onAISolutionAnalyze}
+                                            disabled={!uploadedSolutionFile || isAnalyzing}
+                                            size="sm"
+                                            className="h-8 bg-indigo-600 text-white text-xs hover:bg-indigo-700 disabled:bg-gray-300"
+                                        >
+                                            {isAnalyzing ? "Analyzing..." : "Extract from Image"}
+                                        </Button>
+                                    </div>
+                                    {uploadedSolutionFilePreview && (
+                                        <div className="mt-3 relative h-24 w-full bg-black/5 rounded overflow-hidden">
+                                            <img
+                                                src={uploadedSolutionFilePreview}
+                                                alt="Solution preview"
+                                                className="h-full w-full object-contain"
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+
                                 <textarea
                                     id="solution"
                                     value={solution}
                                     onChange={(e) => setSolution(e.target.value)}
                                     placeholder="Enter the solution (supports KaTeX/MathJax) or generate with AI"
-                                    className="w-full h-32 p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 mt-1 text-sm"
+                                    className="w-full h-32 p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 mt-2 text-sm"
                                 />
 
                                 {/* Solution Preview */}
@@ -708,7 +764,7 @@ export function ProblemEditor({
                                                                                 View Details
                                                                             </Button>
                                                                         </DialogTrigger>
-                                                                        <DialogContent className="max-w-7xl max-h-[85vh] overflow-y-auto bg-white">
+                                                                        <DialogContent className="!max-w-[95vw] max-h-[85vh] overflow-y-auto bg-white">
                                                                             <DialogHeader>
                                                                                 <DialogTitle className="text-lg font-semibold">
                                                                                     {relProb.title}

@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     if (!process.env.OPENAI_API_KEY) {
       console.error('OPENAI_API_KEY is not set in environment variables');
       return NextResponse.json(
-        { 
+        {
           error: 'OpenAI API key is not configured',
           hint: 'Please create .env.local file with OPENAI_API_KEY=your-key and restart the server'
         },
@@ -38,39 +38,39 @@ export async function POST(request: NextRequest) {
     if (action === 'analyze') {
       systemPrompt = `You are an expert mathematics problem analyzer. You MUST respond with valid JSON only.
 
-Available categories (choose the most specific match):
-- Level 1: Algebra, Geometry, Analysis, Number Theory, Combinatorics & Discrete Mathematics, Probability & Statistics, Optimization Theory, Numerical Analysis, Cryptography, Game Theory
-- Level 2 (Algebra): Elementary Algebra, Linear Algebra, Abstract Algebra
-- Level 2 (Geometry): Euclidean Geometry, Analytic Geometry, Differential Geometry, Topology
-- Level 2 (Analysis): Calculus, Complex Analysis, Real Analysis, Differential Equations
-- Level 2 (Number Theory): Elementary Number Theory, Analytic Number Theory
-- Level 3 (Elementary Algebra): Polynomials, Equations and Inequalities, Factorization, Exponents and Logarithms
-- Level 3 (Calculus): Limits and Continuity, Differentiation, Integration, Series
-- And more...
-
 Extract from the image:
-1. Problem statement text with KaTeX syntax
-2. Diagrams/graphs
-3. Solution if present
-4. Difficulty (1-10): 1-3=Easy, 4-6=Medium, 7-9=Hard, 10=Olympic
-5. Category hierarchy (be specific)
+1. Problem statement text with KaTeX syntax. (Critical: Ensure all mathematical symbols are correctly converted to KaTeX)
+2. Diagrams/graphs description if present.
+3. Solution if present.
+4. Difficulty (1-10): 1-3=Easy, 4-6=Medium, 7-9=Hard, 10=Olympic.
+5. Specific category following the hierarchy: Level 1 > Level 2 > Level 3.
 
 CRITICAL: Respond ONLY with valid JSON:
 {
   "title": "Brief descriptive title (5-10 words)",
   "content": "Full problem with KaTeX: \\\\( inline \\\\) or \\\\[ display \\\\]",
-  "solution": "Solution with KaTeX or empty string",
+  "solution": "Detailed solution if present, otherwise empty string",
   "difficulty": 5,
-  "categoryLevel1": "Algebra",
-  "categoryLevel2": "Elementary Algebra",
-  "categoryLevel3": "Polynomials",
-  "categoryConfidence": 0.9,
+  "category": "Level 1 > Level 2 > Level 3",
+  "categoryLevel1": "Level 1",
+  "categoryLevel2": "Level 2",
+  "categoryLevel3": "Level 3",
   "hasDiagrams": true|false,
-  "diagramDescription": "Description",
   "concepts": ["concept1", "concept2"]
 }`;
 
-      userPrompt = 'Analyze this math problem. Identify the most specific category from the hierarchy. Respond with ONLY valid JSON.';
+      userPrompt = 'Analyze this math problem. Extract all details including formulas and diagrams. Respond with ONLY valid JSON.';
+    } else if (action === 'extract-solution') {
+      systemPrompt = `You are an expert mathematics solution analyzer. You MUST respond with valid JSON only.
+Based on the image provided, extract the full step-by-step solution.
+
+CRITICAL: Respond ONLY with valid JSON:
+{
+  "solution": "The full detailed solution using KaTeX syntax for all formulas: \\\\( inline \\\\) or \\\\[ display \\\\]",
+  "explanation": "Brief summary of the solving method used"
+}`;
+
+      userPrompt = 'Extract the complete solution from this image. Focus on mathematical accuracy and formatting formulas with KaTeX. Respond with ONLY valid JSON.';
     } else if (action === 'generate-related') {
       systemPrompt = `You are an expert mathematics problem generator. Based on the given problem, create related problems that focus on the underlying mathematical concepts.
 
@@ -139,7 +139,7 @@ Respond in JSON format with:
       // JSON 파싱 실패 시 텍스트 응답 반환
       console.error('JSON Parse Error:', e);
       console.error('Failed to parse:', aiResponse);
-      
+
       return NextResponse.json({
         success: false,
         error: 'Failed to parse AI response as JSON. The AI may have returned text instead of JSON.',

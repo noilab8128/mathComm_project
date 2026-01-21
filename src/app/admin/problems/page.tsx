@@ -81,6 +81,8 @@ export default function ProblemManagementPage() {
   const [showRelatedProblems, setShowRelatedProblems] = useState(false);
   const [concepts, setConcepts] = useState<string[]>([]);
   const [addedProblemTitles, setAddedProblemTitles] = useState<Set<string>>(new Set());
+  const [uploadedSolutionFile, setUploadedSolutionFile] = useState<File | null>(null);
+  const [uploadedSolutionFilePreview, setUploadedSolutionFilePreview] = useState<string>("");
 
   // --- Drag & Drop / Linking State ---
   const [draggedProblemId, setDraggedProblemId] = useState<string | null>(null);
@@ -128,6 +130,8 @@ export default function ProblemManagementPage() {
     setRelatedProblems([]);
     setConcepts([]);
     setAddedProblemTitles(new Set());
+    setUploadedSolutionFile(null);
+    setUploadedSolutionFilePreview("");
     setIsEditorOpen(true);
   };
 
@@ -146,6 +150,8 @@ export default function ProblemManagementPage() {
     setExtractedDiagrams([]);
     setRelatedProblems([]);
     setConcepts([]);
+    setUploadedSolutionFile(null);
+    setUploadedSolutionFilePreview("");
 
     // Parse category levels
     if (problem.category) {
@@ -196,16 +202,16 @@ export default function ProblemManagementPage() {
         // Now save all staged related problems
         for (const relatedProblem of relatedProblems.filter(p => addedProblemTitles.has(p.title))) {
           try {
-            const newProblemData: Omit<Problem, 'id' | 'created_at' | 'updated_at'> = {
+            const newProblemData: Omit<Problem, 'id' | 'createdAt' | 'updatedAt'> = {
               title: relatedProblem.title,
               content: relatedProblem.content,
               solution: relatedProblem.solution,
               difficulty: relatedProblem.difficulty,
-              category_path: relatedProblem.category,
-              diagram_image_url: undefined,
-              linked_problem_ids: [],
-              is_generated: true,
-              parent_problem_id: saved.id, // Link to the saved problem
+              category: relatedProblem.category,
+              diagramImageUrl: undefined,
+              linkedProblems: [],
+              isGenerated: true,
+              parentProblemId: saved.id, // Link to the saved problem
             };
             await problemsAPI.create(newProblemData);
           } catch (error) {
@@ -264,35 +270,84 @@ export default function ProblemManagementPage() {
     }
   };
 
+  const handleSolutionFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setUploadedSolutionFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setUploadedSolutionFilePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleAIAnalyzeProblem = async () => {
-    if (!uploadedFile) return;
+    if (!uploadedFilePreview) return;
 
     setIsAnalyzing(true);
     try {
-      const formData = new FormData();
-      formData.append('file', uploadedFile);
-
       const response = await fetch('/api/analyze-problem', {
         method: 'POST',
-        body: formData,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          imageBase64: uploadedFilePreview,
+          action: 'analyze'
+        }),
       });
 
       if (!response.ok) throw new Error('Analysis failed');
 
-      const data = await response.json();
-      setProblemTitle(data.title || "");
-      setProblemContent(data.content || "");
-      setSolution(data.solution || "");
-      setDifficulty(data.difficulty || 5);
-      setCategory(data.category || "");
-      if (data.diagrams && data.diagrams.length > 0) {
-        setExtractedDiagrams(data.diagrams);
-        setDiagramImageUrl(data.diagrams[0]);
+      const result = await response.json();
+      if (result.success && result.data) {
+        const data = result.data;
+        setProblemTitle(data.title || "");
+        setProblemContent(data.content || "");
+        setSolution(data.solution || "");
+        setDifficulty(data.difficulty || 5);
+        setCategory(data.category || "");
+
+        // Handle categories and stages
+        if (data.concepts) setConcepts(data.concepts);
+
+        showToast("Problem analyzed successfully!", "success");
+      } else {
+        throw new Error(result.error || 'Analysis failed');
       }
-      showToast("Problem analyzed successfully!", "success");
     } catch (error) {
       console.error('Analysis error:', error);
       showToast("Failed to analyze problem", "error");
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const handleAISolutionAnalyze = async () => {
+    if (!uploadedSolutionFilePreview) return;
+
+    setIsAnalyzing(true);
+    try {
+      const response = await fetch('/api/analyze-problem', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          imageBase64: uploadedSolutionFilePreview,
+          action: 'extract-solution'
+        }),
+      });
+
+      if (!response.ok) throw new Error('Solution extraction failed');
+
+      const result = await response.json();
+      if (result.success && result.data?.solution) {
+        setSolution(result.data.solution);
+        showToast("Solution extracted successfully!", "success");
+      } else {
+        throw new Error(result.error || 'Failed to extract solution');
+      }
+    } catch (error) {
+      console.error('Solution extraction error:', error);
+      showToast("Failed to extract solution from image", "error");
     } finally {
       setIsAnalyzing(false);
     }
@@ -665,7 +720,9 @@ export default function ProblemManagementPage() {
           onCancel={() => setIsEditorOpen(false)}
           onFileUpload={handleProblemFileUpload}
           onDiagramUpload={handleDiagramImageUpload}
+          onSolutionFileUpload={handleSolutionFileUpload}
           onAIAnalyze={handleAIAnalyzeProblem}
+          onAISolutionAnalyze={handleAISolutionAnalyze}
           onAIGenerateSolution={handleAIGenerateSolution}
           onAIDifficulty={handleAIDifficulty}
           onGenerateRelated={handleGenerateRelatedProblems}
@@ -677,6 +734,8 @@ export default function ProblemManagementPage() {
             // Only clear the added status, don't remove the generated problems
             setAddedProblemTitles(new Set());
           }}
+          uploadedSolutionFile={uploadedSolutionFile}
+          uploadedSolutionFilePreview={uploadedSolutionFilePreview}
         />
 
         <LinkManagerDialog
