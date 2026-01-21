@@ -9,7 +9,7 @@ import { ProblemList } from "./components/ProblemList";
 import { ProblemEditor } from "./components/ProblemEditor";
 import { LinkManagerDialog, CreateLinkDialog } from "./components/LinkManagerDialog";
 import { Problem, RelatedProblem } from "./types";
-import { problemsAPI, problemRelationshipsAPI, getDifficultyLabel, calculateXP, categoryToTags, Problem as DbProblem } from "@/lib/supabase";
+import { problemsAPI, problemRelationshipsAPI, getDifficultyLabel, calculateXP, categoryToTags } from "@/lib/supabase";
 import { CATEGORIES } from "@/lib/categories";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -196,7 +196,7 @@ export default function ProblemManagementPage() {
         // Now save all staged related problems
         for (const relatedProblem of relatedProblems.filter(p => addedProblemTitles.has(p.title))) {
           try {
-            const newProblemData: Omit<DbProblem, 'id' | 'created_at' | 'updated_at'> = {
+            const newProblemData: Omit<Problem, 'id' | 'created_at' | 'updated_at'> = {
               title: relatedProblem.title,
               content: relatedProblem.content,
               solution: relatedProblem.solution,
@@ -269,15 +269,12 @@ export default function ProblemManagementPage() {
 
     setIsAnalyzing(true);
     try {
+      const formData = new FormData();
+      formData.append('file', uploadedFile);
+
       const response = await fetch('/api/analyze-problem', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          imageBase64: uploadedFilePreview,
-          action: 'analyze',
-        }),
+        body: formData,
       });
 
       if (!response.ok) throw new Error('Analysis failed');
