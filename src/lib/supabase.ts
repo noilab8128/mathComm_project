@@ -16,6 +16,7 @@ export interface Problem {
   title: string;
   content: string;
   solution?: string;
+  solutions?: { title: string; content: string }[];
   difficulty: number;  // 1-10
   category_level1?: number;  // INTEGER ID from categories table
   category_level2?: number;  // INTEGER ID from categories table
@@ -180,7 +181,8 @@ export const problemsAPI = {
 
     if (error) {
       console.error('Supabase create error:', error);
-      throw new Error(`Failed to create problem: ${error.message || JSON.stringify(error)}`);
+      const errorMessage = error.message || (typeof error === 'object' ? JSON.stringify(error) : String(error));
+      throw new Error(`Failed to create problem: ${errorMessage}`);
     }
     return data as Problem;
   },
@@ -208,7 +210,10 @@ export const problemsAPI = {
       .delete()
       .eq('id', id);
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase delete error:', error);
+      throw new Error(`Failed to delete problem: ${error.message} (Code: ${error.code})`);
+    }
   },
 
   // Filter problems

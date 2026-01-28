@@ -8,9 +8,11 @@ const openai = new OpenAI({
 
 export async function POST(request: NextRequest) {
   try {
-    const { imageBase64, action } = await request.json();
+    const { imageBase64, imagesBase64, action } = await request.json();
+    const images = imagesBase64 || (imageBase64 ? [imageBase64] : []);
+    console.log(`Action: ${action}, Images count: ${images.length}`);
 
-    if (!imageBase64) {
+    if (images.length === 0) {
       return NextResponse.json(
         { error: 'Image data is required' },
         { status: 400 }
@@ -29,7 +31,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('OpenAI API Key configured:', process.env.OPENAI_API_KEY.substring(0, 7) + '...');
+    const keyPrefix = process.env.OPENAI_API_KEY.substring(0, 7);
+    console.log('OpenAI API Key configured:', keyPrefix + '...');
 
     // action에 따라 다른 프롬프트 사용
     let systemPrompt = '';
@@ -38,62 +41,48 @@ export async function POST(request: NextRequest) {
     if (action === 'analyze') {
       systemPrompt = `You are an expert mathematics problem analyzer. You MUST respond with valid JSON only.
 
-Extract from the image:
-1. Problem statement text with KaTeX syntax. (Critical: Ensure all mathematical symbols are correctly converted to KaTeX)
+Extract from the image(s):
+1. Problem statement text with KaTeX syntax.
 2. Diagrams/graphs description if present.
-3. Solution if present.
-4. Difficulty (1-10): 1-3=Easy, 4-6=Medium, 7-9=Hard, 10=Olympic.
+3. Solution(s) if present. If multiple distinct solving methods exist, list them all.
+4. Difficulty (1-10).
 5. Specific category following the hierarchy: Level 1 > Level 2 > Level 3.
 
 CRITICAL: Respond ONLY with valid JSON:
 {
-  "title": "Brief descriptive title (5-10 words)",
-  "content": "Full problem with KaTeX: \\\\( inline \\\\) or \\\\[ display \\\\]",
-  "solution": "Detailed solution if present, otherwise empty string",
+  "title": "Brief descriptive title",
+  "content": "Full problem with KaTeX",
+  "solutions": [
+    {"title": "Method 1: ...", "content": "..."}
+  ],
   "difficulty": 5,
   "category": "Level 1 > Level 2 > Level 3",
-  "categoryLevel1": "Level 1",
-  "categoryLevel2": "Level 2",
-  "categoryLevel3": "Level 3",
-  "hasDiagrams": true|false,
   "concepts": ["concept1", "concept2"]
 }`;
 
-      userPrompt = 'Analyze this math problem. Extract all details including formulas and diagrams. Respond with ONLY valid JSON.';
+      userPrompt = 'Analyze this math problem. Extract all details. If there are multiple solutions, extract each one separately. Respond with ONLY valid JSON.';
     } else if (action === 'extract-solution') {
       systemPrompt = `You are an expert mathematics solution analyzer. You MUST respond with valid JSON only.
-Based on the image provided, extract the full step-by-step solution.
+Based on the image(s) provided, extract the full step-by-step solution(s). 
+If the images contain multiple distinct solutions or methods, extract each as a separate entry in the 'solutions' array.
 
 CRITICAL: Respond ONLY with valid JSON:
 {
-  "solution": "The full detailed solution using KaTeX syntax for all formulas: \\\\( inline \\\\) or \\\\[ display \\\\]",
-  "explanation": "Brief summary of the solving method used"
-}`;
-
-      userPrompt = 'Extract the complete solution from this image. Focus on mathematical accuracy and formatting formulas with KaTeX. Respond with ONLY valid JSON.';
-    } else if (action === 'generate-related') {
-      systemPrompt = `You are an expert mathematics problem generator. Based on the given problem, create related problems that focus on the underlying mathematical concepts.
-
-Respond in JSON format with:
-{
-  "relatedProblems": [
+  "solutions": [
     {
-      "title": "Problem title",
-      "content": "Problem with KaTeX formulas",
-      "solution": "Solution with KaTeX formulas",
-      "difficulty": 1-10,
-      "category": "Category",
-      "concept": "Core concept this problem teaches"
+      "title": "Solution 1: [Descriptive title]",
+      "content": "Full detailed solution using KaTeX syntax",
+      "explanation": "Brief summary of the method"
     }
   ]
 }`;
 
-      userPrompt = 'Generate 2-3 related problems that teach the fundamental concepts needed to solve this problem.';
+      userPrompt = 'Extract all solutions from these image(s). If multiple methods are shown, separate them. Respond with ONLY valid JSON.';
     }
 
     // OpenAI Vision API 호출
     const response = await openai.chat.completions.create({
-      model: 'gpt-4o', // GPT-4 Vision model
+      model: 'gpt-4o',
       messages: [
         {
           role: 'system',
@@ -106,18 +95,18 @@ Respond in JSON format with:
               type: 'text',
               text: userPrompt,
             },
-            {
+            ...images.map((img: string) => ({
               type: 'image_url',
               image_url: {
-                url: imageBase64,
+                url: img,
               },
-            },
+            })),
           ],
         },
       ],
-      max_tokens: 2000,
+      max_tokens: 3000,
       temperature: 0.3,
-      response_format: { type: "json_object" }, // Force JSON response
+      response_format: { type: "json_object" },
     });
 
     const aiResponse = response.choices[0]?.message?.content;
@@ -135,16 +124,25 @@ Respond in JSON format with:
     let parsedResponse;
     try {
       parsedResponse = JSON.parse(aiResponse);
-    } catch (e) {
-      // JSON 파싱 실패 시 텍스트 응답 반환
-      console.error('JSON Parse Error:', e);
-      console.error('Failed to parse:', aiResponse);
 
+      // 데이터 정규화 및 하위 호환성 유지
+      if (parsedResponse.solutions && Array.isArray(parsedResponse.solutions) && parsedResponse.solutions.length > 0) {
+        // 첫 번째 솔루션을 기본 solution 필드에 설정
+        if (!parsedResponse.solution) {
+          parsedResponse.solution = parsedResponse.solutions[0].content;
+        }
+      } else if (parsedResponse.solution && !parsedResponse.solutions) {
+        // 단일 solution만 온 경우 배열로 변환
+        parsedResponse.solutions = [
+          { title: 'Standard Solution', content: parsedResponse.solution }
+        ];
+      }
+    } catch (e) {
+      console.error('JSON Parse Error:', e);
       return NextResponse.json({
         success: false,
-        error: 'Failed to parse AI response as JSON. The AI may have returned text instead of JSON.',
+        error: 'Failed to parse AI response as JSON.',
         rawResponse: aiResponse,
-        hint: 'This usually happens if the model did not use json_object mode. Check if you are using a compatible model.',
       }, { status: 500 });
     }
 
@@ -155,12 +153,23 @@ Respond in JSON format with:
 
   } catch (error: any) {
     console.error('OpenAI API Error:', error);
+
+    // Check for OpenAI specific errors
+    if (error.status === 413 || error.code === 'payload_too_large') {
+      return NextResponse.json(
+        { error: 'The image file is too large for the AI to process. Please try a smaller image.' },
+        { status: 413 }
+      );
+    }
+
     return NextResponse.json(
       {
         error: error.message || 'Failed to analyze problem',
-        details: error.response?.data || null,
+        status: error.status,
+        code: error.code,
+        details: error.response?.data || error.error || null,
       },
-      { status: 500 }
+      { status: error.status || 500 }
     );
   }
 }

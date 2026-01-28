@@ -20,7 +20,7 @@ try {
 
 export async function POST(request: NextRequest) {
   try {
-    const { problemContent, category, difficulty } = await request.json();
+    const { problemContent, solutions, category, difficulty } = await request.json();
 
     if (!problemContent) {
       return NextResponse.json(
@@ -36,6 +36,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const solutionsText = solutions && solutions.length > 0
+      ? solutions.map((s: any, i: number) => `Solution Method ${i + 1} (${s.title}):\n${s.content}`).join('\n\n')
+      : 'No reference solutions provided.';
+
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: [
@@ -46,12 +50,14 @@ export async function POST(request: NextRequest) {
 PROBLEM GENERATION GUIDE:
 ${AI_GUIDE_CONTENT}
 
-Based on the guide above, analyze the problem and:
-1. Break down the problem into logical stages (e.g., Stage 1: Variable Decomposition, Stage 2: Case Analysis, etc.)
-2. For each stage, generate 1-2 foundational sub-problems
-3. Problems should be easier than the original (lower difficulty)
-4. Each problem should teach a specific prerequisite concept needed for that stage
-5. Follow the structured approach outlined in the guide
+Based on the guide above, analyze the original problem and its provided solution method(s):
+1. Break down the problem into logical stages.
+2. If multiple solution methods are provided, analyze each one and identify the prerequisite concepts and skills required for EVERY method.
+3. Generate a comprehensive set of foundational sub-problems that cover the logic of all provided solution approaches.
+4. The sub-problems should span difficulty levels starting from 1 up to the difficulty of the original problem (${difficulty || 5}).
+5. For each difficulty level (1 to ${difficulty || 5}), you may generate multiple problems if there are different concepts or skills from different solution paths to address.
+6. Do not feel limited to a small number of problems; provide as many as needed to build a solid foundation across all identified methods.
+7. Each sub-problem must have a clear "stage", "concept", and "difficulty" (1-10).
 
 CRITICAL: Respond ONLY with valid JSON in this exact format:
 {
@@ -61,7 +67,7 @@ CRITICAL: Respond ONLY with valid JSON in this exact format:
       "title": "Short problem title",
       "content": "Problem with KaTeX formulas using \\\\\\\\( \\\\\\\\) or \\\\\\\\[ \\\\\\\\]",
       "solution": "Step-by-step solution with KaTeX",
-      "difficulty": 3,
+      "difficulty": 1-10,
       "category": "Algebra",
       "stage": "Stage 1: Description",
       "concept": "Which concept this teaches",
@@ -77,7 +83,10 @@ Use double backslashes in JSON: \\\\\\\\( x^2 \\\\\\\\) for inline, \\\\\\\\[ ..
           content: `Original Problem (Difficulty: ${difficulty || 5}, Category: ${category || 'Math'}):
 ${problemContent}
 
-Analyze this problem following the guide structure and generate 3-6 foundational sub-problems organized by stages. Respond with ONLY valid JSON.`,
+Reference Solution(s):
+${solutionsText}
+
+Analyze this problem and all provided solution methods. Generate a comprehensive sequence of sub-problems (from difficulty level 1 up to ${difficulty || 5}) that cover all prerequisite concepts for all approaches. Respond with ONLY valid JSON.`,
         },
       ],
       max_tokens: 4000,

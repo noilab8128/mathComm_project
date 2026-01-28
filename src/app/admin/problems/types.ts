@@ -1,8 +1,15 @@
+export interface SolutionItem {
+    id: string;
+    title: string;
+    content: string;
+}
+
 export interface Problem {
     id: string;
     title: string;
     content: string;
-    solution: string;
+    solution: string; // Kept for backward compatibility
+    solutions: SolutionItem[]; // Supporting multiple solutions
     difficulty: number;
     category: string;
     diagramImageUrl?: string;
@@ -16,7 +23,8 @@ export interface Problem {
 export interface RelatedProblem {
     title: string;
     content: string;
-    solution: string;
+    solution: string; // Kept for backward compatibility
+    solutions?: SolutionItem[];
     difficulty: number;
     category: string;
     stage: string;

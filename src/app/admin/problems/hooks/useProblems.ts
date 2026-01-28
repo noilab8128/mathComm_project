@@ -94,6 +94,7 @@ export function useProblems() {
                 title: sp.title,
                 content: sp.content,
                 solution: sp.solution || '',
+                solutions: sp.solutions || [],
                 difficulty: sp.difficulty,
                 category: sp.category_path || sp.category_level1 || '',
                 diagramImageUrl: sp.diagram_image_url,
@@ -141,6 +142,7 @@ export function useProblems() {
                 title: problem.title,
                 content: problem.content,
                 solution: problem.solution || undefined,
+                solutions: problem.solutions?.map(s => ({ title: s.title, content: s.content })),
                 difficulty: problem.difficulty,
                 category_path: problem.category,
                 // Use INTEGER category IDs from the state

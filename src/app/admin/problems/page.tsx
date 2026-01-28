@@ -8,11 +8,12 @@ import { ProblemFilters } from "./components/ProblemFilters";
 import { ProblemList } from "./components/ProblemList";
 import { ProblemEditor } from "./components/ProblemEditor";
 import { LinkManagerDialog, CreateLinkDialog } from "./components/LinkManagerDialog";
-import { Problem, RelatedProblem } from "./types";
+import { Problem, RelatedProblem, SolutionItem } from "./types";
 import { problemsAPI, problemRelationshipsAPI, getDifficultyLabel, calculateXP, categoryToTags } from "@/lib/supabase";
 import { CATEGORIES } from "@/lib/categories";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { resizeImage } from "@/lib/imageUtils";
 
 export default function ProblemManagementPage() {
   const {
@@ -76,13 +77,18 @@ export default function ProblemManagementPage() {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [uploadedFilePreview, setUploadedFilePreview] = useState<string>("");
   const [extractedDiagrams, setExtractedDiagrams] = useState<string[]>([]);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false); // Generic for problem extraction
+  const [isAnalyzingSolution, setIsAnalyzingSolution] = useState(false);
+  const [isGeneratingRelated, setIsGeneratingRelated] = useState(false);
   const [relatedProblems, setRelatedProblems] = useState<RelatedProblem[]>([]);
   const [showRelatedProblems, setShowRelatedProblems] = useState(false);
   const [concepts, setConcepts] = useState<string[]>([]);
   const [addedProblemTitles, setAddedProblemTitles] = useState<Set<string>>(new Set());
   const [uploadedSolutionFile, setUploadedSolutionFile] = useState<File | null>(null);
   const [uploadedSolutionFilePreview, setUploadedSolutionFilePreview] = useState<string>("");
+  const [solutions, setSolutions] = useState<SolutionItem[]>([]);
+  const [uploadedSolutionFiles, setUploadedSolutionFiles] = useState<File[]>([]);
+  const [uploadedSolutionFilesPreviews, setUploadedSolutionFilesPreviews] = useState<string[]>([]);
 
   // --- Drag & Drop / Linking State ---
   const [draggedProblemId, setDraggedProblemId] = useState<string | null>(null);
@@ -132,6 +138,9 @@ export default function ProblemManagementPage() {
     setAddedProblemTitles(new Set());
     setUploadedSolutionFile(null);
     setUploadedSolutionFilePreview("");
+    setSolutions([]);
+    setUploadedSolutionFiles([]);
+    setUploadedSolutionFilesPreviews([]);
     setIsEditorOpen(true);
   };
 
@@ -152,6 +161,9 @@ export default function ProblemManagementPage() {
     setConcepts([]);
     setUploadedSolutionFile(null);
     setUploadedSolutionFilePreview("");
+    setSolutions(problem.solutions || []);
+    setUploadedSolutionFiles([]);
+    setUploadedSolutionFilesPreviews([]);
 
     // Parse category levels
     if (problem.category) {
@@ -186,6 +198,7 @@ export default function ProblemManagementPage() {
       title: problemTitle,
       content: problemContent,
       solution: solution,
+      solutions: solutions,
       difficulty: difficulty,
       category: category,
       diagramImageUrl: diagramImageUrl,
@@ -202,18 +215,23 @@ export default function ProblemManagementPage() {
         // Now save all staged related problems
         for (const relatedProblem of relatedProblems.filter(p => addedProblemTitles.has(p.title))) {
           try {
-            const newProblemData: Omit<Problem, 'id' | 'createdAt' | 'updatedAt'> = {
+            // Map RelatedProblem (client) to Problem (database)
+            const newProblemData = {
               title: relatedProblem.title,
               content: relatedProblem.content,
               solution: relatedProblem.solution,
               difficulty: relatedProblem.difficulty,
-              category: relatedProblem.category,
-              diagramImageUrl: undefined,
-              linkedProblems: [],
-              isGenerated: true,
-              parentProblemId: saved.id, // Link to the saved problem
+              category_path: relatedProblem.category,
+              category_level1: selectedLevel1 ? parseInt(selectedLevel1) : undefined,
+              category_level2: selectedLevel2 ? parseInt(selectedLevel2) : undefined,
+              category_level3: selectedLevel3 ? parseInt(selectedLevel3) : undefined,
+              level: getDifficultyLabel(relatedProblem.difficulty),
+              xp: calculateXP(relatedProblem.difficulty),
+              tags: categoryToTags(relatedProblem.category),
+              is_generated: true,
+              parent_problem_id: saved.id,
             };
-            await problemsAPI.create(newProblemData);
+            await problemsAPI.create(newProblemData as any);
           } catch (error) {
             console.error('Error saving related problem:', error);
           }
@@ -252,8 +270,16 @@ export default function ProblemManagementPage() {
     if (file) {
       setUploadedFile(file);
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setUploadedFilePreview(reader.result as string);
+      reader.onloadend = async () => {
+        const base64 = reader.result as string;
+        try {
+          // Resize image to ensure it's not too large for the API
+          const resized = await resizeImage(base64);
+          setUploadedFilePreview(resized);
+        } catch (error) {
+          console.error('Failed to resize image:', error);
+          setUploadedFilePreview(base64);
+        }
       };
       reader.readAsDataURL(file);
     }
@@ -270,15 +296,36 @@ export default function ProblemManagementPage() {
     }
   };
 
-  const handleSolutionFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setUploadedSolutionFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setUploadedSolutionFilePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+  const handleSolutionFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      const fileList = Array.from(files);
+      setUploadedSolutionFiles(prev => [...prev, ...fileList]);
+
+      const newPreviews: string[] = [];
+      for (const file of fileList) {
+        const reader = new FileReader();
+        const promise = new Promise<string>((resolve) => {
+          reader.onloadend = async () => {
+            const base64 = reader.result as string;
+            try {
+              const resized = await resizeImage(base64);
+              resolve(resized);
+            } catch (error) {
+              resolve(base64);
+            }
+          };
+        });
+        reader.readAsDataURL(file);
+        newPreviews.push(await promise);
+      }
+      setUploadedSolutionFilesPreviews(prev => [...prev, ...newPreviews]);
+
+      // Keep backward compatibility for now
+      if (newPreviews.length > 0 && !uploadedSolutionFilePreview) {
+        setUploadedSolutionFile(fileList[0]);
+        setUploadedSolutionFilePreview(newPreviews[0]);
+      }
     }
   };
 
@@ -296,7 +343,16 @@ export default function ProblemManagementPage() {
         }),
       });
 
-      if (!response.ok) throw new Error('Analysis failed');
+      if (!response.ok) {
+        let errorMessage = 'Analysis failed';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorData.message || errorMessage;
+        } catch (e) {
+          errorMessage = `${errorMessage} (${response.status} ${response.statusText})`;
+        }
+        throw new Error(errorMessage);
+      }
 
       const result = await response.json();
       if (result.success && result.data) {
@@ -314,42 +370,64 @@ export default function ProblemManagementPage() {
       } else {
         throw new Error(result.error || 'Analysis failed');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Analysis error:', error);
-      showToast("Failed to analyze problem", "error");
+      showToast(error.message || "Failed to analyze problem", "error");
     } finally {
       setIsAnalyzing(false);
     }
   };
 
   const handleAISolutionAnalyze = async () => {
-    if (!uploadedSolutionFilePreview) return;
+    if (uploadedSolutionFilesPreviews.length === 0 && !uploadedSolutionFilePreview) return;
 
-    setIsAnalyzing(true);
+    setIsAnalyzingSolution(true);
     try {
       const response = await fetch('/api/analyze-problem', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          imageBase64: uploadedSolutionFilePreview,
+          imagesBase64: uploadedSolutionFilesPreviews.length > 0 ? uploadedSolutionFilesPreviews : [uploadedSolutionFilePreview],
           action: 'extract-solution'
         }),
       });
 
-      if (!response.ok) throw new Error('Solution extraction failed');
+      if (!response.ok) {
+        let errorMessage = 'Solution extraction failed';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorData.message || errorMessage;
+        } catch (e) {
+          // If not JSON, use the status text
+          errorMessage = `${errorMessage} (${response.status} ${response.statusText})`;
+        }
+        throw new Error(errorMessage);
+      }
 
       const result = await response.json();
-      if (result.success && result.data?.solution) {
-        setSolution(result.data.solution);
-        showToast("Solution extracted successfully!", "success");
+      if (result.success && result.data?.solutions) {
+        const extractedSolutions = result.data.solutions.map((s: any, idx: number) => ({
+          id: `ext-${Date.now()}-${idx}`,
+          title: s.title || `Solution ${idx + 1}`,
+          content: s.content
+        }));
+
+        setSolutions(prev => [...prev, ...extractedSolutions]);
+
+        // Also update the main 'solution' for backward compatibility
+        if (extractedSolutions.length > 0) {
+          setSolution(extractedSolutions[0].content);
+        }
+
+        showToast(`Extracted ${extractedSolutions.length} solution(s)!`, "success");
       } else {
         throw new Error(result.error || 'Failed to extract solution');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Solution extraction error:', error);
-      showToast("Failed to extract solution from image", "error");
+      showToast(error.message || "Failed to extract solution from image", "error");
     } finally {
-      setIsAnalyzing(false);
+      setIsAnalyzingSolution(false);
     }
   };
 
@@ -390,13 +468,14 @@ export default function ProblemManagementPage() {
   const handleGenerateRelatedProblems = async () => {
     if (!problemContent) return;
 
-    setIsAnalyzing(true);
+    setIsGeneratingRelated(true);
     try {
       const response = await fetch('/api/generate-related-problems', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           problemContent: problemContent,
+          solutions: solutions.map(s => ({ title: s.title, content: s.content })),
           category: category,
           difficulty: difficulty
         }),
@@ -418,7 +497,7 @@ export default function ProblemManagementPage() {
       console.error('Generation error:', error);
       showToast("Failed to generate related problems", "error");
     } finally {
-      setIsAnalyzing(false);
+      setIsGeneratingRelated(false);
     }
   };
 
@@ -711,6 +790,8 @@ export default function ProblemManagementPage() {
           uploadedFilePreview={uploadedFilePreview}
           extractedDiagrams={extractedDiagrams}
           isAnalyzing={isAnalyzing}
+          isAnalyzingSolution={isAnalyzingSolution}
+          isGeneratingRelated={isGeneratingRelated}
           relatedProblems={relatedProblems}
           showRelatedProblems={showRelatedProblems}
           setShowRelatedProblems={setShowRelatedProblems}
@@ -736,6 +817,10 @@ export default function ProblemManagementPage() {
           }}
           uploadedSolutionFile={uploadedSolutionFile}
           uploadedSolutionFilePreview={uploadedSolutionFilePreview}
+          solutions={solutions}
+          setSolutions={setSolutions}
+          uploadedSolutionFiles={uploadedSolutionFiles}
+          uploadedSolutionFilesPreviews={uploadedSolutionFilesPreviews}
         />
 
         <LinkManagerDialog

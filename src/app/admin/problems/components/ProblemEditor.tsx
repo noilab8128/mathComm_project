@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import MathPreview from "@/components/MathPreview";
-import { Problem, RelatedProblem } from "../types";
+import { Problem, RelatedProblem, SolutionItem } from "../types";
 import { CATEGORIES } from "@/lib/categories";
 
 interface ProblemEditorProps {
@@ -21,6 +21,8 @@ interface ProblemEditorProps {
     setProblemContent: (value: string) => void;
     solution: string;
     setSolution: (value: string) => void;
+    solutions: SolutionItem[];
+    setSolutions: (value: SolutionItem[]) => void;
     difficulty: number;
     setDifficulty: (value: number) => void;
     category: string;
@@ -42,6 +44,8 @@ interface ProblemEditorProps {
     uploadedFilePreview: string;
     extractedDiagrams: string[];
     isAnalyzing: boolean;
+    isAnalyzingSolution?: boolean;
+    isGeneratingRelated?: boolean;
     relatedProblems: RelatedProblem[];
     showRelatedProblems: boolean;
     setShowRelatedProblems: (show: boolean) => void;
@@ -66,6 +70,8 @@ interface ProblemEditorProps {
     onClearRelated: () => void;
     uploadedSolutionFile?: File | null;
     uploadedSolutionFilePreview?: string;
+    uploadedSolutionFiles?: File[];
+    uploadedSolutionFilesPreviews?: string[];
 }
 
 const GENERATION_STEPS = [
@@ -108,6 +114,8 @@ export function ProblemEditor({
     uploadedFilePreview,
     extractedDiagrams,
     isAnalyzing,
+    isAnalyzingSolution,
+    isGeneratingRelated,
     relatedProblems,
     showRelatedProblems,
     setShowRelatedProblems,
@@ -129,7 +137,11 @@ export function ProblemEditor({
     onRemoveExtractedDiagram,
     onClearRelated,
     uploadedSolutionFile,
-    uploadedSolutionFilePreview
+    uploadedSolutionFilePreview,
+    solutions,
+    setSolutions,
+    uploadedSolutionFiles,
+    uploadedSolutionFilesPreviews
 }: ProblemEditorProps) {
     const problemFileInputRef = useRef<HTMLInputElement>(null);
     const diagramFileInputRef = useRef<HTMLInputElement>(null);
@@ -143,7 +155,10 @@ export function ProblemEditor({
         let interval: NodeJS.Timeout;
         let stepInterval: NodeJS.Timeout;
 
-        if (isAnalyzing) {
+        // Current active AI process
+        const isCurrentAnalyzing = isAnalyzing || isAnalyzingSolution || isGeneratingRelated;
+
+        if (isCurrentAnalyzing) {
             setProgress(0);
             setStepIndex(0);
 
@@ -168,7 +183,7 @@ export function ProblemEditor({
             if (interval) clearInterval(interval);
             if (stepInterval) clearInterval(stepInterval);
         };
-    }, [isAnalyzing]);
+    }, [isAnalyzing, isAnalyzingSolution, isGeneratingRelated]);
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -250,10 +265,34 @@ export function ProblemEditor({
                                     <Button
                                         onClick={onAIAnalyze}
                                         disabled={!uploadedFile || isAnalyzing}
-                                        className="w-full bg-blue-600 text-white font-medium py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                                        className="w-full bg-blue-600 text-white font-medium py-3 px-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed shadow-md transition-all flex items-center justify-center gap-3"
                                     >
-                                        {isAnalyzing ? "Analyzing..." : "Analyze with AI"}
+                                        {isAnalyzing ? (
+                                            <>
+                                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                                <span>AI is analyzing problem...</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" /></svg>
+                                                <span>Analyze with AI</span>
+                                            </>
+                                        )}
                                     </Button>
+
+                                    {isAnalyzing && (
+                                        <div className="mt-4 p-4 bg-blue-50 border border-blue-100 rounded-xl flex items-start gap-4">
+                                            <div className="mt-1">
+                                                <div className="w-5 h-5 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <p className="text-sm font-semibold text-blue-900">Problem Extraction in Progress</p>
+                                                <p className="text-xs text-blue-700/80 leading-relaxed">
+                                                    AI is identifying formulas, converting text to LaTeX, and detecting potential diagrams...
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
 
                                     {/* Extracted Diagrams Section */}
                                     {extractedDiagrams.length > 0 && (
@@ -506,34 +545,44 @@ export function ProblemEditor({
 
                             {/* Preview removed from here and moved above content */}
 
-                            {/* Solution */}
-                            <div>
+                            {/* Solution Section */}
+                            <div className="space-y-4 pt-4 border-t">
                                 <div className="flex items-center justify-between">
-                                    <label htmlFor="solution" className="text-sm font-medium text-gray-800">
-                                        Solution
-                                    </label>
-                                    <Button
-                                        onClick={onAIGenerateSolution}
-                                        variant="outline"
-                                        size="sm"
-                                        className="text-xs text-gray-700 border-gray-300 hover:bg-gray-50"
-                                        disabled={isAnalyzing || !problemContent}
-                                    >
-                                        Generate with AI
-                                    </Button>
+                                    <label className="text-lg font-semibold text-gray-800">Solutions</label>
+                                    <div className="flex gap-2">
+                                        <Button
+                                            onClick={onAIGenerateSolution}
+                                            variant="outline"
+                                            size="sm"
+                                            className="text-xs text-gray-700 border-gray-300 hover:bg-gray-50"
+                                            disabled={isAnalyzing || !problemContent}
+                                        >
+                                            Generate with AI
+                                        </Button>
+                                        <Button
+                                            onClick={() => setSolutions([...solutions, { id: `manual-${Date.now()}`, title: `Method ${solutions.length + 1}`, content: "" }])}
+                                            variant="outline"
+                                            size="sm"
+                                            className="text-xs text-gray-700 border-gray-300 hover:bg-gray-50"
+                                        >
+                                            Add Solution
+                                        </Button>
+                                    </div>
                                 </div>
 
                                 {/* Solution Image Upload Area */}
-                                <div className="mt-2 p-3 border border-dashed border-gray-300 rounded-md bg-gray-50/50">
-                                    <div className="flex items-center justify-between gap-4">
+                                <div className="mt-2 p-4 border border-dashed border-gray-300 rounded-lg bg-gray-50/50">
+                                    <div className="flex items-center justify-between gap-4 mb-4">
                                         <div className="flex-1">
-                                            <p className="text-[11px] font-medium text-gray-600 mb-2 uppercase tracking-tight">Extract Solution from Image (AI)</p>
+                                            <p className="text-[11px] font-bold text-indigo-600 mb-1 uppercase tracking-wider">Extract Solutions from Images (AI)</p>
+                                            <p className="text-xs text-gray-500 mb-3">Upload one or more images (e.g., long solutions, multiple methods).</p>
                                             <div className="flex items-center gap-2">
                                                 <Input
                                                     type="file"
                                                     ref={solutionFileInputRef}
                                                     onChange={onSolutionFileUpload}
                                                     accept="image/*"
+                                                    multiple
                                                     className="hidden"
                                                 />
                                                 <Button
@@ -543,50 +592,116 @@ export function ProblemEditor({
                                                     className="text-xs h-8 text-gray-700 bg-white border-gray-300 hover:bg-gray-100"
                                                     disabled={isAnalyzing}
                                                 >
-                                                    Choose Solution Image
+                                                    Choose Solution Image(s)
                                                 </Button>
-                                                {uploadedSolutionFile && (
+                                                {(uploadedSolutionFiles?.length || 0) > 0 ? (
+                                                    <span className="text-[10px] text-indigo-600 font-medium">{uploadedSolutionFiles?.length} file(s) selected</span>
+                                                ) : uploadedSolutionFile ? (
                                                     <span className="text-[10px] text-gray-500 truncate max-w-[150px]">{uploadedSolutionFile.name}</span>
-                                                )}
+                                                ) : null}
                                             </div>
                                         </div>
                                         <Button
                                             onClick={onAISolutionAnalyze}
-                                            disabled={!uploadedSolutionFile || isAnalyzing}
+                                            disabled={(!uploadedSolutionFile && (!uploadedSolutionFiles || uploadedSolutionFiles.length === 0)) || isAnalyzingSolution}
                                             size="sm"
-                                            className="h-8 bg-indigo-600 text-white text-xs hover:bg-indigo-700 disabled:bg-gray-300"
+                                            className="h-10 px-4 bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 disabled:bg-indigo-300 shadow-sm flex items-center gap-2"
                                         >
-                                            {isAnalyzing ? "Analyzing..." : "Extract from Image"}
+                                            {isAnalyzingSolution ? (
+                                                <>
+                                                    <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                                    Extracting...
+                                                </>
+                                            ) : "Extract All from Images"}
                                         </Button>
                                     </div>
-                                    {uploadedSolutionFilePreview && (
-                                        <div className="mt-3 relative h-24 w-full bg-black/5 rounded overflow-hidden">
-                                            <img
-                                                src={uploadedSolutionFilePreview}
-                                                alt="Solution preview"
-                                                className="h-full w-full object-contain"
-                                            />
+
+                                    {isAnalyzingSolution && (
+                                        <div className="mt-4 p-3 bg-indigo-50 border border-indigo-100 rounded-lg flex items-center gap-3 animate-pulse">
+                                            <div className="w-4 h-4 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+                                            <p className="text-xs font-medium text-indigo-700">AI is identifying and formatting each solution method...</p>
+                                        </div>
+                                    )}
+
+                                    {/* Image Previews */}
+                                    <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300">
+                                        {(uploadedSolutionFilesPreviews || (uploadedSolutionFilePreview ? [uploadedSolutionFilePreview] : [])).map((url, idx) => (
+                                            <div key={idx} className="relative flex-shrink-0 h-24 w-32 bg-black/5 rounded-md border border-gray-200 overflow-hidden shadow-sm">
+                                                <img
+                                                    src={url}
+                                                    alt={`Solution preview ${idx + 1}`}
+                                                    className="h-full w-full object-contain"
+                                                />
+                                                <div className="absolute top-1 left-1 bg-black/50 text-white text-[8px] px-1 rounded">#{idx + 1}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Solutions List */}
+                                <div className="space-y-6 mt-4">
+                                    {solutions.map((sol, idx) => (
+                                        <div key={sol.id || idx} className="p-5 border border-gray-200 rounded-xl bg-white shadow-sm space-y-4 transition-all hover:border-indigo-200">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-3 flex-1">
+                                                    <Badge className="bg-gray-100 text-gray-600 border-none font-bold">#{idx + 1}</Badge>
+                                                    <Input
+                                                        value={sol.title}
+                                                        onChange={(e) => {
+                                                            const newSols = [...solutions];
+                                                            newSols[idx].title = e.target.value;
+                                                            setSolutions(newSols);
+                                                        }}
+                                                        className="font-semibold text-sm border-none bg-gray-50 focus:bg-white transition-colors h-8"
+                                                        placeholder="Solution Title (e.g., Method 1: Algebraic approach)"
+                                                    />
+                                                </div>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 px-2"
+                                                    onClick={() => setSolutions(solutions.filter((_, i) => i !== idx))}
+                                                >
+                                                    Delete
+                                                </Button>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Content (LaTeX/KaTeX)</label>
+                                                    <textarea
+                                                        value={sol.content}
+                                                        onChange={(e) => {
+                                                            const newSols = [...solutions];
+                                                            newSols[idx].content = e.target.value;
+                                                            setSolutions(newSols);
+                                                            if (idx === 0) setSolution(e.target.value); // Sync with old state
+                                                        }}
+                                                        placeholder="Enter solution content here..."
+                                                        className="w-full h-48 p-4 text-sm border border-gray-100 rounded-lg bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-300 outline-none transition-all resize-none"
+                                                    />
+                                                </div>
+                                                <div className="space-y-2 flex flex-col h-full">
+                                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Live Preview</label>
+                                                    <div className="flex-1 p-4 border border-gray-50 rounded-lg bg-gray-50/30 overflow-y-auto max-h-48 min-h-[12rem]">
+                                                        {sol.content ? (
+                                                            <MathPreview html={sol.content} />
+                                                        ) : (
+                                                            <div className="flex items-center justify-center h-full text-gray-300 italic text-xs">Preview will appear here...</div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+
+                                    {solutions.length === 0 && (
+                                        <div className="text-center py-12 border-2 border-dashed border-gray-100 rounded-2xl bg-gray-50/20">
+                                            <p className="text-gray-400 text-sm">No detailed solutions added yet.</p>
+                                            <p className="text-gray-300 text-xs mt-1">Use the buttons above to generate with AI or add manually.</p>
                                         </div>
                                     )}
                                 </div>
-
-                                <textarea
-                                    id="solution"
-                                    value={solution}
-                                    onChange={(e) => setSolution(e.target.value)}
-                                    placeholder="Enter the solution (supports KaTeX/MathJax) or generate with AI"
-                                    className="w-full h-32 p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 mt-2 text-sm"
-                                />
-
-                                {/* Solution Preview */}
-                                {solution && (
-                                    <div className="mt-2">
-                                        <h4 className="text-xs font-medium text-gray-700 mb-1">Solution Preview</h4>
-                                        <div className="p-3 border border-gray-200 rounded-md bg-gray-50 min-h-[80px] max-h-[200px] overflow-y-auto">
-                                            <MathPreview html={solution} />
-                                        </div>
-                                    </div>
-                                )}
                             </div>
 
                             {/* Related Problems Generation */}
@@ -610,52 +725,59 @@ export function ProblemEditor({
                                             onClick={onGenerateRelated}
                                             variant="outline"
                                             size="sm"
-                                            className="text-xs text-gray-700 border-gray-300 hover:bg-gray-50"
-                                            disabled={isAnalyzing || !problemContent}
+                                            className="text-xs text-gray-700 border-gray-300 hover:bg-gray-50 flex items-center gap-2"
+                                            disabled={isGeneratingRelated || !problemContent}
                                         >
-                                            {relatedProblems.length > 0 ? 'Generate More' : 'Generate Related Problems with AI'}
+                                            {isGeneratingRelated ? (
+                                                <>
+                                                    <div className="w-3 h-3 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+                                                    Generating...
+                                                </>
+                                            ) : (
+                                                relatedProblems.length > 0 ? 'Generate More' : 'Generate Related Problems with AI'
+                                            )}
                                         </Button>
                                     </div>
                                 </div>
-                                <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
-                                    <p className="text-xs text-gray-700">
+                                <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-lg">
+                                    <p className="text-xs text-indigo-700">
                                         💡 Click "Generate Related Problems with AI" to automatically create foundational problems linked to this one.
                                         {linkedProblems.length > 0 && (
-                                            <span className="font-medium text-blue-700"> Currently {linkedProblems.length} problem(s) linked.</span>
+                                            <span className="font-medium text-indigo-700"> Currently {linkedProblems.length} problem(s) linked.</span>
                                         )}
                                     </p>
                                 </div>
                             </div>
 
                             {/* AI Generation Progress Indicator */}
-                            {isAnalyzing && (
-                                <div className="mt-4 p-6 border border-blue-100 rounded-lg bg-blue-50/50 animate-in fade-in duration-500">
+                            {isGeneratingRelated && (
+                                <div className="mt-4 p-6 border border-indigo-100 rounded-xl bg-indigo-50/50 animate-in fade-in duration-500">
                                     <div className="flex flex-col items-center text-center">
                                         <div className="mb-4 relative">
-                                            <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+                                            <div className="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
                                             <div className="absolute inset-0 flex items-center justify-center">
-                                                <span className="text-[10px] font-bold text-blue-600">{Math.floor(progress)}%</span>
+                                                <span className="text-[10px] font-bold text-indigo-600">{Math.floor(progress)}%</span>
                                             </div>
                                         </div>
 
-                                        <h4 className="text-sm font-semibold text-blue-900 mb-1">
+                                        <h4 className="text-sm font-semibold text-indigo-900 mb-1">
                                             {GENERATION_STEPS[stepIndex]}
                                         </h4>
-                                        <p className="text-xs text-blue-700/70 mb-4 max-w-xs">
+                                        <p className="text-xs text-indigo-700/70 mb-4 max-w-xs">
                                             AI is carefully analyzing the problem based on the generation guide to create quality learning steps.
                                         </p>
 
-                                        <div className="w-full max-w-md bg-blue-100 rounded-full h-1.5 overflow-hidden">
+                                        <div className="w-full max-w-md bg-indigo-100 rounded-full h-1.5 overflow-hidden">
                                             <div
-                                                className="bg-blue-600 h-full transition-all duration-500 ease-out"
+                                                className="bg-indigo-600 h-full transition-all duration-500 ease-out"
                                                 style={{ width: `${progress}%` }}
                                             ></div>
                                         </div>
 
                                         <div className="mt-3 flex gap-2">
-                                            <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce"></span>
-                                            <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce [animation-delay:0.2s]"></span>
-                                            <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+                                            <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce"></span>
+                                            <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce [animation-delay:0.2s]"></span>
+                                            <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce [animation-delay:0.4s]"></span>
                                         </div>
                                     </div>
                                 </div>
