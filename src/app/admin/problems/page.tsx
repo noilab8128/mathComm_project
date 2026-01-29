@@ -14,6 +14,7 @@ import { CATEGORIES } from "@/lib/categories";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { resizeImage } from "@/lib/imageUtils";
+import { convertPdfToImages } from "@/lib/pdf-utils";
 
 export default function ProblemManagementPage() {
   const {
@@ -89,6 +90,15 @@ export default function ProblemManagementPage() {
   const [solutions, setSolutions] = useState<SolutionItem[]>([]);
   const [uploadedSolutionFiles, setUploadedSolutionFiles] = useState<File[]>([]);
   const [uploadedSolutionFilesPreviews, setUploadedSolutionFilesPreviews] = useState<string[]>([]);
+  const [isBulkMode, setIsBulkMode] = useState(false);
+  const [pendingProblems, setPendingProblems] = useState<Partial<Problem>[]>([]);
+  const [currentBulkIndex, setCurrentBulkIndex] = useState(0);
+  const [pdfImages, setPdfImages] = useState<string[]>([]);
+  const [problemPageRange, setProblemPageRange] = useState("");
+  const [solutionPageRange, setSolutionPageRange] = useState("");
+  const [questionIndices, setQuestionIndices] = useState("");
+  const [totalPdfPages, setTotalPdfPages] = useState(0);
+  const [selectedProblemIndices, setSelectedProblemIndices] = useState<Set<number>>(new Set());
 
   // --- Drag & Drop / Linking State ---
   const [draggedProblemId, setDraggedProblemId] = useState<string | null>(null);
@@ -136,11 +146,19 @@ export default function ProblemManagementPage() {
     setRelatedProblems([]);
     setConcepts([]);
     setAddedProblemTitles(new Set());
-    setUploadedSolutionFile(null);
     setUploadedSolutionFilePreview("");
     setSolutions([]);
     setUploadedSolutionFiles([]);
     setUploadedSolutionFilesPreviews([]);
+    setIsBulkMode(false);
+    setPendingProblems([]);
+    setCurrentBulkIndex(0);
+    setPdfImages([]);
+    setProblemPageRange("");
+    setSolutionPageRange("");
+    setQuestionIndices("");
+    setTotalPdfPages(0);
+    setSelectedProblemIndices(new Set());
     setIsEditorOpen(true);
   };
 
@@ -188,6 +206,70 @@ export default function ProblemManagementPage() {
   };
 
   const handleSaveProblem = async () => {
+    if (isBulkMode && pendingProblems.length > 0) {
+      // Final sync of current editor state into pending list
+      const currentProb = {
+        title: problemTitle,
+        content: problemContent,
+        solutions: solutions,
+        difficulty: difficulty,
+        category: category
+      };
+      const allProblems = [...pendingProblems];
+      allProblems[currentBulkIndex] = currentProb;
+
+      let savedCount = 0;
+      for (let i = 0; i < allProblems.length; i++) {
+        const prob = allProblems[i];
+        if (!prob.title || !prob.content) continue;
+        if (!selectedProblemIndices.has(i)) continue; // Skip if not selected
+
+        // Map category string "L1 > L2" to IDs for database
+        let l1Id = undefined, l2Id = undefined;
+        if (prob.category) {
+          const parts = prob.category.split(' > ');
+          const l1 = CATEGORIES.level1.find(c => c.name === parts[0]);
+          if (l1) {
+            l1Id = l1.id;
+            if (parts[1]) {
+              const l2List = CATEGORIES.level2[l1.id as keyof typeof CATEGORIES.level2];
+              const l2 = l2List?.find((c: any) => c.name === parts[1]);
+              if (l2) l2Id = l2.id;
+            }
+          }
+        }
+
+        const problemToSave: Problem = {
+          id: `temp-${Date.now()}-${savedCount}`,
+          title: prob.title,
+          content: prob.content,
+          solution: prob.solutions && prob.solutions.length > 0 ? prob.solutions[0].content : "",
+          solutions: prob.solutions || [],
+          difficulty: prob.difficulty || 5,
+          category: prob.category || "",
+          diagramImageUrl: "",
+          linkedProblems: [],
+          isGenerated: false,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+
+        try {
+          await saveProblemToSupabase(problemToSave, l1Id, l2Id);
+          savedCount++;
+        } catch (error) {
+          console.error('Error saving bulk problem:', error);
+        }
+      }
+
+      showToast(`Successfully saved ${savedCount} problems from PDF!`, "success");
+      setIsEditorOpen(false);
+      setIsBulkMode(false);
+      setPendingProblems([]);
+      loadProblemsFromSupabase();
+      return;
+    }
+
     if (!problemTitle || !problemContent) {
       showToast("Please fill in all required fields", "error");
       return;
@@ -238,9 +320,7 @@ export default function ProblemManagementPage() {
         }
 
         showToast(
-          isEditing
-            ? `Problem updated successfully! ${addedProblemTitles.size} related problems saved.`
-            : `Problem created successfully! ${addedProblemTitles.size} related problems saved.`,
+          isEditing ? "Problem updated successfully!" : "Problem created successfully!",
           "success"
         );
         setIsEditorOpen(false);
@@ -269,19 +349,41 @@ export default function ProblemManagementPage() {
     const file = e.target.files?.[0];
     if (file) {
       setUploadedFile(file);
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const base64 = reader.result as string;
-        try {
-          // Resize image to ensure it's not too large for the API
-          const resized = await resizeImage(base64);
-          setUploadedFilePreview(resized);
-        } catch (error) {
-          console.error('Failed to resize image:', error);
-          setUploadedFilePreview(base64);
-        }
-      };
-      reader.readAsDataURL(file);
+
+      if (file.type === 'application/pdf') {
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+          const arrayBuffer = reader.result as ArrayBuffer;
+          try {
+            // Initial preview (page 1)
+            const result = await convertPdfToImages(arrayBuffer, [1]);
+            setTotalPdfPages(result.totalPages);
+            setPdfImages(result.images);
+            setUploadedFilePreview(result.images[0]);
+            setIsBulkMode(true);
+
+            showToast(`PDF loaded: ${result.totalPages} pages. Enter ranges for extraction.`, "success");
+          } catch (error) {
+            console.error('Failed to convert PDF:', error);
+            showToast("Failed to process PDF file", "error");
+          }
+        };
+        reader.readAsArrayBuffer(file);
+      } else {
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+          const base64 = reader.result as string;
+          try {
+            const resized = await resizeImage(base64);
+            setUploadedFilePreview(resized);
+            setIsBulkMode(false);
+          } catch (error) {
+            console.error('Failed to resize image:', error);
+            setUploadedFilePreview(base64);
+          }
+        };
+        reader.readAsDataURL(file);
+      }
     }
   };
 
@@ -330,17 +432,69 @@ export default function ProblemManagementPage() {
   };
 
   const handleAIAnalyzeProblem = async () => {
-    if (!uploadedFilePreview) return;
+    if (!uploadedFilePreview && !uploadedFile) return;
 
     setIsAnalyzing(true);
     try {
+      let finalImages = [uploadedFilePreview];
+      let analysisAction = 'analyze';
+      let requestPayload: any = { action: 'analyze' };
+
+      if (isBulkMode && uploadedFile?.type === 'application/pdf') {
+        analysisAction = 'bulk-analyze';
+
+        // Helper to parse range string "1-3, 5" into [1, 2, 3, 5]
+        const parseRange = (rangeStr: string) => {
+          if (!rangeStr) return [];
+          const pages = new Set<number>();
+          rangeStr.split(',').forEach(part => {
+            const [start, end] = part.split('-').map(s => parseInt(s.trim()));
+            if (end) {
+              for (let i = start; i <= end; i++) if (!isNaN(i)) pages.add(i);
+            } else if (!isNaN(start)) {
+              pages.add(start);
+            }
+          });
+          return Array.from(pages).sort((a, b) => a - b);
+        };
+
+        const pPages = parseRange(problemPageRange);
+        const sPages = parseRange(solutionPageRange);
+        const allTargetPages = Array.from(new Set([...pPages, ...sPages])).sort((a, b) => a - b);
+
+        if (allTargetPages.length > 0) {
+          const reader = new FileReader();
+          const arrayBuffer = await new Promise<ArrayBuffer>((resolve) => {
+            reader.onload = () => resolve(reader.result as ArrayBuffer);
+            reader.readAsArrayBuffer(uploadedFile);
+          });
+
+          const { images } = await convertPdfToImages(arrayBuffer, allTargetPages);
+          finalImages = images;
+        } else {
+          finalImages = pdfImages; // Use the initial preview images if no range specified
+        }
+
+        requestPayload = {
+          imagesBase64: finalImages,
+          action: 'bulk-analyze',
+          context: {
+            problemPages: problemPageRange,
+            solutionPages: solutionPageRange,
+            questionIndices: questionIndices
+          }
+        };
+      } else {
+        requestPayload = {
+          imageBase64: uploadedFilePreview,
+          action: 'analyze'
+        };
+      }
+
       const response = await fetch('/api/analyze-problem', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          imageBase64: uploadedFilePreview,
-          action: 'analyze'
-        }),
+        body: JSON.stringify(requestPayload),
       });
 
       if (!response.ok) {
@@ -356,23 +510,59 @@ export default function ProblemManagementPage() {
 
       const result = await response.json();
       if (result.success && result.data) {
-        const data = result.data;
-        setProblemTitle(data.title || "");
-        setProblemContent(data.content || "");
-        setSolution(data.solution || "");
-        setDifficulty(data.difficulty || 5);
-        setCategory(data.category || "");
+        if (analysisAction === 'bulk-analyze' && result.data.problems) {
+          if (result.data.problems.length === 0) {
+            showToast("AI could not extract any problems. Try a clearer page range.", "error");
+            return;
+          }
 
-        // Handle categories and stages
-        if (data.concepts) setConcepts(data.concepts);
+          setPendingProblems(result.data.problems);
+          setCurrentBulkIndex(0);
+          // Auto-select all extracted problems by default
+          setSelectedProblemIndices(new Set(result.data.problems.map((_: any, i: number) => i)));
 
-        showToast("Problem analyzed successfully!", "success");
+          const first = result.data.problems[0];
+          setProblemTitle(first.title || "");
+          setProblemContent(first.content || "");
+          setSolutions(first.solutions || []);
+          if (first.solutions && first.solutions.length > 0) {
+            setSolution(first.solutions[0].content);
+          } else {
+            setSolution("");
+          }
+          setDifficulty(first.difficulty || 5);
+          setCategory(first.category || "");
+
+          showToast(`Extracted ${result.data.problems.length} problems!`, "success");
+        } else {
+          const data = result.data;
+          setProblemTitle(data.title || "");
+          setProblemContent(data.content || "");
+          setSolution(data.solution || "");
+          setSolutions(data.solutions || []);
+          setDifficulty(data.difficulty || 5);
+          setCategory(data.category || "");
+
+          if (data.concepts) setConcepts(data.concepts);
+          showToast("Problem analyzed successfully!", "success");
+        }
       } else {
         throw new Error(result.error || 'Analysis failed');
       }
     } catch (error: any) {
       console.error('Analysis error:', error);
-      showToast(error.message || "Failed to analyze problem", "error");
+
+      let finalMessage = error.message || "Failed to analyze problem";
+
+      // Handle truncation/JSON parse errors specifically
+      if (finalMessage.includes('JSON') || finalMessage.includes('parse')) {
+        finalMessage = "AI Response Truncated: The content was too large for a single response. Please use more specific 'Question Numbers' or a smaller page range.";
+      }
+      else if (finalMessage.includes('429') || finalMessage.includes('too large') || finalMessage.includes('tokens')) {
+        finalMessage = "TPM Limit REACHED: The range/indices are too broad for a single request. Please try a smaller page range or fewer question indices.";
+      }
+
+      showToast(finalMessage, "error");
     } finally {
       setIsAnalyzing(false);
     }
@@ -821,6 +1011,43 @@ export default function ProblemManagementPage() {
           setSolutions={setSolutions}
           uploadedSolutionFiles={uploadedSolutionFiles}
           uploadedSolutionFilesPreviews={uploadedSolutionFilesPreviews}
+          isBulkMode={isBulkMode}
+          pendingProblems={pendingProblems}
+          currentBulkIndex={currentBulkIndex}
+          onBulkIndexChange={(index) => {
+            // Save current changes to the pending list before switching
+            const currentProb = {
+              title: problemTitle,
+              content: problemContent,
+              solutions: solutions,
+              difficulty: difficulty,
+              category: category
+            };
+            const updatedPending = [...pendingProblems];
+            updatedPending[currentBulkIndex] = currentProb;
+            setPendingProblems(updatedPending);
+
+            // Switch to new problem from pending list
+            const nextProb = updatedPending[index];
+            setProblemTitle(nextProb.title || "");
+            setProblemContent(nextProb.content || "");
+            setSolutions(nextProb.solutions || []);
+            if (nextProb.solutions && nextProb.solutions.length > 0) {
+              setSolution(nextProb.solutions[0].content);
+            }
+            setDifficulty(nextProb.difficulty || 5);
+            setCategory(nextProb.category || "");
+            setCurrentBulkIndex(index);
+          }}
+          problemPageRange={problemPageRange}
+          setProblemPageRange={setProblemPageRange}
+          solutionPageRange={solutionPageRange}
+          setSolutionPageRange={setSolutionPageRange}
+          questionIndices={questionIndices}
+          setQuestionIndices={setQuestionIndices}
+          totalPdfPages={totalPdfPages}
+          selectedProblemIndices={selectedProblemIndices}
+          setSelectedProblemIndices={setSelectedProblemIndices}
         />
 
         <LinkManagerDialog
