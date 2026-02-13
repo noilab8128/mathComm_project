@@ -189,12 +189,30 @@ export function ProblemList({
                                             {(() => {
                                                 const renderProblemRow = (problem: Problem, depth: number = 0): React.ReactNode[] => {
                                                     const childProblems = problems.filter(p => p.parentProblemId === problem.id);
-                                                    // Sort children by difficulty
-                                                    childProblems.sort((a, b) => a.difficulty - b.difficulty);
+
+                                                    // Group by stage/solution
+                                                    const groups = new Map<string, Problem[]>();
+                                                    childProblems.forEach(p => {
+                                                        const groupKey = p.hierarchyInfo?.stageName || "General";
+                                                        if (!groups.has(groupKey)) groups.set(groupKey, []);
+                                                        groups.get(groupKey)!.push(p);
+                                                    });
+
+                                                    // Sort groups by sequence order of first item
+                                                    const sortedGroups = Array.from(groups.entries()).sort((a, b) => {
+                                                        const seqA = a[1][0].hierarchyInfo?.sequenceOrder || 0;
+                                                        const seqB = b[1][0].hierarchyInfo?.sequenceOrder || 0;
+                                                        return seqA - seqB;
+                                                    });
+
+                                                    // Sort children in each group by difficulty DESCENDING (Standard -> Easier)
+                                                    for (const group of sortedGroups) {
+                                                        group[1].sort((a, b) => b.difficulty - a.difficulty);
+                                                    }
 
                                                     const explicitLinkedProblems = problem.linkedProblems
                                                         ? problems.filter(p =>
-                                                            problem.linkedProblems.includes(p.id) &&
+                                                            problem.linkedProblems?.includes(p.id) &&
                                                             p.parentProblemId !== problem.id
                                                         )
                                                         : [];
@@ -261,7 +279,7 @@ export function ProblemList({
                                                                 )}
                                                             </TableCell>
                                                             <TableCell className="text-gray-500 text-xs">
-                                                                {problem.createdAt.toLocaleDateString()}
+                                                                {new Date(problem.createdAt).toLocaleDateString()}
                                                             </TableCell>
                                                             <TableCell className="text-right">
                                                                 <Button
@@ -280,8 +298,26 @@ export function ProblemList({
                                                     ];
 
                                                     if (isExpanded && hasChildren) {
-                                                        childProblems.forEach(child => {
-                                                            rows.push(...renderProblemRow(child, depth + 1));
+                                                        // Render groups
+                                                        sortedGroups.forEach(([groupName, groupProblems]) => {
+
+                                                            // If multiple groups, show separator/header
+                                                            if (sortedGroups.length > 1) {
+                                                                rows.push(
+                                                                    <TableRow key={`group-${problem.id}-${groupName}`} className="bg-gray-50/50">
+                                                                        <TableCell colSpan={7} className="py-1">
+                                                                            <div className="flex items-center gap-2 text-xs font-semibold text-blue-600/80 uppercase tracking-wider" style={{ paddingLeft: `${(depth + 1) * 24 + 20}px` }}>
+                                                                                <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
+                                                                                Stage: {groupName}
+                                                                            </div>
+                                                                        </TableCell>
+                                                                    </TableRow>
+                                                                );
+                                                            }
+
+                                                            groupProblems.forEach(child => {
+                                                                rows.push(...renderProblemRow(child, depth + 1));
+                                                            });
                                                         });
                                                     }
 

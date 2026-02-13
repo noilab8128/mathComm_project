@@ -219,7 +219,8 @@ function ProblemDialog({ problem }: { problem: ProblemDisplay }) {
 }
 
 // Build problem tree for a given olympiad problem
-function buildProblemTree(rootProblem: ProblemDisplay, allProblems: ProblemDisplay[]): ProblemDisplay[] {
+// Build problem tree for a given olympiad problem
+function buildProblemTree(rootProblem: ProblemDisplay, _allProblems: ProblemDisplay[]): ProblemDisplay[] {
   const tree: ProblemDisplay[] = [rootProblem];
 
   // Find direct children (problems with this as parent_problem_id)
@@ -303,9 +304,10 @@ export default function MainPage() {
         });
 
         setProblemTrees(trees);
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Failed to fetch problems:', err);
-        setError(err.message || 'Failed to load problems. Please check your connection.');
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+        setError(errorMessage || 'Failed to load problems. Please check your connection.');
         setOfficialProblems([]);
       } finally {
         setIsLoading(false);

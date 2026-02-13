@@ -1,6 +1,7 @@
 // UserHomePage Component - Main overview page for MathQuest
 // Displays user progress, skill tree, recommended problems, and leaderboard
 
+// User Home Page Component - Updated for Hierarchy
 "use client"
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
@@ -16,10 +17,10 @@ import { Separator } from "@/components/ui/separator";
 import { Loader2, Lock, Unlock, BookOpen, Star, Send, Flame, ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { MathPreview } from "@/components/MathPreview";
-import { problemsAPI, problemRelationshipsAPI, getDifficultyLabel, Problem as SupabaseProblem } from "@/lib/supabase";
+import { problemsAPI, problemHierarchiesAPI, getDifficultyLabel, Problem as SupabaseProblem } from "@/lib/supabase";
 
 // Weekly leaderboard data
-const leaderboard = [
+const leaderboard: { name: string; xp: number; streak: number }[] = [
   { name: "Ada L.", xp: 12450, streak: 21 },
   { name: "Carl F.", xp: 11880, streak: 12 },
   { name: "M. Seo", xp: 10320, streak: 8 },
@@ -63,7 +64,15 @@ interface ProblemDisplay {
   category_path?: string;
 }
 
-function convertSupabaseProblem(sp: SupabaseProblem): ProblemDisplay {
+// Convert Supabase Problem to display format
+interface ProblemWithSolutions extends SupabaseProblem {
+  solutions: { content: string }[];
+}
+
+function convertSupabaseProblem(sp: SupabaseProblem | ProblemWithSolutions): ProblemDisplay {
+  const solutions = 'solutions' in sp ? sp.solutions : [];
+  const solutionContent = solutions && solutions.length > 0 ? solutions[0].content : null;
+
   return {
     id: sp.id,
     title: sp.title,
@@ -75,25 +84,26 @@ function convertSupabaseProblem(sp: SupabaseProblem): ProblemDisplay {
     unlocked: true,
     content: sp.content,
     hint: undefined,
-    solution: sp.solution,
+    solution: solutionContent !== null ? solutionContent : undefined,
     category_path: sp.category_path,
   };
 }
 
-// Build hierarchical learning paths based on parent_problem_id (like admin page)
-function buildLearningPaths(problems: SupabaseProblem[], relationships: any[]): { nodes: SkillNode[], edges: string[][] } {
+// Build hierarchical learning paths based on hierarchy data (like admin page)
+function buildLearningPaths(problems: SupabaseProblem[], parentMap: Map<string, string>): { nodes: SkillNode[], edges: string[][] } {
   const nodes: SkillNode[] = [];
   const edges: string[][] = [];
 
-  // Find root problems (no parent_problem_id)
-  const rootProblems = problems.filter(p => !p.parent_problem_id);
+  // Find root problems (no parent in hierarchy)
+  const rootProblems = problems.filter(p => !parentMap.has(p.id));
 
   if (rootProblems.length === 0) {
-    // If no root problems, use all problems as roots
+    // If no root problems, use all problems as roots (fallback)
     rootProblems.push(...problems.slice(0, 10));
   }
 
-  let rowIndex = 0;
+  // Row index tracking (unused for now but kept for logic structure if needed)
+  // let rowIndex = 0;
   const level0X = 150;  // Root problems (left)
   const level1X = 450;  // Level 1 derived problems (middle)
   const level2X = 750;  // Level 2 grandchildren (right)
@@ -122,11 +132,11 @@ function buildLearningPaths(problems: SupabaseProblem[], relationships: any[]): 
     });
 
     // Find Level 1: Derived problems (children of root)
-    const derivedProblems = problems.filter(p => p.parent_problem_id === rootProblem.id);
+    const derivedProblems = problems.filter(p => parentMap.get(p.id) === rootProblem.id);
     derivedProblems.sort((a, b) => a.difficulty - b.difficulty);
 
     let derivedYOffset = 0;
-    derivedProblems.forEach((derived, derivedIdx) => {
+    derivedProblems.forEach((derived) => {
       const derivedNodeId = `problem-${derived.id}`;
       const derivedLevel = derived.level || getDifficultyLabel(derived.difficulty);
 
@@ -149,7 +159,7 @@ function buildLearningPaths(problems: SupabaseProblem[], relationships: any[]): 
       edges.push([rootNodeId, derivedNodeId]);
 
       // Find Level 2: Grandchildren (children of derived)
-      const grandchildren = problems.filter(p => p.parent_problem_id === derived.id);
+      const grandchildren = problems.filter(p => parentMap.get(p.id) === derived.id);
       grandchildren.sort((a, b) => a.difficulty - b.difficulty);
 
       grandchildren.forEach((grandchild, gcIdx) => {
@@ -179,18 +189,7 @@ function buildLearningPaths(problems: SupabaseProblem[], relationships: any[]): 
       derivedYOffset += Math.max(100, grandchildren.length * ySpacingDerived) + 20;
     });
 
-    // If there are derived problems, adjust spacing
-    if (derivedProblems.length > 0) {
-      const maxDerivedHeight = derivedProblems.reduce((max, d) => {
-        const grandchildren = problems.filter(p => p.parent_problem_id === d.id);
-        return Math.max(max, grandchildren.length * ySpacingDerived + 100);
-      }, 0);
 
-      // Update rowIndex to account for the height of this root's hierarchy
-      if (maxDerivedHeight > ySpacing) {
-        rowIndex += Math.ceil(maxDerivedHeight / ySpacing);
-      }
-    }
   });
 
   return { nodes, edges };
@@ -285,7 +284,7 @@ function RecommendedProblems() {
           })
           .slice(0, 3);
         setRecommendedProblems(converted);
-      } catch (err) {
+      } catch (err: unknown) {
         console.error('Failed to fetch recommended problems:', err);
         setRecommendedProblems([]);
       } finally {
@@ -349,7 +348,7 @@ function RecommendedProblems() {
  * Features two modes: written solution and auto-check
  * @param problem - Problem object with title, XP, difficulty, tags, and unlock status
  */
-function ProblemDialog({ problem }: { problem: any }) {
+function ProblemDialog({ problem }: { problem: ProblemDisplay }) {
   // State to track which tab is active (write solution or auto-check)
   const [tab, setTab] = React.useState<"write" | "auto">("write");
   const [solutionDraft, setSolutionDraft] = React.useState("");
@@ -438,7 +437,7 @@ function ProblemDialog({ problem }: { problem: any }) {
           </div>
 
           <div className="flex flex-col">
-            <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="flex-1 flex flex-col">
+            <Tabs value={tab} onValueChange={(v) => setTab(v as "write" | "auto")} className="flex-1 flex flex-col">
               <TabsList className="bg-gray-100 flex-shrink-0">
                 <TabsTrigger value="write" className="data-[state=active]:bg-white data-[state=active]:text-gray-900">Write Solution</TabsTrigger>
                 <TabsTrigger value="auto" className="data-[state=active]:bg-white data-[state=active]:text-gray-900">Auto-check</TabsTrigger>
@@ -559,30 +558,27 @@ function SkillTreeCanvas({ onOpenNode }: { onOpenNode?: (id: string) => void }) 
     const fetchLearningPath = async () => {
       try {
         setIsLoading(true);
-        // Fetch all problems
-        const supabaseProblems = await problemsAPI.getAll();
+        // Fetch all problems and hierarchy
+        const [supabaseProblems, hierarchyData] = await Promise.all([
+          problemsAPI.getAll(),
+          problemHierarchiesAPI.getAll()
+        ]);
+
         const convertedProblems = supabaseProblems.map(convertSupabaseProblem);
         setProblems(convertedProblems);
 
-        // Fetch all relationships efficiently
-        const allRelationships: any[] = [];
-        const batchSize = 10;
-        for (let i = 0; i < supabaseProblems.length; i += batchSize) {
-          const batch = supabaseProblems.slice(i, i + batchSize);
-          await Promise.all(
-            batch.map(async (problem) => {
-              try {
-                const relationships = await problemRelationshipsAPI.getLearningPath(problem.id);
-                allRelationships.push(...relationships);
-              } catch (err) {
-                // Skip if error
-              }
-            })
-          );
+        // Create parent lookups
+        const parentMap = new Map<string, string>(); // child -> parent
+        if (hierarchyData) {
+          hierarchyData.forEach((h: { parent_problem_id: string; child_problem_id: string }) => {
+            if (h.parent_problem_id && h.child_problem_id) {
+              parentMap.set(h.child_problem_id, h.parent_problem_id);
+            }
+          });
         }
 
         // Build learning paths horizontally
-        const { nodes, edges } = buildLearningPaths(supabaseProblems, allRelationships);
+        const { nodes, edges } = buildLearningPaths(supabaseProblems, parentMap);
         setSkillNodes(nodes);
         setSkillEdges(edges);
       } catch (err) {

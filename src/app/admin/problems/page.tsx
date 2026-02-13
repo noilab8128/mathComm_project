@@ -2,14 +2,14 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useProblems } from "./hooks/useProblems";
+import { problemsAPI, problemHierarchiesAPI, getDifficultyLabel, calculateXP, categoryToTags } from "@/lib/supabase";
 import { ProblemHeader } from "./components/ProblemHeader";
 import { ProblemStats } from "./components/ProblemStats";
 import { ProblemFilters } from "./components/ProblemFilters";
 import { ProblemList } from "./components/ProblemList";
 import { ProblemEditor } from "./components/ProblemEditor";
 import { LinkManagerDialog, CreateLinkDialog } from "./components/LinkManagerDialog";
-import { Problem, RelatedProblem, SolutionItem } from "./types";
-import { problemsAPI, problemRelationshipsAPI, getDifficultyLabel, calculateXP, categoryToTags } from "@/lib/supabase";
+import { Problem, Solution, RelatedProblem } from "./types";
 import { CATEGORIES } from "@/lib/categories";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -87,7 +87,7 @@ export default function ProblemManagementPage() {
   const [addedProblemTitles, setAddedProblemTitles] = useState<Set<string>>(new Set());
   const [uploadedSolutionFile, setUploadedSolutionFile] = useState<File | null>(null);
   const [uploadedSolutionFilePreview, setUploadedSolutionFilePreview] = useState<string>("");
-  const [solutions, setSolutions] = useState<SolutionItem[]>([]);
+  const [solutions, setSolutions] = useState<Solution[]>([]);
   const [uploadedSolutionFiles, setUploadedSolutionFiles] = useState<File[]>([]);
   const [uploadedSolutionFilesPreviews, setUploadedSolutionFilesPreviews] = useState<string[]>([]);
   const [isBulkMode, setIsBulkMode] = useState(false);
@@ -241,17 +241,22 @@ export default function ProblemManagementPage() {
 
         const problemToSave: Problem = {
           id: `temp-${Date.now()}-${savedCount}`,
-          title: prob.title,
-          content: prob.content,
+          title: prob.title || "Untitled",
+          content: prob.content || "",
           solution: prob.solutions && prob.solutions.length > 0 ? prob.solutions[0].content : "",
-          solutions: prob.solutions || [],
+          solutions: prob.solutions ? prob.solutions.map((s: any, idx: number) => ({
+            id: s.id,
+            content: s.content,
+            sequenceOrder: idx + 1
+          })) : [],
           difficulty: prob.difficulty || 5,
           category: prob.category || "",
+          xp: calculateXP(prob.difficulty || 5),
           diagramImageUrl: "",
           linkedProblems: [],
           isGenerated: false,
-          createdAt: new Date(),
-          updatedAt: new Date(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         };
 
         try {
@@ -283,25 +288,33 @@ export default function ProblemManagementPage() {
       solutions: solutions,
       difficulty: difficulty,
       category: category,
+      xp: calculateXP(difficulty),
       diagramImageUrl: diagramImageUrl,
       linkedProblems: linkedProblems,
       isGenerated: selectedProblem?.isGenerated || false,
       parentProblemId: selectedProblem?.parentProblemId,
-      createdAt: selectedProblem?.createdAt || new Date(),
-      updatedAt: new Date(),
+      createdAt: selectedProblem?.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
 
     try {
       const saved = await saveProblemToSupabase(problemToSave, selectedLevel1, selectedLevel2, selectedLevel3);
       if (saved) {
-        // Now save all staged related problems
-        for (const relatedProblem of relatedProblems.filter(p => addedProblemTitles.has(p.title))) {
+        // Now save all staged related problems with hierarchy
+        // We need to know which solution/stage they belong to
+        // For now, we assume simple linear generation or rely on 'concepts' (stages) mapping if available
+        // In the new 'relatedProblems' structure from API, we might expect stage info.
+
+        const problemsToSave = relatedProblems.filter(p => addedProblemTitles.has(p.title));
+
+        for (let i = 0; i < problemsToSave.length; i++) {
+          const relatedProblem = problemsToSave[i];
           try {
             // Map RelatedProblem (client) to Problem (database)
             const newProblemData = {
               title: relatedProblem.title,
               content: relatedProblem.content,
-              solution: relatedProblem.solution,
+              solution: relatedProblem.solution, // legacy
               difficulty: relatedProblem.difficulty,
               category_path: relatedProblem.category,
               category_level1: selectedLevel1 ? parseInt(selectedLevel1) : undefined,
@@ -311,11 +324,37 @@ export default function ProblemManagementPage() {
               xp: calculateXP(relatedProblem.difficulty),
               tags: categoryToTags(relatedProblem.category),
               is_generated: true,
-              parent_problem_id: saved.id,
+              // parent_problem_id: saved.id, // Removed from columns, use hierarchy table
             };
-            await problemsAPI.create(newProblemData as any);
-          } catch (error) {
+
+            // Create the child problem
+            // Prepare child problem data - remove 'solution' as it's not in problems table
+            const { solution, ...problemData } = newProblemData as any;
+
+            // Cast solutions to any because problemsAPI.create handles assigning 'problem_id'
+            const savedChild = await problemsAPI.create(problemData, [{
+              content: relatedProblem.solution,
+              sequence_order: 1
+            }] as any);
+
+            if (savedChild) {
+              const stageName = concepts?.[0] || "Next Step";
+              const currentDepth = saved.hierarchyInfo?.depth || 1;
+
+              // Create Hierarchy Link
+              await problemHierarchiesAPI.create(
+                saved.id,
+                savedChild.id,
+                null, // parent_solution_id
+                stageName,
+                i + 1, // sequence_order
+                currentDepth + 1 // depth
+              );
+            }
+
+          } catch (error: any) {
             console.error('Error saving related problem:', error);
+            console.error('Error Details:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
           }
         }
 
@@ -665,7 +704,7 @@ export default function ProblemManagementPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           problemContent: problemContent,
-          solutions: solutions.map(s => ({ title: s.title, content: s.content })),
+          solutions: solutions.map(s => ({ content: s.content })),
           category: category,
           difficulty: difficulty
         }),
@@ -756,28 +795,29 @@ export default function ProblemManagementPage() {
         };
         setProblems(prev => prev.map(p => p.id === draggedProblemId ? updatedSource : p));
 
-        // If it's a derived/prerequisite relationship, update parent pointer
-        if (linkType === 'derived') {
-          const targetProblem = problems.find(p => p.id === dropTargetId);
-          if (targetProblem) {
-            const updatedTarget = { ...targetProblem, parentProblemId: draggedProblemId };
-            setProblems(prev => prev.map(p => p.id === dropTargetId ? updatedTarget : p));
-
-            // Save parent update to DB
-            if (isDbConnected) {
-              await problemsAPI.update(dropTargetId, { parent_problem_id: draggedProblemId });
-            }
-          }
+        // If it's a derived/prerequisite relationship, update parent pointer locally for UI
+        const targetProblem = problems.find(p => p.id === dropTargetId);
+        if (targetProblem) {
+          // Update local state only to reflect hierarchy in UI if needed
+          const updatedTarget = { ...targetProblem, parentProblemId: draggedProblemId };
+          setProblems(prev => prev.map(p => p.id === dropTargetId ? updatedTarget : p));
         }
       }
 
-      // 2. Save link to DB
+      // 2. Save link to DB using Hierarchy
       if (isDbConnected) {
-        await problemRelationshipsAPI.create(
+        // We need depth and sequence. 
+        // Default: 1st child, depth = parent depth + 1
+        const parent = problems.find(p => p.id === draggedProblemId);
+        const parentDepth = parent?.hierarchyInfo?.depth || 1;
+
+        await problemHierarchiesAPI.create(
           draggedProblemId,
           dropTargetId,
-          linkType,
-          { concept: linkConcept }
+          null, // parent_solution_id
+          linkConcept || "Linked", // stage_name
+          1, // sequence_order (TODO: calculate properly)
+          parentDepth + 1
         );
       }
 
@@ -812,19 +852,13 @@ export default function ProblemManagementPage() {
         return p;
       }));
 
-      // Delete from DB
+      // Delete from DB (Hierarchy)
       if (isDbConnected) {
-        // We need the relationship ID to delete properly, but for now we'll just update the problems
-        // In a real app, we'd query the relationship ID first or have an API to delete by source/target
-        // For now, let's assume we just update the parent pointer if it exists
-        const targetProblem = problems.find(p => p.id === targetId);
-        if (targetProblem?.parentProblemId === sourceId) {
-          await problemsAPI.update(targetId, { parent_problem_id: undefined });
-        }
+        await problemHierarchiesAPI.delete(sourceId, targetId);
       }
 
       showToast("Link removed", "success");
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to delete link:', error);
       showToast("Failed to delete link", "error");
     }
