@@ -3,6 +3,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { Providers } from "@/components/Providers";
 import { LearningSyncProvider } from "@/lib/learningSync";
 
 // Configure Geist Sans font for body text and headings
@@ -34,9 +35,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <LearningSyncProvider>
+        <Providers>
           {children}
-        </LearningSyncProvider>
+        </Providers>
       </body>
     </html>
   );

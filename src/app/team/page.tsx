@@ -168,7 +168,7 @@ const TeamPage = () => {
                         <Users className="h-16 w-16 mx-auto mb-4 opacity-90" />
                         <h2 className="text-3xl font-bold mb-4">Join Our Mission</h2>
                         <p className="text-lg text-indigo-100 mb-6 max-w-2xl mx-auto">
-                            We're always looking for passionate individuals who share our vision of making mathematics education accessible to everyone.
+                            We&apos;re always looking for passionate individuals who share our vision of making mathematics education accessible to everyone.
                         </p>
                         <a
                             href="/careers"

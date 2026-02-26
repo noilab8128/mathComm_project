@@ -909,239 +909,237 @@ export default function ProblemManagementPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8 font-sans text-gray-900">
-      <div className="max-w-7xl mx-auto space-y-8">
+    <div className="space-y-6">
 
-        {/* Header */}
-        <ProblemHeader
-          isDbConnected={isDbConnected}
-          onSync={loadProblemsFromSupabase}
-          onExport={handleExportCSV}
-          onNewProblem={handleNewProblem}
-          onManageLinks={() => setShowLinkManagerDialog(true)}
-          isLoadingFromDb={isLoadingFromDb}
+      {/* Header */}
+      <ProblemHeader
+        isDbConnected={isDbConnected}
+        onSync={loadProblemsFromSupabase}
+        onExport={handleExportCSV}
+        onNewProblem={handleNewProblem}
+        onManageLinks={() => setShowLinkManagerDialog(true)}
+        isLoadingFromDb={isLoadingFromDb}
+      />
+
+      {/* Stats */}
+      <ProblemStats problems={problems} />
+
+      {/* Filters & List */}
+      <div className="space-y-4">
+        <ProblemFilters
+          totalCount={totalCount}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          viewMode={viewMode}
+          setViewMode={setViewMode}
+          filterCategory={filterCategory}
+          setFilterCategory={setFilterCategory}
+          filterDifficulty={filterDifficulty}
+          setFilterDifficulty={setFilterDifficulty}
+          sortBy={sortBy}
+          setSortBy={setSortBy}
+          categories={CATEGORIES}
         />
 
-        {/* Stats */}
-        <ProblemStats problems={problems} />
-
-        {/* Filters & List */}
-        <div className="space-y-4">
-          <ProblemFilters
-            totalCount={totalCount}
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-            viewMode={viewMode}
-            setViewMode={setViewMode}
-            filterCategory={filterCategory}
-            setFilterCategory={setFilterCategory}
-            filterDifficulty={filterDifficulty}
-            setFilterDifficulty={setFilterDifficulty}
-            sortBy={sortBy}
-            setSortBy={setSortBy}
-            categories={CATEGORIES}
-          />
-
-          <ProblemList
-            problems={problems}
-            viewMode={viewMode}
-            selectedProblem={selectedProblem}
-            expandedProblems={expandedProblems}
-            draggedProblemId={draggedProblemId}
-            dropTargetId={dropTargetId}
-            linkEditMode={linkEditMode}
-            linkEditSourceId={linkEditSourceId}
-            linkEditSourcePosition={linkEditSourcePosition}
-            mousePosition={mousePosition}
-            currentPage={currentPage}
-            pageSize={pageSize}
-            totalCount={totalCount}
-            totalPages={Math.ceil(totalCount / pageSize)}
-            isLoadingFromDb={isLoadingFromDb}
-            onSelectProblem={handleSelectProblem}
-            onDeleteProblem={handleDeleteProblem}
-            onToggleExpanded={handleToggleExpanded}
-            onPageChange={setCurrentPage}
-            onDragStart={handleDragStart}
-            onDragEnd={() => {
-              setDraggedProblemId(null);
-              setDropTargetId(null);
-            }}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            onStartLinkEdit={handleStartLinkEdit}
-            onCancelLinkEdit={handleCancelLinkEdit}
-            onChangeLinkParent={handleChangeLinkParent}
-            onMouseMove={(e) => setMousePosition({ x: e.clientX, y: e.clientY })}
-            selectedProblemIds={selectedProblemIds}
-            toggleProblemSelection={toggleProblemSelection}
-            selectAllProblems={selectAllProblems}
-            clearSelection={clearSelection}
-            sortBy={sortBy}
-            onSortChange={setSortBy}
-          />
-        </div>
-
-        {/* Dialogs */}
-        <ProblemEditor
-          isOpen={isEditorOpen}
-          onOpenChange={setIsEditorOpen}
-          isEditing={isEditing}
-          selectedProblem={selectedProblem}
-          problemTitle={problemTitle}
-          setProblemTitle={setProblemTitle}
-          problemContent={problemContent}
-          setProblemContent={setProblemContent}
-          solution={solution}
-          setSolution={setSolution}
-          difficulty={difficulty}
-          setDifficulty={setDifficulty}
-          category={category}
-          setCategory={setCategory}
-          selectedLevel1={selectedLevel1}
-          setSelectedLevel1={setSelectedLevel1}
-          selectedLevel2={selectedLevel2}
-          setSelectedLevel2={setSelectedLevel2}
-          selectedLevel3={selectedLevel3}
-          setSelectedLevel3={setSelectedLevel3}
-          diagramImageUrl={diagramImageUrl}
-          setDiagramImageUrl={setDiagramImageUrl}
-          linkedProblems={linkedProblems}
-          inputMethod={inputMethod}
-          setInputMethod={setInputMethod}
-          uploadedFile={uploadedFile}
-          uploadedFilePreview={uploadedFilePreview}
-          extractedDiagrams={extractedDiagrams}
-          isAnalyzing={isAnalyzing}
-          isAnalyzingSolution={isAnalyzingSolution}
-          isGeneratingRelated={isGeneratingRelated}
-          relatedProblems={relatedProblems}
-          showRelatedProblems={showRelatedProblems}
-          setShowRelatedProblems={setShowRelatedProblems}
-          concepts={concepts}
-          addedProblemTitles={addedProblemTitles}
-          onSave={handleSaveProblem}
-          onCancel={() => setIsEditorOpen(false)}
-          onFileUpload={handleProblemFileUpload}
-          onDiagramUpload={handleDiagramImageUpload}
-          onSolutionFileUpload={handleSolutionFileUpload}
-          onAIAnalyze={handleAIAnalyzeProblem}
-          onAISolutionAnalyze={handleAISolutionAnalyze}
-          onAIGenerateSolution={handleAIGenerateSolution}
-          onAIDifficulty={handleAIDifficulty}
-          onGenerateRelated={handleGenerateRelatedProblems}
-          onAddRelated={handleAddRelatedProblem}
-          onRemoveRelated={handleRemoveRelatedProblem}
-          onSelectExtractedDiagram={(url) => setDiagramImageUrl(url)}
-          onRemoveExtractedDiagram={(index) => setExtractedDiagrams(prev => prev.filter((_, i) => i !== index))}
-          onClearRelated={() => {
-            // Only clear the added status, don't remove the generated problems
-            setAddedProblemTitles(new Set());
-          }}
-          uploadedSolutionFile={uploadedSolutionFile}
-          uploadedSolutionFilePreview={uploadedSolutionFilePreview}
-          solutions={solutions}
-          setSolutions={setSolutions}
-          uploadedSolutionFiles={uploadedSolutionFiles}
-          uploadedSolutionFilesPreviews={uploadedSolutionFilesPreviews}
-          isBulkMode={isBulkMode}
-          pendingProblems={pendingProblems}
-          currentBulkIndex={currentBulkIndex}
-          onBulkIndexChange={(index) => {
-            // Save current changes to the pending list before switching
-            const currentProb = {
-              title: problemTitle,
-              content: problemContent,
-              solutions: solutions,
-              difficulty: difficulty,
-              category: category
-            };
-            const updatedPending = [...pendingProblems];
-            updatedPending[currentBulkIndex] = currentProb;
-            setPendingProblems(updatedPending);
-
-            // Switch to new problem from pending list
-            const nextProb = updatedPending[index];
-            setProblemTitle(nextProb.title || "");
-            setProblemContent(nextProb.content || "");
-            setSolutions(nextProb.solutions || []);
-            if (nextProb.solutions && nextProb.solutions.length > 0) {
-              setSolution(nextProb.solutions[0].content);
-            }
-            setDifficulty(nextProb.difficulty || 5);
-            setCategory(nextProb.category || "");
-            setCurrentBulkIndex(index);
-          }}
-          problemPageRange={problemPageRange}
-          setProblemPageRange={setProblemPageRange}
-          solutionPageRange={solutionPageRange}
-          setSolutionPageRange={setSolutionPageRange}
-          questionIndices={questionIndices}
-          setQuestionIndices={setQuestionIndices}
-          totalPdfPages={totalPdfPages}
-          selectedProblemIndices={selectedProblemIndices}
-          setSelectedProblemIndices={setSelectedProblemIndices}
-        />
-
-        <LinkManagerDialog
-          isOpen={showLinkManagerDialog}
-          onOpenChange={setShowLinkManagerDialog}
-          problemId={selectedProblem?.id || null}
+        <ProblemList
           problems={problems}
-          onDeleteLink={handleDeleteLink}
-        />
-
-        <CreateLinkDialog
-          isOpen={showLinkDialog}
-          onOpenChange={setShowLinkDialog}
+          viewMode={viewMode}
+          selectedProblem={selectedProblem}
+          expandedProblems={expandedProblems}
           draggedProblemId={draggedProblemId}
           dropTargetId={dropTargetId}
-          problems={problems}
-          linkType={linkType}
-          setLinkType={setLinkType}
-          linkConcept={linkConcept}
-          setLinkConcept={setLinkConcept}
-          onCreateLink={handleCreateLink}
-          onCancel={() => setShowLinkDialog(false)}
+          linkEditMode={linkEditMode}
+          linkEditSourceId={linkEditSourceId}
+          linkEditSourcePosition={linkEditSourcePosition}
+          mousePosition={mousePosition}
+          currentPage={currentPage}
+          pageSize={pageSize}
+          totalCount={totalCount}
+          totalPages={Math.ceil(totalCount / pageSize)}
+          isLoadingFromDb={isLoadingFromDb}
+          onSelectProblem={handleSelectProblem}
+          onDeleteProblem={handleDeleteProblem}
+          onToggleExpanded={handleToggleExpanded}
+          onPageChange={setCurrentPage}
+          onDragStart={handleDragStart}
+          onDragEnd={() => {
+            setDraggedProblemId(null);
+            setDropTargetId(null);
+          }}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          onStartLinkEdit={handleStartLinkEdit}
+          onCancelLinkEdit={handleCancelLinkEdit}
+          onChangeLinkParent={handleChangeLinkParent}
+          onMouseMove={(e) => setMousePosition({ x: e.clientX, y: e.clientY })}
+          selectedProblemIds={selectedProblemIds}
+          toggleProblemSelection={toggleProblemSelection}
+          selectAllProblems={selectAllProblems}
+          clearSelection={clearSelection}
+          sortBy={sortBy}
+          onSortChange={setSortBy}
         />
-
-        {/* Global Toast */}
-        {toast.show && (
-          <div className={`fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white transition-all transform translate-y-0 ${toast.type === "success" ? "bg-green-600" : "bg-red-600"
-            }`}>
-            {toast.message}
-          </div>
-        )}
-
-        {/* Confirmation Dialog */}
-        <Dialog open={confirmDialog.isOpen} onOpenChange={(open) => !open && setConfirmDialog(prev => ({ ...prev, isOpen: false }))}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{confirmDialog.title}</DialogTitle>
-              <DialogDescription className="whitespace-pre-wrap">
-                {confirmDialog.message}
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={confirmDialog.onConfirm}
-                className="bg-red-600 text-white hover:bg-red-700"
-              >
-                Delete
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
       </div>
+
+      {/* Dialogs */}
+      <ProblemEditor
+        isOpen={isEditorOpen}
+        onOpenChange={setIsEditorOpen}
+        isEditing={isEditing}
+        selectedProblem={selectedProblem}
+        problemTitle={problemTitle}
+        setProblemTitle={setProblemTitle}
+        problemContent={problemContent}
+        setProblemContent={setProblemContent}
+        solution={solution}
+        setSolution={setSolution}
+        difficulty={difficulty}
+        setDifficulty={setDifficulty}
+        category={category}
+        setCategory={setCategory}
+        selectedLevel1={selectedLevel1}
+        setSelectedLevel1={setSelectedLevel1}
+        selectedLevel2={selectedLevel2}
+        setSelectedLevel2={setSelectedLevel2}
+        selectedLevel3={selectedLevel3}
+        setSelectedLevel3={setSelectedLevel3}
+        diagramImageUrl={diagramImageUrl}
+        setDiagramImageUrl={setDiagramImageUrl}
+        linkedProblems={linkedProblems}
+        inputMethod={inputMethod}
+        setInputMethod={setInputMethod}
+        uploadedFile={uploadedFile}
+        uploadedFilePreview={uploadedFilePreview}
+        extractedDiagrams={extractedDiagrams}
+        isAnalyzing={isAnalyzing}
+        isAnalyzingSolution={isAnalyzingSolution}
+        isGeneratingRelated={isGeneratingRelated}
+        relatedProblems={relatedProblems}
+        showRelatedProblems={showRelatedProblems}
+        setShowRelatedProblems={setShowRelatedProblems}
+        concepts={concepts}
+        addedProblemTitles={addedProblemTitles}
+        onSave={handleSaveProblem}
+        onCancel={() => setIsEditorOpen(false)}
+        onFileUpload={handleProblemFileUpload}
+        onDiagramUpload={handleDiagramImageUpload}
+        onSolutionFileUpload={handleSolutionFileUpload}
+        onAIAnalyze={handleAIAnalyzeProblem}
+        onAISolutionAnalyze={handleAISolutionAnalyze}
+        onAIGenerateSolution={handleAIGenerateSolution}
+        onAIDifficulty={handleAIDifficulty}
+        onGenerateRelated={handleGenerateRelatedProblems}
+        onAddRelated={handleAddRelatedProblem}
+        onRemoveRelated={handleRemoveRelatedProblem}
+        onSelectExtractedDiagram={(url) => setDiagramImageUrl(url)}
+        onRemoveExtractedDiagram={(index) => setExtractedDiagrams(prev => prev.filter((_, i) => i !== index))}
+        onClearRelated={() => {
+          // Only clear the added status, don't remove the generated problems
+          setAddedProblemTitles(new Set());
+        }}
+        uploadedSolutionFile={uploadedSolutionFile}
+        uploadedSolutionFilePreview={uploadedSolutionFilePreview}
+        solutions={solutions}
+        setSolutions={setSolutions}
+        uploadedSolutionFiles={uploadedSolutionFiles}
+        uploadedSolutionFilesPreviews={uploadedSolutionFilesPreviews}
+        isBulkMode={isBulkMode}
+        pendingProblems={pendingProblems}
+        currentBulkIndex={currentBulkIndex}
+        onBulkIndexChange={(index) => {
+          // Save current changes to the pending list before switching
+          const currentProb = {
+            title: problemTitle,
+            content: problemContent,
+            solutions: solutions,
+            difficulty: difficulty,
+            category: category
+          };
+          const updatedPending = [...pendingProblems];
+          updatedPending[currentBulkIndex] = currentProb;
+          setPendingProblems(updatedPending);
+
+          // Switch to new problem from pending list
+          const nextProb = updatedPending[index];
+          setProblemTitle(nextProb.title || "");
+          setProblemContent(nextProb.content || "");
+          setSolutions(nextProb.solutions || []);
+          if (nextProb.solutions && nextProb.solutions.length > 0) {
+            setSolution(nextProb.solutions[0].content);
+          }
+          setDifficulty(nextProb.difficulty || 5);
+          setCategory(nextProb.category || "");
+          setCurrentBulkIndex(index);
+        }}
+        problemPageRange={problemPageRange}
+        setProblemPageRange={setProblemPageRange}
+        solutionPageRange={solutionPageRange}
+        setSolutionPageRange={setSolutionPageRange}
+        questionIndices={questionIndices}
+        setQuestionIndices={setQuestionIndices}
+        totalPdfPages={totalPdfPages}
+        selectedProblemIndices={selectedProblemIndices}
+        setSelectedProblemIndices={setSelectedProblemIndices}
+      />
+
+      <LinkManagerDialog
+        isOpen={showLinkManagerDialog}
+        onOpenChange={setShowLinkManagerDialog}
+        problemId={selectedProblem?.id || null}
+        problems={problems}
+        onDeleteLink={handleDeleteLink}
+      />
+
+      <CreateLinkDialog
+        isOpen={showLinkDialog}
+        onOpenChange={setShowLinkDialog}
+        draggedProblemId={draggedProblemId}
+        dropTargetId={dropTargetId}
+        problems={problems}
+        linkType={linkType}
+        setLinkType={setLinkType}
+        linkConcept={linkConcept}
+        setLinkConcept={setLinkConcept}
+        onCreateLink={handleCreateLink}
+        onCancel={() => setShowLinkDialog(false)}
+      />
+
+      {/* Global Toast */}
+      {toast.show && (
+        <div className={`fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white transition-all transform translate-y-0 ${toast.type === "success" ? "bg-green-600" : "bg-red-600"
+          }`}>
+          {toast.message}
+        </div>
+      )}
+
+      {/* Confirmation Dialog */}
+      <Dialog open={confirmDialog.isOpen} onOpenChange={(open) => !open && setConfirmDialog(prev => ({ ...prev, isOpen: false }))}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{confirmDialog.title}</DialogTitle>
+            <DialogDescription className="whitespace-pre-wrap">
+              {confirmDialog.message}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDialog.onConfirm}
+              className="bg-red-600 text-white hover:bg-red-700"
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }

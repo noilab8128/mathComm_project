@@ -10,11 +10,11 @@ interface LandingSidebarProps {
 
 export default function LandingSidebar({ active }: LandingSidebarProps) {
     const items = [
-        { key: "main", label: "Home", icon: <Home className="h-4 w-4" />, href: "/landing" },
-        { key: "problems", label: "Problems", icon: <Brain className="h-4 w-4" />, href: "/landing" },
-        { key: "skill-tree", label: "Skill Trees", icon: <Network className="h-4 w-4" />, href: "/landing" },
-        { key: "stats", label: "Stats", icon: <LineChart className="h-4 w-4" />, href: "/landing" },
-        { key: "community", label: "Community", icon: <Users className="h-4 w-4" />, href: "/landing" },
+        { key: "main", label: "Home", icon: <Home className="h-4 w-4" />, href: "/" },
+        { key: "problems", label: "Problems", icon: <Brain className="h-4 w-4" />, href: "/" },
+        { key: "skill-tree", label: "Skill Trees", icon: <Network className="h-4 w-4" />, href: "/" },
+        { key: "stats", label: "Stats", icon: <LineChart className="h-4 w-4" />, href: "/" },
+        { key: "community", label: "Community", icon: <Users className="h-4 w-4" />, href: "/" },
     ];
 
     return (
@@ -32,8 +32,8 @@ export default function LandingSidebar({ active }: LandingSidebarProps) {
                         key={it.key}
                         href={it.href}
                         className={`w-full flex items-center gap-3 rounded-lg px-3 py-3 text-left transition-colors font-medium text-sm ${active === it.key
-                                ? "bg-gray-100 text-gray-900 shadow-sm"
-                                : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
+                            ? "bg-gray-100 text-gray-900 shadow-sm"
+                            : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
                             }`}
                     >
                         {it.icon}

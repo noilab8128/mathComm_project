@@ -17,7 +17,7 @@ import { Separator } from "@/components/ui/separator";
 import { Loader2, Lock, Unlock, BookOpen, Star, Send, Flame, ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { MathPreview } from "@/components/MathPreview";
-import { problemsAPI, problemHierarchiesAPI, getDifficultyLabel, Problem as SupabaseProblem } from "@/lib/supabase";
+import { problemsAPI, problemHierarchiesAPI, getDifficultyLabel } from "@/lib/supabase";
 
 // Weekly leaderboard data
 const leaderboard: { name: string; xp: number; streak: number }[] = [
@@ -64,12 +64,7 @@ interface ProblemDisplay {
   category_path?: string;
 }
 
-// Convert Supabase Problem to display format
-interface ProblemWithSolutions extends SupabaseProblem {
-  solutions: { content: string }[];
-}
-
-function convertSupabaseProblem(sp: SupabaseProblem | ProblemWithSolutions): ProblemDisplay {
+function convertSupabaseProblem(sp: unknown): ProblemDisplay {
   const solutions = 'solutions' in sp ? sp.solutions : [];
   const solutionContent = solutions && solutions.length > 0 ? solutions[0].content : null;
 
@@ -90,12 +85,12 @@ function convertSupabaseProblem(sp: SupabaseProblem | ProblemWithSolutions): Pro
 }
 
 // Build hierarchical learning paths based on hierarchy data (like admin page)
-function buildLearningPaths(problems: SupabaseProblem[], parentMap: Map<string, string>): { nodes: SkillNode[], edges: string[][] } {
+function buildLearningPaths(problems: unknown[], parentMap: Map<string, string>): { nodes: SkillNode[], edges: string[][] } {
   const nodes: SkillNode[] = [];
   const edges: string[][] = [];
 
   // Find root problems (no parent in hierarchy)
-  const rootProblems = problems.filter(p => !parentMap.has(p.id));
+  const rootProblems = problems.filter((p: unknown) => !parentMap.has(p.id));
 
   if (rootProblems.length === 0) {
     // If no root problems, use all problems as roots (fallback)
@@ -198,6 +193,8 @@ function buildLearningPaths(problems: SupabaseProblem[], parentMap: Map<string, 
 // ------------------------------------------------------------
 // Reusable UI Components
 // ------------------------------------------------------------
+// Reusable UI Components
+// ------------------------------------------------------------
 
 /**
  * StatBar Component - Displays a progress bar with label and percentage
@@ -261,10 +258,7 @@ function LeaderboardCard() {
 }
 
 /**
- * RecommendedProblems Component - Shows personalized problem recommendations
- * Displays problems with XP, difficulty, tags, and unlock status
- * Fetches from Supabase
- */
+ * RecommendedProblems Component - Shows personalized problem recommendations   */
 function RecommendedProblems() {
   const [recommendedProblems, setRecommendedProblems] = useState<ProblemDisplay[]>([]);
   const [isLoading, setIsLoading] = useState(true);

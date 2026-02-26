@@ -4,7 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { Mail, MessageCircle, Heart, FileText, Shield } from "lucide-react";
 
-const FooterSeo = () => {
+const Footer = () => {
     return (
         <footer className="w-full bg-gradient-to-b from-gray-50 to-gray-100 border-t border-gray-200 mt-auto">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -177,6 +177,7 @@ const FooterSeo = () => {
                         {/* Logo and Copyright */}
                         <div className="flex items-center gap-3">
                             <div className="relative w-8 h-8">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img
                                     src="/noilab_logo.png"
                                     alt="NOI.LAB Logo"
@@ -242,4 +243,4 @@ const FooterSeo = () => {
     );
 };
 
-export default FooterSeo;
+export default Footer;

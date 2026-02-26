@@ -3,7 +3,6 @@
 
 "use client"
 import React, { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -338,10 +337,6 @@ export default function Problems() {
   const [selectedLevel, setSelectedLevel] = useState("All");
   const [selectedAge, setSelectedAge] = useState("All");
 
-  // State for auto-opening problem dialog when navigating from Dashboard
-  const [autoOpenProblemId, setAutoOpenProblemId] = useState<string | null>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-
   // Fetch problems from Supabase on mount
   useEffect(() => {
     const fetchProblems = async () => {
@@ -380,8 +375,6 @@ export default function Problems() {
         // Check if the problem exists in the loaded problems
         const problemExists = problems.some(p => p.id === selectedProblemId);
         if (problemExists) {
-          setAutoOpenProblemId(selectedProblemId);
-          setIsDialogOpen(true);
           // Scroll to the problem element after a short delay to ensure it's rendered
           setTimeout(() => {
             const problemElement = document.querySelector(`[data-problem-id="${selectedProblemId}"]`);

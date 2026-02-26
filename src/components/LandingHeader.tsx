@@ -17,16 +17,15 @@ export default function LandingHeader() {
             <div className="flex items-center gap-4">
                 {/* Help Link */}
                 <Link
-                    href="/landing"
+                    href="/"
                     className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors mr-2"
                 >
                     <HelpCircle className="h-4 w-4" />
                     <span>FAQ/Help</span>
                 </Link>
 
-                {/* Auth Buttons */}
                 <div className="flex items-center gap-2">
-                    <Link href="/">
+                    <Link href="/login">
                         <Button
                             variant="ghost"
                             className="text-sm font-semibold text-gray-700 hover:bg-gray-100 rounded-md py-2 px-4 h-9"
@@ -34,7 +33,7 @@ export default function LandingHeader() {
                             Sign in
                         </Button>
                     </Link>
-                    <Link href="/">
+                    <Link href="/login">
                         <Button
                             className="bg-gray-900 text-white hover:bg-black text-sm font-semibold rounded-md py-2 px-4 h-9 shadow-sm"
                         >

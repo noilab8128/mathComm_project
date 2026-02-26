@@ -27,12 +27,12 @@ const TermsPage = () => {
                     <div className="prose prose-lg max-w-none">
                         <h2 className="text-3xl font-bold text-gray-900 mb-6">1. Acceptance of Terms</h2>
                         <p className="text-gray-600 mb-6 leading-relaxed">
-                            By accessing and using NOI.LAB's services, you accept and agree to be bound by the terms and provisions of this agreement. If you do not agree to abide by the above, please do not use this service.
+                            By accessing and using NOI.LAB&apos;s services, you accept and agree to be bound by the terms and provisions of this agreement. If you do not agree to abide by the above, please do not use this service.
                         </p>
 
                         <h2 className="text-3xl font-bold text-gray-900 mb-6 mt-10">2. Use License</h2>
                         <p className="text-gray-600 mb-4 leading-relaxed">
-                            Permission is granted to temporarily access the materials on NOI.LAB's platform for personal, non-commercial use only. This is the grant of a license, not a transfer of title, and under this license you may not:
+                            Permission is granted to temporarily access the materials on NOI.LAB&apos;s platform for personal, non-commercial use only. This is the grant of a license, not a transfer of title, and under this license you may not:
                         </p>
                         <ul className="space-y-2 mb-6">
                             <li className="flex items-start gap-3 text-gray-600">
@@ -45,7 +45,7 @@ const TermsPage = () => {
                             </li>
                             <li className="flex items-start gap-3 text-gray-600">
                                 <AlertCircle className="h-5 w-5 text-indigo-600 mt-1 flex-shrink-0" />
-                                <span>Attempt to reverse engineer any software contained on NOI.LAB's platform</span>
+                                <span>Attempt to reverse engineer any software contained on NOI.LAB&apos;s platform</span>
                             </li>
                             <li className="flex items-start gap-3 text-gray-600">
                                 <AlertCircle className="h-5 w-5 text-indigo-600 mt-1 flex-shrink-0" />
@@ -53,9 +53,11 @@ const TermsPage = () => {
                             </li>
                         </ul>
 
-                        <h2 className="text-3xl font-bold text-gray-900 mb-6 mt-10">3. User Accounts</h2>
-                        <p className="text-gray-600 mb-6 leading-relaxed">
-                            When you create an account with us, you must provide accurate, complete, and current information. Failure to do so constitutes a breach of the Terms, which may result in immediate termination of your account.
+                        <h2 className="text-xl font-bold text-gray-900 mb-4">4. Content and Intellectual Property</h2>
+
+                        <h3 className="text-lg font-semibold text-gray-800 mb-2 mt-6">4.1 Platform Content</h3>
+                        <p className="text-gray-700 leading-relaxed mb-4">
+                            All content on MathQuest, including but not limited to algorithms, curricula, problem sets, designs, and text, is owned by or licensed to NOI.LAB and is protected by intellectual property laws. You may not copy, modify, distribute, or reverse engineer any part of the platform without explicit written permission. It&apos;s illegal to copy content.
                         </p>
 
                         <h2 className="text-3xl font-bold text-gray-900 mb-6 mt-10">4. Intellectual Property</h2>
@@ -64,8 +66,8 @@ const TermsPage = () => {
                         </p>
 
                         <h2 className="text-3xl font-bold text-gray-900 mb-6 mt-10">5. User Content</h2>
-                        <p className="text-gray-600 mb-6 leading-relaxed">
-                            You retain all rights to any content you submit, post, or display on or through the service. By submitting content, you grant us a worldwide, non-exclusive, royalty-free license to use, reproduce, and distribute such content.
+                        <p className="text-gray-700 leading-relaxed mb-4">
+                            You may choose to, or we may invite you to submit comments, feedback, or ideas about MathQuest (&quot;Feedback&quot;). By submitting Feedback, you agree that we are free to use it without any restriction or compensation to you. We don&apos;t waive any rights to use similar or related ideas previously known to us, developed by our employees, or obtained from other sources.
                         </p>
 
                         <h2 className="text-3xl font-bold text-gray-900 mb-6 mt-10">6. Prohibited Activities</h2>
@@ -103,7 +105,7 @@ const TermsPage = () => {
 
                         <h2 className="text-3xl font-bold text-gray-900 mb-6 mt-10">9. Changes to Terms</h2>
                         <p className="text-gray-600 mb-6 leading-relaxed">
-                            We reserve the right to modify or replace these Terms at any time. If a revision is material, we will provide at least 30 days' notice prior to any new terms taking effect.
+                            We reserve the right to modify or replace these Terms at any time. If a revision is material, we will provide at least 30 days&apos; notice prior to any new terms taking effect.
                         </p>
 
                         <h2 className="text-3xl font-bold text-gray-900 mb-6 mt-10">10. Contact Us</h2>

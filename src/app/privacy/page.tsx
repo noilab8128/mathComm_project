@@ -150,29 +150,25 @@ const PrivacyPage = () => {
                             We use cookies and similar tracking technologies to collect information about your browsing activities. You can control cookies through your browser settings and other tools.
                         </p>
 
-                        <h2 className="text-3xl font-bold text-gray-900 mb-6 mt-10">7. Children's Privacy</h2>
+                        <h2 className="text-3xl font-bold text-gray-900 mb-6 mt-10">7. Children&apos;s Privacy</h2>
                         <p className="text-gray-600 mb-6 leading-relaxed">
                             Our service is not intended for children under 13 years of age. We do not knowingly collect personal information from children under 13.
                         </p>
 
                         <h2 className="text-3xl font-bold text-gray-900 mb-6 mt-10">8. Changes to Privacy Policy</h2>
                         <p className="text-gray-600 mb-6 leading-relaxed">
-                            We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the "Last updated" date.
+                            We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the &quot;Last updated&quot; date.
                         </p>
 
-                        <h2 className="text-3xl font-bold text-gray-900 mb-6 mt-10">9. Contact Us</h2>
-                        <p className="text-gray-600 mb-4 leading-relaxed">
-                            If you have questions about this Privacy Policy, please contact us:
+                        <h2 className="text-xl font-bold text-gray-900 mb-4">9. Contact Us</h2>
+                        <p className="text-gray-700 leading-relaxed mb-4">
+                            If you have any questions or concerns about this Privacy Policy or our data practices, please contact our Data Protection Officer at:
                         </p>
-                        <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg p-6 border border-indigo-100">
-                            <p className="text-gray-700 font-medium mb-2 flex items-center gap-2">
-                                <Bell className="h-5 w-5 text-indigo-600" />
-                                Email: privacy@noilab.com
-                            </p>
-                            <p className="text-gray-700 font-medium flex items-center gap-2">
-                                <Shield className="h-5 w-5 text-indigo-600" />
-                                Data Protection Officer: dpo@noilab.com
-                            </p>
+                        <div className="bg-gray-50 border border-gray-100 rounded-lg p-6">
+                            <p className="font-semibold text-gray-900 mb-2">NOI.LAB Privacy Team</p>
+                            <p className="text-gray-600">Email: privacy@noilab.com</p>
+                            <p className="text-gray-600">Address: 123 Education Way, Suite 400, Tech District</p>
+                            <p className="text-gray-600 mt-4 text-sm italic">Please include &quot;Privacy Inquiry&quot; in your subject line for faster routing.</p>
                         </div>
                     </div>
                 </div>
