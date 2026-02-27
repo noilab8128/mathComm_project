@@ -3,7 +3,6 @@
 
 "use client"
 import React, { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -15,13 +14,28 @@ import { BookOpen, Send, Lock, Unlock, Star, Filter, Loader2 } from "lucide-reac
 import MathPreview from "@/components/MathPreview";
 import { problemsAPI, getDifficultyLabel, type Problem as SupabaseProblem } from "@/lib/supabase";
 
-// Progressive Magic Square Problems for Teaching (data imported from shared module)
+// Convert Supabase Problem to component format
+export interface ProblemDisplay {
+  id: string;
+  title: string;
+  level: string;
+  age: string;
+  xp: number;
+  difficulty: string;
+  tags: string[];
+  unlocked: boolean;
+  content: string;
+  hint?: string;
+  solution?: string;
+  category_path?: string;
+}
+
 /**
  * ProblemDialog Component - Modal for solving individual math problems
  * Features two solution modes: written proof and auto-check
  * @param problem - Problem object with metadata and unlock status
  */
-function ProblemDialog({ problem }: { problem: any }) {
+function ProblemDialog({ problem }: { problem: ProblemDisplay }) {
   // State to track active solution mode (write or auto-check)
   const [tab, setTab] = React.useState<"write" | "auto">("write");
   const [solutionDraft, setSolutionDraft] = React.useState("");
@@ -30,7 +44,7 @@ function ProblemDialog({ problem }: { problem: any }) {
   const [previewHtml, setPreviewHtml] = React.useState("");
   const [previewError, setPreviewError] = React.useState<string | null>(null);
   const [previewSource, setPreviewSource] = React.useState("");
-  
+
   // State for problem content rendering (LaTeX)
   const [problemHtml, setProblemHtml] = React.useState<string>("");
   const [problemContentLoading, setProblemContentLoading] = React.useState(true);
@@ -118,7 +132,7 @@ function ProblemDialog({ problem }: { problem: any }) {
 
     loadProblemContent();
   }, [problem?.content]);
-  
+
   return (
     <DialogContent className="flex w-[95vw] max-w-7xl max-h-[90vh] flex-col overflow-y-auto p-6 bg-white border-2 border-gray-200 text-sm text-gray-800 shadow-2xl">
       <DialogHeader className="space-y-2">
@@ -282,26 +296,15 @@ function ProblemDialog({ problem }: { problem: any }) {
   );
 }
 
-// Convert Supabase Problem to component format
-interface ProblemDisplay {
-  id: string;
-  title: string;
-  level: string;
-  age: string;
-  xp: number;
-  difficulty: string;
-  tags: string[];
-  unlocked: boolean;
-  content: string;
-  hint?: string;
-  solution?: string;
-  category_path?: string;
-}
+
 
 // Convert Supabase Problem to display format
 function convertSupabaseProblem(sp: SupabaseProblem): ProblemDisplay {
   // All problems should be unlocked regardless of hierarchy position
   // (parent_problem_id, children, etc.)
+  const solutions = (sp as unknown as { solutions: { content: string }[] }).solutions;
+  const solutionContent = solutions && solutions.length > 0 ? solutions[0].content : null;
+
   return {
     id: sp.id,
     title: sp.title,
@@ -313,7 +316,7 @@ function convertSupabaseProblem(sp: SupabaseProblem): ProblemDisplay {
     unlocked: true, // All problems unlocked - no hierarchy restrictions
     content: sp.content,
     hint: undefined, // Can be added from concepts or other fields
-    solution: sp.solution,
+    solution: solutionContent || undefined,
     category_path: sp.category_path,
   };
 }
@@ -329,15 +332,11 @@ export default function Problems() {
   const [problems, setProblems] = useState<ProblemDisplay[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   // State for filtering
   const [selectedLevel, setSelectedLevel] = useState("All");
   const [selectedAge, setSelectedAge] = useState("All");
-  
-  // State for auto-opening problem dialog when navigating from Dashboard
-  const [autoOpenProblemId, setAutoOpenProblemId] = useState<string | null>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  
+
   // Fetch problems from Supabase on mount
   useEffect(() => {
     const fetchProblems = async () => {
@@ -353,9 +352,10 @@ export default function Problems() {
           return converted;
         });
         setProblems(convertedProblems);
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Failed to fetch problems from Supabase:', err);
-        setError(err.message || 'Failed to load problems. Please check your connection.');
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+        setError(errorMessage || 'Failed to load problems. Please check your connection.');
         // Fallback to empty array on error
         setProblems([]);
       } finally {
@@ -365,7 +365,7 @@ export default function Problems() {
 
     fetchProblems();
   }, []);
-  
+
   // Check for selectedProblemId in sessionStorage when component mounts or problems are loaded
   // and auto-open the dialog for that problem
   useEffect(() => {
@@ -375,8 +375,6 @@ export default function Problems() {
         // Check if the problem exists in the loaded problems
         const problemExists = problems.some(p => p.id === selectedProblemId);
         if (problemExists) {
-          setAutoOpenProblemId(selectedProblemId);
-          setIsDialogOpen(true);
           // Scroll to the problem element after a short delay to ensure it's rendered
           setTimeout(() => {
             const problemElement = document.querySelector(`[data-problem-id="${selectedProblemId}"]`);
@@ -400,18 +398,18 @@ export default function Problems() {
       }
     }
   }, [isLoading, problems]);
-  
+
   // Filter problems based on selected criteria
   const filteredProblems = problems.filter(problem => {
     const levelMatch = selectedLevel === "All" || problem.level === selectedLevel;
     const ageMatch = selectedAge === "All" || problem.age === selectedAge;
     return levelMatch && ageMatch;
   });
-  
+
   // Get unique levels and ages for filter options
   const levels = ["All", ...new Set(problems.map(p => p.level).filter(Boolean))];
   const ages = ["All", ...new Set(problems.map(p => p.age).filter(Boolean))];
-  
+
   return (
     <div className="p-4 space-y-4 bg-white text-gray-800">
       {/* Header with filtering options */}
@@ -423,55 +421,53 @@ export default function Problems() {
             <span className="text-sm text-gray-500">Filter by:</span>
           </div>
         </div>
-        
+
         {/* Filter Controls */}
         <div className="flex flex-wrap gap-4">
-              {/* Level Filter */}
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-gray-800">Level:</span>
-                <div className="flex gap-1">
-                  {levels.map(level => (
-                    <Button
-                      key={level}
-                      size="sm"
-                      variant={selectedLevel === level ? "default" : "outline"}
-                      onClick={() => setSelectedLevel(level)}
-                      className={`text-xs ${
-                        selectedLevel === level 
-                          ? "bg-blue-600 text-white hover:bg-blue-700" 
-                          : "border-gray-300 text-gray-700 hover:bg-gray-100"
-                      }`}
-                    >
-                      {level}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-              
-              {/* Age Filter */}
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-gray-800">Age:</span>
-                <div className="flex gap-1">
-                  {ages.map(age => (
-                    <Button
-                      key={age}
-                      size="sm"
-                      variant={selectedAge === age ? "default" : "outline"}
-                      onClick={() => setSelectedAge(age)}
-                      className={`text-xs ${
-                        selectedAge === age 
-                          ? "bg-blue-600 text-white hover:bg-blue-700" 
-                          : "border-gray-300 text-gray-700 hover:bg-gray-100"
-                      }`}
-                    >
-                      {age}
-                    </Button>
-                  ))}
-                </div>
-              </div>
+          {/* Level Filter */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-800">Level:</span>
+            <div className="flex gap-1">
+              {levels.map(level => (
+                <Button
+                  key={level}
+                  size="sm"
+                  variant={selectedLevel === level ? "default" : "outline"}
+                  onClick={() => setSelectedLevel(level)}
+                  className={`text-xs ${selectedLevel === level
+                    ? "bg-blue-600 text-white hover:bg-blue-700"
+                    : "border-gray-300 text-gray-700 hover:bg-gray-100"
+                    }`}
+                >
+                  {level}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          {/* Age Filter */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-800">Age:</span>
+            <div className="flex gap-1">
+              {ages.map(age => (
+                <Button
+                  key={age}
+                  size="sm"
+                  variant={selectedAge === age ? "default" : "outline"}
+                  onClick={() => setSelectedAge(age)}
+                  className={`text-xs ${selectedAge === age
+                    ? "bg-blue-600 text-white hover:bg-blue-700"
+                    : "border-gray-300 text-gray-700 hover:bg-gray-100"
+                    }`}
+                >
+                  {age}
+                </Button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
-      
+
       {/* Loading State */}
       {isLoading && (
         <div className="flex items-center justify-center h-[560px] rounded-xl border border-gray-200 bg-white">
@@ -504,16 +500,15 @@ export default function Problems() {
             {filteredProblems.map((problem) => {
               const isOlympiad = problem.level === "Olympiad";
               const isBeginner = problem.level === "Beginner";
-              
+
               return (
-                <div 
+                <div
                   key={problem.id}
                   data-problem-id={problem.id}
-                  className={`rounded-lg border p-3 flex items-center justify-between bg-white border-gray-200 shadow-sm ${
-                    isOlympiad ? 'border-yellow-300 bg-yellow-50' :
+                  className={`rounded-lg border p-3 flex items-center justify-between bg-white border-gray-200 shadow-sm ${isOlympiad ? 'border-yellow-300 bg-yellow-50' :
                     isBeginner ? 'border-green-300 bg-green-50' :
-                    ''
-                  }`}
+                      ''
+                    }`}
                 >
                   <div className="flex-1">
                     <div className="font-semibold text-gray-800">{problem.title}</div>
@@ -537,8 +532,8 @@ export default function Problems() {
                   </div>
                   <Dialog>
                     <DialogTrigger asChild>
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         variant="outline"
                         className="border-gray-300 text-gray-700 hover:bg-gray-100"
                       >
@@ -550,7 +545,7 @@ export default function Problems() {
                 </div>
               );
             })}
-            
+
             {/* Show message if no problems match filter */}
             {filteredProblems.length === 0 && !isLoading && (
               <div className="text-center py-8 text-gray-500">

@@ -25,7 +25,7 @@ export function useLearningSync() {
     // Provide a safe fallback so components can be used standalone
     return {
       selectedNode: null,
-      setSelectedNode: (_: string | null) => {},
+      setSelectedNode: () => { },
     };
   }
   return ctx;

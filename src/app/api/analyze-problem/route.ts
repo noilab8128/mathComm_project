@@ -8,9 +8,11 @@ const openai = new OpenAI({
 
 export async function POST(request: NextRequest) {
   try {
-    const { imageBase64, action } = await request.json();
+    const { imageBase64, imagesBase64, action, context } = await request.json();
+    const images = imagesBase64 || (imageBase64 ? [imageBase64] : []);
+    console.log(`Action: ${action}, Images count: ${images.length}`);
 
-    if (!imageBase64) {
+    if (images.length === 0) {
       return NextResponse.json(
         { error: 'Image data is required' },
         { status: 400 }
@@ -21,7 +23,7 @@ export async function POST(request: NextRequest) {
     if (!process.env.OPENAI_API_KEY) {
       console.error('OPENAI_API_KEY is not set in environment variables');
       return NextResponse.json(
-        { 
+        {
           error: 'OpenAI API key is not configured',
           hint: 'Please create .env.local file with OPENAI_API_KEY=your-key and restart the server'
         },
@@ -29,7 +31,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('OpenAI API Key configured:', process.env.OPENAI_API_KEY.substring(0, 7) + '...');
+    const keyPrefix = process.env.OPENAI_API_KEY.substring(0, 7);
+    console.log('OpenAI API Key configured:', keyPrefix + '...');
 
     // action에 따라 다른 프롬프트 사용
     let systemPrompt = '';
@@ -38,62 +41,83 @@ export async function POST(request: NextRequest) {
     if (action === 'analyze') {
       systemPrompt = `You are an expert mathematics problem analyzer. You MUST respond with valid JSON only.
 
-Available categories (choose the most specific match):
-- Level 1: Algebra, Geometry, Analysis, Number Theory, Combinatorics & Discrete Mathematics, Probability & Statistics, Optimization Theory, Numerical Analysis, Cryptography, Game Theory
-- Level 2 (Algebra): Elementary Algebra, Linear Algebra, Abstract Algebra
-- Level 2 (Geometry): Euclidean Geometry, Analytic Geometry, Differential Geometry, Topology
-- Level 2 (Analysis): Calculus, Complex Analysis, Real Analysis, Differential Equations
-- Level 2 (Number Theory): Elementary Number Theory, Analytic Number Theory
-- Level 3 (Elementary Algebra): Polynomials, Equations and Inequalities, Factorization, Exponents and Logarithms
-- Level 3 (Calculus): Limits and Continuity, Differentiation, Integration, Series
-- And more...
+Extract from the image(s):
+1. Problem statement text with KaTeX syntax.
+2. Diagrams/graphs description if present.
+3. ALL Solution(s) present. If multiple distinct solving methods, alternative solutions, or step-by-step variations exist in the text/images, you MUST extract EACH ONE separately.
+4. Difficulty (1-10).
+5. Specific category following the hierarchy: Level 1 > Level 2 > Level 3.
 
-Extract from the image:
-1. Problem statement text with KaTeX syntax
-2. Diagrams/graphs
-3. Solution if present
-4. Difficulty (1-10): 1-3=Easy, 4-6=Medium, 7-9=Hard, 10=Olympic
-5. Category hierarchy (be specific)
+CRITICAL: If the input contains multiple solving methods (e.g., "Method 1", "Method 2", "Alternative Solution"), create a separate object in the "solutions" array for each.
 
 CRITICAL: Respond ONLY with valid JSON:
 {
-  "title": "Brief descriptive title (5-10 words)",
-  "content": "Full problem with KaTeX: \\\\( inline \\\\) or \\\\[ display \\\\]",
-  "solution": "Solution with KaTeX or empty string",
+  "title": "Brief descriptive title",
+  "content": "Full problem with KaTeX",
+  "solutions": [
+    {"title": "Method 1: ...", "content": "..."},
+    {"title": "Alternative Method: ...", "content": "..."}
+  ],
   "difficulty": 5,
-  "categoryLevel1": "Algebra",
-  "categoryLevel2": "Elementary Algebra",
-  "categoryLevel3": "Polynomials",
-  "categoryConfidence": 0.9,
-  "hasDiagrams": true|false,
-  "diagramDescription": "Description",
+  "category": "Level 1 > Level 2 > Level 3",
   "concepts": ["concept1", "concept2"]
-}`;
+}
+CRITICAL: Do NOT wrap the JSON in markdown code blocks like \` \` \`json. Respond with the raw JSON string only. No preamble or postscript.`;
 
-      userPrompt = 'Analyze this math problem. Identify the most specific category from the hierarchy. Respond with ONLY valid JSON.';
-    } else if (action === 'generate-related') {
-      systemPrompt = `You are an expert mathematics problem generator. Based on the given problem, create related problems that focus on the underlying mathematical concepts.
+      userPrompt = 'Analyze this math problem. Extract all details. If there are multiple solutions, extract each one separately. Respond with ONLY valid JSON.';
+    } else if (action === 'bulk-analyze') {
+      const { problemPages, solutionPages, questionIndices } = context || {};
+      systemPrompt = `You are an expert mathematics educator and problem extractor. You MUST respond with valid JSON only.
 
-Respond in JSON format with:
+Based on the provided image(s), identify and extract math problems.
+${problemPages ? `IMPORTANT: Focus ONLY on problems from pages: ${problemPages}` : ""}
+${solutionPages ? `IMPORTANT: Look for solutions on pages: ${solutionPages}` : ""}
+${questionIndices ? `VERY IMPORTANT: Extract ONLY question numbers: ${questionIndices}` : "Extract all visible problems."}
+
+For each problem, you must extract ALL corresponding solutions if present. 
+CRITICAL: Many problems have multiple distinct solutions (e.g., "Solution 1", "Solution 2", "Alternative Way"). You MUST identify and extract EACH distinct solution separately into the "solutions" array.
+
+CRITICAL: Respond ONLY with valid JSON in this format:
 {
-  "relatedProblems": [
+  "problems": [
     {
-      "title": "Problem title",
-      "content": "Problem with KaTeX formulas",
-      "solution": "Solution with KaTeX formulas",
+      "title": "Descriptive title for problem 1",
+      "content": "Full problem 1 content with KaTeX",
+      "solutions": [
+        {"title": "Method 1: [Descriptive title]", "content": "Full solution 1 content with KaTeX"},
+        {"title": "Method 2: [Descriptive title]", "content": "Full solution 2 content with KaTeX"}
+      ],
       "difficulty": 1-10,
-      "category": "Category",
-      "concept": "Core concept this problem teaches"
+      "category": "Level 1 > Level 2 > Level 3"
+    },
+    ...
+  ]
+}
+CRITICAL: Do NOT wrap the JSON in markdown code blocks. Respond with ONLY the raw JSON object. No preamble, no explanation, no markdown tags.`;
+
+      userPrompt = `Extract ${questionIndices ? `questions ${questionIndices}` : "all problems"} and their solutions from these images. Organize them into the specified JSON format. Respond with ONLY valid JSON.`;
+    } else if (action === 'extract-solution') {
+      systemPrompt = `You are an expert mathematics solution analyzer. You MUST respond with valid JSON only.
+Based on the image(s) provided, extract the full step-by-step solution(s). 
+If the images contain multiple distinct solutions or methods, extract each as a separate entry in the 'solutions' array.
+
+CRITICAL: Respond ONLY with valid JSON:
+{
+  "solutions": [
+    {
+      "title": "Solution 1: [Descriptive title]",
+      "content": "Full detailed solution using KaTeX syntax",
+      "explanation": "Brief summary of the method"
     }
   ]
 }`;
 
-      userPrompt = 'Generate 2-3 related problems that teach the fundamental concepts needed to solve this problem.';
+      userPrompt = 'Extract all solutions from these image(s). If multiple methods are shown, separate them. Respond with ONLY valid JSON.';
     }
 
     // OpenAI Vision API 호출
     const response = await openai.chat.completions.create({
-      model: 'gpt-4o', // GPT-4 Vision model
+      model: 'gpt-4o',
       messages: [
         {
           role: 'system',
@@ -106,18 +130,18 @@ Respond in JSON format with:
               type: 'text',
               text: userPrompt,
             },
-            {
+            ...images.map((img: string) => ({
               type: 'image_url',
               image_url: {
-                url: imageBase64,
+                url: img,
               },
-            },
+            })),
           ],
         },
       ],
-      max_tokens: 2000,
+      max_tokens: 16384,
       temperature: 0.3,
-      response_format: { type: "json_object" }, // Force JSON response
+      response_format: { type: "json_object" },
     });
 
     const aiResponse = response.choices[0]?.message?.content;
@@ -131,20 +155,46 @@ Respond in JSON format with:
 
     console.log('Raw AI Response:', aiResponse);
 
+    // JSON 파싱 전 전처리: 마크다운 코드 블록(```json ... ```) 제거
+    let cleanJson = aiResponse.trim();
+    if (cleanJson.startsWith('```')) {
+      const match = cleanJson.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+      if (match && match[1]) {
+        cleanJson = match[1].trim();
+      }
+    }
+
     // JSON 파싱
     let parsedResponse;
     try {
-      parsedResponse = JSON.parse(aiResponse);
+      parsedResponse = JSON.parse(cleanJson);
+
+      // 데이터 정규화 및 하위 호환성 유지
+      const normalizeProblem = (p: any) => {
+        if (p.solutions && Array.isArray(p.solutions) && p.solutions.length > 0) {
+          if (!p.solution) {
+            p.solution = p.solutions[0].content;
+          }
+        } else if (p.solution && (!p.solutions || p.solutions.length === 0)) {
+          p.solutions = [
+            { title: 'Standard Solution', content: p.solution }
+          ];
+        }
+        return p;
+      };
+
+      if (action === 'bulk-analyze' && parsedResponse.problems && Array.isArray(parsedResponse.problems)) {
+        parsedResponse.problems = parsedResponse.problems.map(normalizeProblem);
+      } else {
+        parsedResponse = normalizeProblem(parsedResponse);
+      }
     } catch (e) {
-      // JSON 파싱 실패 시 텍스트 응답 반환
       console.error('JSON Parse Error:', e);
-      console.error('Failed to parse:', aiResponse);
-      
       return NextResponse.json({
         success: false,
-        error: 'Failed to parse AI response as JSON. The AI may have returned text instead of JSON.',
+        error: 'Failed to parse AI response as JSON.',
         rawResponse: aiResponse,
-        hint: 'This usually happens if the model did not use json_object mode. Check if you are using a compatible model.',
+        cleanJsonAttempt: cleanJson,
       }, { status: 500 });
     }
 
@@ -155,12 +205,23 @@ Respond in JSON format with:
 
   } catch (error: any) {
     console.error('OpenAI API Error:', error);
+
+    // Check for OpenAI specific errors
+    if (error.status === 413 || error.code === 'payload_too_large') {
+      return NextResponse.json(
+        { error: 'The image file is too large for the AI to process. Please try a smaller image.' },
+        { status: 413 }
+      );
+    }
+
     return NextResponse.json(
       {
         error: error.message || 'Failed to analyze problem',
-        details: error.response?.data || null,
+        status: error.status,
+        code: error.code,
+        details: error.response?.data || error.error || null,
       },
-      { status: 500 }
+      { status: error.status || 500 }
     );
   }
 }

@@ -76,7 +76,7 @@ export function convertProblemsToCSV(problems: Problem[]): string {
 /**
  * Escape CSV values (handle commas, quotes, newlines)
  */
-function escapeCsvValue(value: any): string {
+function escapeCsvValue(value: string | number | boolean | null | undefined): string {
   if (value === null || value === undefined) {
     return '';
   }
@@ -133,7 +133,7 @@ function getDifficultyLabel(difficulty: number): string {
  */
 export function exportProblemsToCSV(problems: Problem[], filename?: string) {
   const csvContent = convertProblemsToCSV(problems);
-  
+
   if (!csvContent) {
     alert('No problems to export');
     return;
