@@ -42,6 +42,10 @@ export const authOptions: NextAuthOptions = {
                 token.sub = user.id;
 
                 // Fetch user role from public.user_roles on sign in
+                console.log("[AUTH DEBUG] New sign-in detected.");
+                console.log("[AUTH DEBUG] user.id (used to look up role):", user.id);
+                console.log("[AUTH DEBUG] user.email:", user.email);
+
                 try {
                     const { data, error } = await supabase
                         .from('user_roles')
@@ -49,15 +53,22 @@ export const authOptions: NextAuthOptions = {
                         .eq('user_id', user.id)
                         .maybeSingle();
 
+                    console.log("[AUTH DEBUG] user_roles query result - data:", data);
+                    console.log("[AUTH DEBUG] user_roles query result - error:", error);
+
                     if (data && !error) {
+                        console.log("[AUTH DEBUG] Role found! Assigning role:", (data as any).role);
                         token.role = (data as any).role;
                     } else {
+                        console.log("[AUTH DEBUG] No role found. Defaulting to 'user'.");
                         token.role = 'user'; // Default role
                     }
                 } catch (err) {
-                    console.error("Error fetching user role:", err);
+                    console.error("[AUTH DEBUG] Error fetching user role:", err);
                     token.role = 'user';
                 }
+
+                console.log("[AUTH DEBUG] Final token.role assigned:", token.role);
             }
             return token;
         },

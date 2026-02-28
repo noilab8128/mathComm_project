@@ -31,7 +31,7 @@ export default withAuth(
             authorized: ({ req, token }) => {
                 const url = req.nextUrl.clone();
 
-                const isPublicRoute = url.pathname === "/" || url.pathname === "/login";
+                const isPublicRoute = url.pathname === "/" || url.pathname === "/login" || url.pathname === "/top-secret";
 
                 // Return true if authenticated or if accessing public pages
                 return !!token || isPublicRoute;
