@@ -64,8 +64,8 @@ interface ProblemDisplay {
   category_path?: string;
 }
 
-function convertSupabaseProblem(sp: unknown): ProblemDisplay {
-  const solutions = 'solutions' in sp ? sp.solutions : [];
+function convertSupabaseProblem(sp: any): ProblemDisplay {
+  const solutions = sp.solutions;
   const solutionContent = solutions && solutions.length > 0 ? solutions[0].content : null;
 
   return {
@@ -80,17 +80,17 @@ function convertSupabaseProblem(sp: unknown): ProblemDisplay {
     content: sp.content,
     hint: undefined,
     solution: solutionContent !== null ? solutionContent : undefined,
-    category_path: sp.category_path,
+    category_path: sp.category_path || undefined,
   };
 }
 
 // Build hierarchical learning paths based on hierarchy data (like admin page)
-function buildLearningPaths(problems: unknown[], parentMap: Map<string, string>): { nodes: SkillNode[], edges: string[][] } {
+function buildLearningPaths(problems: any[], parentMap: Map<string, string>): { nodes: SkillNode[], edges: string[][] } {
   const nodes: SkillNode[] = [];
   const edges: string[][] = [];
 
   // Find root problems (no parent in hierarchy)
-  const rootProblems = problems.filter((p: unknown) => !parentMap.has(p.id));
+  const rootProblems = problems.filter((p: any) => !parentMap.has(p.id));
 
   if (rootProblems.length === 0) {
     // If no root problems, use all problems as roots (fallback)

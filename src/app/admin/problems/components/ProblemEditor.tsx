@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import MathPreview from "@/components/MathPreview";
-import { Problem, RelatedProblem, SolutionItem } from "../types";
+import { Problem, RelatedProblem, Solution } from "../types";
 import { CATEGORIES } from "@/lib/categories";
 
 interface ProblemEditorProps {
@@ -21,8 +21,8 @@ interface ProblemEditorProps {
     setProblemContent: (value: string) => void;
     solution: string;
     setSolution: (value: string) => void;
-    solutions: SolutionItem[];
-    setSolutions: (value: SolutionItem[]) => void;
+    solutions: Solution[];
+    setSolutions: (value: Solution[]) => void;
     difficulty: number;
     setDifficulty: (value: number) => void;
     category: string;

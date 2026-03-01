@@ -169,7 +169,7 @@ export default function ProblemManagementPage() {
     setProblemContent(problem.content);
     setSolution(problem.solution || "");
     setDifficulty(problem.difficulty);
-    setCategory(problem.category);
+    setCategory(problem.category || "");
     setDiagramImageUrl(problem.diagramImageUrl || "");
     setLinkedProblems(problem.linkedProblems || []);
     setUploadedFile(null);
@@ -298,7 +298,7 @@ export default function ProblemManagementPage() {
     };
 
     try {
-      const saved = await saveProblemToSupabase(problemToSave, selectedLevel1, selectedLevel2, selectedLevel3);
+      const saved = await saveProblemToSupabase(problemToSave, selectedLevel1, selectedLevel2, selectedLevel3) as Problem | null;
       if (saved) {
         // Now save all staged related problems with hierarchy
         // We need to know which solution/stage they belong to
@@ -335,7 +335,7 @@ export default function ProblemManagementPage() {
             const savedChild = await problemsAPI.create(problemData, [{
               content: relatedProblem.solution,
               sequence_order: 1
-            }] as any);
+            }] as any) as any;
 
             if (savedChild) {
               const stageName = concepts?.[0] || "Next Step";
@@ -896,7 +896,7 @@ export default function ProblemManagementPage() {
 
       // Update DB
       if (isDbConnected) {
-        await problemsAPI.update(linkEditSourceId, { parent_problem_id: newParentId });
+        await problemsAPI.update(linkEditSourceId, { parent_problem_id: newParentId } as any);
       }
 
       showToast("Parent problem updated!", "success");

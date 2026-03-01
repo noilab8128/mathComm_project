@@ -1,7 +1,8 @@
 export interface Solution {
     id?: string;
+    title?: string;
     content: string; // Markdown/LaTeX
-    sequenceOrder: number;
+    sequenceOrder?: number;
 }
 
 export interface Problem {
@@ -58,4 +59,7 @@ export interface RelatedProblem {
     difficulty: number;
     category: string;
     concepts?: string[]; // or stages
+    stage?: string;
+    concept?: string;
+    explanation?: string;
 }
