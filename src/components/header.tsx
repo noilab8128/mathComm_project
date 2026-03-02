@@ -48,16 +48,15 @@ const Header = () => {
                     {/* Right Side Actions - Absolute Right */}
                     <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center gap-3">
                         {/* Donate Button */}
-                        <button
+                        <a
+                            href="https://paypal.me/mookwonseo"
+                            target="_blank"
+                            rel="noopener noreferrer"
                             className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-lg hover:from-pink-600 hover:to-rose-600 transition-all shadow-sm hover:shadow-md font-medium text-sm"
-                            onClick={() => {
-                                // Add donate logic here
-                                console.log("Donate clicked");
-                            }}
                         >
                             <Heart className="h-4 w-4" />
                             Donate
-                        </button>
+                        </a>
 
                         {/* Menu Toggle and Dropdown Container */}
                         <div className="relative">
