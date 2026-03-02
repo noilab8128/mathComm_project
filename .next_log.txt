@@ -29,3 +29,4 @@ Database user creation error: {
  POST /api/auth/register 500 in 2026ms
  ✓ Compiled middleware in 111ms
  ✓ Compiled middleware in 22ms
+ ⚠ Found a change in next.config.ts. Restarting the server to apply the changes...
