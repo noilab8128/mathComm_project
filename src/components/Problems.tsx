@@ -317,7 +317,7 @@ function convertSupabaseProblem(sp: SupabaseProblem): ProblemDisplay {
     content: sp.content,
     hint: undefined, // Can be added from concepts or other fields
     solution: solutionContent || undefined,
-    category_path: sp.category_path,
+    category_path: sp.category_path || undefined,
   };
 }
 

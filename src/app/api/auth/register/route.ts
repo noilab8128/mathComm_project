@@ -1,0 +1,73 @@
+import { NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
+import bcrypt from "bcryptjs";
+
+export async function POST(req: Request) {
+    try {
+        const { email, password, turnstileToken } = await req.json();
+
+        // 1. Basic validation
+        if (!email || !password) {
+            return NextResponse.json({ message: "Email and password are required" }, { status: 400 });
+        }
+        if (password.length < 6) {
+            return NextResponse.json({ message: "Password must be at least 6 characters" }, { status: 400 });
+        }
+        if (!turnstileToken) {
+            return NextResponse.json({ message: "Please verify you are human" }, { status: 400 });
+        }
+
+        // Initialize Admin Supabase Client to access next_auth schema
+        const adminSupabase = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL as string,
+            process.env.SUPABASE_SERVICE_ROLE_KEY as string
+        );
+
+        // 2. Check if user already exists in next_auth schema
+        const { data: existingUser } = await adminSupabase
+            .schema("next_auth")
+            .from("users")
+            .select("id")
+            .eq("email", email)
+            .maybeSingle();
+
+        if (existingUser) {
+            return NextResponse.json({ message: "Email is already registered" }, { status: 409 });
+        }
+
+        // 3. Hash the password
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // 4. Create new user in next_auth.users table
+        const id = crypto.randomUUID();
+
+        const { error: createError } = await adminSupabase
+            .schema("next_auth")
+            .from("users")
+            .insert([
+                {
+                    id: id,
+                    email: email,
+                    password_hash: hashedPassword,
+                }
+            ]);
+
+        if (createError) {
+            console.error("Database user creation error:", createError);
+            // Fallback for cache issue explicitly mapped
+            if (createError.code === 'PGRST204') {
+                return NextResponse.json({ message: "Database schema cache needs reloading. Please restart the database or wait a moment." }, { status: 500 });
+            }
+            return NextResponse.json({ message: "Failed to create user account" }, { status: 500 });
+        }
+
+        // Construct the expected newUser shape for NextAuth
+        const newUser = { id, email };
+
+        return NextResponse.json({ message: "User created successfully", user: newUser }, { status: 201 });
+
+    } catch (error) {
+        console.error("Registration error:", error);
+        return NextResponse.json({ message: "Internal server error" }, { status: 500 });
+    }
+}

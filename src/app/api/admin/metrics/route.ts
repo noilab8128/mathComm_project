@@ -5,7 +5,6 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 
 export async function GET() {
     const session = await getServerSession(authOptions);
-    // @ts-expect-error - Custom role property
     if (session?.user?.role !== 'admin') {
         return new NextResponse('Unauthorized', { status: 403 });
     }
@@ -33,7 +32,8 @@ export async function GET() {
             activeProblems: activeProblems || 0,
             publishedNotices: publishedNotices || 0,
         });
-    } catch (e: any) {
-        return NextResponse.json({ error: e.message }, { status: 500 });
+    } catch (e: unknown) {
+        const err = e as Error;
+        return NextResponse.json({ error: err.message }, { status: 500 });
     }
 }

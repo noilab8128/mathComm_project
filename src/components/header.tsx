@@ -1,13 +1,12 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { Menu, Home, Settings, HelpCircle, LogOut, X, Search, Heart, ShieldAlert } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 
 const Header = () => {
     const { data: session } = useSession();
-    // @ts-expect-error - Custom role property in session
     const isAdmin = session?.user?.role === "admin";
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 

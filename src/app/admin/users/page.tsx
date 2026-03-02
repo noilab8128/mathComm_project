@@ -118,7 +118,7 @@ export default function UsersManagementPage() {
                             ) : filteredUsers.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={4} className="h-32 text-center text-gray-500">
-                                        No users found matching "{searchQuery}"
+                                        No users found matching &quot;{searchQuery}&quot;
                                     </TableCell>
                                 </TableRow>
                             ) : (
