@@ -33,9 +33,9 @@ export default function LandingHeader() {
                             Sign in
                         </Button>
                     </Link>
-                    <Link href="/login">
+                    <Link href="/login?mode=signup">
                         <Button
-                            className="bg-gray-900 text-white hover:bg-black text-sm font-semibold rounded-md py-2 px-4 h-9 shadow-sm"
+                            className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-full px-5 py-2 hover:shadow-md transition-all"
                         >
                             Sign up
                         </Button>

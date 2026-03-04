@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Shield, Lock, Eye, Database, UserCheck, Bell } from "lucide-react";
+import { Shield, Lock, Eye, Database, UserCheck } from 'lucide-react';
 
 const PrivacyPage = () => {
     const lastUpdated = "November 21, 2025";

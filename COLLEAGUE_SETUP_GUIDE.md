@@ -1,51 +1,135 @@
-# MathQuest 개발 환경 공지 (NextAuth & Admin 연동)
+# MathQuest - 로컬 개발 환경 셋업 가이드 (NextAuth 연동 이후)
 
-안녕하세요! 최근에 구글 로그인(NextAuth) 기능과 관리자(Admin) 대시보드가 추가되었습니다.
-두 사람이 **동일한 Supabase 데이터베이스**를 공유해서 사용하고 있기 때문에, DB 스키마는 이미 제가 업데이트를 마쳤습니다! 🎉
+이 문서는 최근 진행된 **NextAuth.js 인증 마이그레이션** 및 **라우팅 구조 변경** 이후, 동료 개발자가 프로젝트를 로컬에서 정상적으로 실행하고 이어서 개발하기 위해 필요한 사전 설정 단계들을 안내합니다.
 
-따라서 코드를 `pull` 받으신 후 **아래의 간단한 1~3번 과정만** 진행해 주시면 바로 개발에 참여하실 수 있습니다.
+## 1. 패키지 설치
+새로운 인증 라이브러리와 관련 패키지들이 추가되었습니다. 코드를 pull 받은 후 먼저 패키지를 업데이트해 주세요.
 
----
-
-## 1. 패키지 설치 (`npm install`)
-새로운 패키지들(`next-auth`, `@auth/supabase-adapter` 등)이 추가되었으므로 모듈 설치를 한 번 진행해 주세요.
 ```bash
 npm install
 ```
+*(추가된 주요 패키지: `next-auth`, `@auth/supabase-adapter`, `bcryptjs`, `react-turnstile` 등)*
 
-## 2. 환경 변수 (`.env.local`) 세팅 확인
-NextAuth와 서비스 전용 API 우회를 위해 추가된 환경 변수가 있습니다.
-본인의 로컬 `.env.local` 파일에 아래 변수들이 모두 들어가 있는지 확인해 주세요! (제가 사용하는 값과 동일하게 복사해 넣으시면 됩니다.)
+## 2. 환경 변수 (.env.local) 설정
+NextAuth 및 소셜 로그인 연동을 위해 `.env.local` 파일에 아래 환경 변수들이 추가되어야 합니다. (보안상 실제 키 값은 별도로 공유받아 입력해 주세요.)
 
 ```env
-# Next.js & NextAuth 기본 설정
-NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=your_jwt_secret_key_here
+# -----------------------------------------------------------------------------
+# NextAuth 기본 설정
+# -----------------------------------------------------------------------------
+# (http://localhost:3000 으로 설정. 배포 시에는 실제 도메인 입력)
+NEXTAUTH_URL="http://localhost:3000"
 
-# Google OAuth 클라이언트 정보
-GOOGLE_CLIENT_ID=your_google_client_id_here
-GOOGLE_CLIENT_SECRET=your_google_client_secret_here
+# (필수: JWT 암호화를 위한 비밀키. `openssl rand -base64 32` 명령어로 생성 가능)
+NEXTAUTH_SECRET="[공유받은 시크릿 키 입력]"
 
-# Supabase 공통 키 (기존 보유)
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url_here
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key_here
+# -----------------------------------------------------------------------------
+# 소셜 로그인 (OAuth) API 키
+# -----------------------------------------------------------------------------
+# Google OAuth
+GOOGLE_CLIENT_ID="[공유받은 구글 클라이언트 ID 입력]"
+GOOGLE_CLIENT_SECRET="[공유받은 구글 클라이언트 시크릿 입력]"
 
-# [추가됨] Supabase Admin (서버 사이드 API 검증용 Role Key)
-SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key_here
+# Facebook OAuth
+FACEBOOK_CLIENT_ID="[공유받은 페이스북 클라이언트 ID 입력]"
+FACEBOOK_CLIENT_SECRET="[공유받은 페이스북 클라이언트 시크릿 입력]"
+
+# -----------------------------------------------------------------------------
+# Turnstile (로봇 방지 캡챠) 설정
+# -----------------------------------------------------------------------------
+NEXT_PUBLIC_TURNSTILE_SITE_KEY="[공유받은 Cloudflare Turnstile Site Key 입력]"
+TURNSTILE_SECRET_KEY="[공유받은 Cloudflare Turnstile Secret Key 입력]"
 ```
 
-## 3. 어드민(Admin) 권한 부여 받기
-DB를 직접 열어서 수정하실 필요가 **전혀 없습니다!** 웹페이지(UI)에 관리자 권한을 부여하는 기능까지 모두 만들어 두었습니다.
+## 3. 플랫폼별 콜백 URL 설정 가이드 (실서버 및 로컬 동시 사용)
 
-1. 로컬 환경(`localhost:3000`)을 실행시킨 뒤, **구글로 최초 1회 로그인을 진행해 주세요.** (이때 자동으로 일반 'User' 계정이 생성됩니다.)
-2. 저에게 슬랙/카톡 등으로 메신저를 보내주세요. ("로그인 완료했습니다!")
-3. 제가 제 계정으로 어드민 페이지(`localhost:3000/admin/users`)에 접속해서 **버튼 클릭 한 번으로 Admin 권한을 부여해 드리겠습니다.**
-4. 권한 부여가 끝난 뒤, 기존 브라우저를 **새로고침** 하시면 좌측 메뉴 등에 `Admin Dashboard` 버튼이 활성화되는 것을 보실 수 있습니다!
+팀원들이 로컬에서 개발하면서 동시에 배포된 실서버(Netlify/Vercel 등) 환경에서도 인증이 정상 작동하도록 설정하는 방법입니다. 각 개발자 콘솔에서 **로컬 호스트(`http://localhost:3000`)와 실서버 도메인을 모두 등록**해 놓으면 한 개의 앱(클라이언트 ID)으로 두 환경을 모두 커버할 수 있습니다.
+
+### Google OAuth (Google Cloud Console)
+1. **API 및 서비스 > 사용자 인증 정보** 이동
+2. 생성된 OAuth 2.0 클라이언트 ID 클릭
+3. **승인된 리디렉션 URI** 항목에 다음 두 가지를 모두 추가:
+   - `http://localhost:3000/api/auth/callback/google`
+   - `https://[실제배포도메인.com]/api/auth/callback/google`
+
+### Facebook OAuth (Facebook Developers)
+1. 내 앱 > 설정 > 기본 설정 확인
+2. 좌측 메뉴 **설정 > 고급 설정** 또는 **제품 > Facebook 로그인 > 설정** 이동
+3. **유효한 OAuth 리디렉션 URI** 항목에 다음 두 가지를 모두 추가:
+   - `http://localhost:3000/api/auth/callback/facebook`
+   - `https://[실제배포도메인.com]/api/auth/callback/facebook`
+
+### Cloudflare Turnstile (캡챠)
+로컬 서버와 배포된 실서버에서 모두 Turnstile이 작동하려면 도메인 추가가 필요합니다.
+1. [Cloudflare Turnstile 대시보드](https://dash.cloudflare.com/?to=/:account/turnstile) 접속
+2. 생성한 위젯의 **Settings (설정)** 클릭
+3. **Domains (도메인)** 목록에 다음 두 가지를 모두 추가:
+   - `localhost` (127.0.0.1 도 포함)
+   - `[실제배포도메인.com]` (예: mathquest.netlify.app)
+> *주의:* 도메인을 등록하지 않은 환경에서는 Turnstile 위젯이 작동하지 않아 이메일 회원가입/로그인이 차단됩니다.
+
+### Supabase URL Configuration
+Supabase가 소셜 로그인 승인 후 인증 데이터를 NextAuth로 올바르게 넘겨주기 위한 설정입니다.
+1. Supabase 대시보드 > **Authentication > URL Configuration** 이동
+2. **Site URL:** 실서버 도메인 (예: `https://[실제배포도메인.com]`)
+3. **Redirect URLs:** `http://localhost:3000/*` 및 추가 배포 도메인 패턴들을 리스트에 추가
 
 ---
 
-### 주요 변경 파일 구조 요약 (충돌 방지 참고용)
-- **`src/app/api/auth/[...nextauth]/route.ts`** : 구글 로그인 처리
-- **`src/middleware.ts`** : 권한에 따른 라우팅 접근 제어 (`/admin` 접근 차단)
-- **`src/app/admin/users/page.tsx`** : 관리자가 직접 다른 유저의 권한을 제어할 수 있는 페이지
-- **기존 `_seo` 네이밍 정리** : `header_seo.tsx` ➡️ `header.tsx`, `footer_seo.tsx` ➡️ `footer.tsx` 로 깔끔하게 파일명을 변경했습니다.
+> **참고:** 기존에 사용하던 Supabase 관련 변수 (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`)는 그대로 유지되어야 합니다. NextAuth 어댑터가 내부적으로 이 값들을 사용하여 데이터베이스(`next_auth` 스키마)와 통신합니다.
+
+## 3. 데이터베이스 상태 (참고)
+* 인증 관련 데이터 처리가 기존 기본 Supabase Auth 영역에서 **`next_auth` 스키마 내의 테이블(users, accounts, sessions, verification_tokens)** 로 모두 마이그레이션 되었습니다.
+* 따라서 새로운 소셜 로그인이나 로컬 이메일 가입 유저의 정보는 해당 테이블들에 저장됩니다. (단, DB 스키마 업데이트는 이미 원격 Supabase에 반영되어 있으므로, 동일한 개발 DB를 사용 중이라면 별도의 로컬 마이그레이션 작업은 필요하지 않습니다.)
+
+## 4. 로컬 서버 실행 확인
+모든 설정이 완료되었다면, 서버를 실행하고 접속 및 로그인 플로우가 정상 작동하는지 확인합니다.
+
+```bash
+npm run dev
+```
+
+### 💡 주요 테스트 포인트
+1. `http://localhost:3000` (랜딩 페이지) 우상단의 **Log In / Sign Up** 버튼 통해 이동
+2. 구글, 페이스북, 일반 이메일(Credentials) 로그인 정상 작동 여부 
+3. 로그인 성공 시 정상적으로 `http://localhost:3000/dashboard` 로 리다이렉션 되는지 확인
+4. 권한 없는(비로그인) 상태로 `/dashboard` 나 `/admin` 접근 시 `/` 또는 `/login` 으로 튕겨내는지 확인 (Middleware 작동)
+
+셋업 과정에서 문제가 생기면 언제든 문의 바랍니다!
+
+---
+
+## 🚀 추가 안내: Netlify 실서버 배포 시 환경 변수 설정 방법
+
+로컬에서 사용한 `.env.local` 파일의 환경 변수들을 Netlify 배포 환경에도 똑같이 설정해 주어야 실서버에서 로그인 기능이 동작합니다. 아래 순서대로 Netlify 대시보드에서 설정해 주세요.
+
+1. **Netlify 대시보드 로그인:** [https://app.netlify.com/](https://app.netlify.com/) 에 로그인합니다.
+2. **사이트 선택:** 배포된 프로젝트(Site)를 클릭하여 상세 페이지로 들어갑니다.
+3. **Site 설정 이동:** 좌측 메뉴에서 **`Site configuration`** (또는 화면 상단의 `Site settings`) 메뉴를 클릭합니다.
+4. **환경 변수 메뉴 진입:** 좌측 서브 메뉴에서 **`Environment variables`** 항목을 찾아 클릭합니다.
+5. **Add a variable(변수 추가):** 화면에 보이는 `Add a variable` 버튼을 클릭한 뒤, `Add a single variable`(또는 Import)을 선택하여 변수를 하나씩 추가합니다.
+
+#### 📌 Netlify에 반드시 추가해야 할 환경 변수 목록
+> Key와 Value 칸에 각각 아래 내용을 복사해서 붙여넣기 해줍니다.
+
+| Key (변수명) | Value (값) | 설명 |
+| :--- | :--- | :--- |
+| `NEXTAUTH_URL` | `https://[본인의-Netlify-배포주소.netlify.app]` | **중요:** `localhost:3000`이 아닌 배포된 최종 도메인 주소 입력 |
+| `NEXTAUTH_SECRET` | `[로컬과 동일한 시크릿 키]` | 로컬 `.env.local`과 동일한 JWT 암호화 키 |
+| `GOOGLE_CLIENT_ID` | `[구글 클라이언트 ID]` | 로컬 `.env.local`과 동일 |
+| `GOOGLE_CLIENT_SECRET`| `[구글 클라이언트 시크릿]` | 로컬 `.env.local`과 동일 |
+| `FACEBOOK_CLIENT_ID` | `[페이스북 클라이언트 ID]` | 로컬 `.env.local`과 동일 |
+| `FACEBOOK_CLIENT_SECRET`| `[페이스북 클라이언트 시크릿]`| 로컬 `.env.local`과 동일 |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | `[Cloudflare 사이트 키]` | 로컬 `.env.local`과 동일 |
+| `TURNSTILE_SECRET_KEY` | `[Cloudflare 시크릿 키]` | 로컬 `.env.local`과 동일 |
+| `NEXT_PUBLIC_SUPABASE_URL` | `[Supabase URL]` | 로컬 `.env.local`과 동일 |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `[Supabase Anon 키]` | 로컬 `.env.local`과 동일 |
+| `SUPABASE_SERVICE_ROLE_KEY` | `[Supabase Service Role 키]`| 로컬 `.env.local`과 동일 |
+
+6. 모든 환경 변수를 입력했다면, 입력창 아래의 **`Save` (저장)** 버튼을 누릅니다.
+7. **(선택 사항이자 필수) 재배포(Re-deploy):** 환경 변수 변경 사항을 적용하기 위해 새로운 빌드가 필요합니다.
+   - 프로젝트 상단 탭에서 **`Deploys`** 로 이동합니다.
+   - 가장 최근 배포(Published) 내역 우측의 **`Trigger deploy`** 드롭다운 버튼을 클릭합니다.
+   - **`Clear cache and deploy site`** 를 선택하여 기존 캐시를 지우고 깨끗하게 새로 배포를 진행합니다.
+
+이 과정이 완료되면 Netlify 실서버 URL에서도 소셜 로그인 팝업과 이메일 인증이 정상적으로 작동하게 됩니다.

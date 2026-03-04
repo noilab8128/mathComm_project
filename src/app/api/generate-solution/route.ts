@@ -60,12 +60,13 @@ Format your response with clear steps and KaTeX formulas.`,
       solution,
     });
 
-  } catch (error: any) {
-    console.error('OpenAI API Error:', error);
+  } catch (error: unknown) {
+    const err = error as { message?: string, response?: { data?: unknown } };
+    console.error('OpenAI API Error:', err);
     return NextResponse.json(
       {
-        error: error.message || 'Failed to generate solution',
-        details: error.response?.data || null,
+        error: err.message || 'Failed to generate solution',
+        details: err.response?.data || null,
       },
       { status: 500 }
     );

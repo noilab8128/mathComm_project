@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     }
 
     const solutionsText = solutions && solutions.length > 0
-      ? solutions.map((s: any, i: number) => `Solution Method ${i + 1} (${s.title}):\n${s.content}`).join('\n\n')
+      ? solutions.map((s: { title: string, content: string }, i: number) => `Solution Method ${i + 1} (${s.title}):\n${s.content}`).join('\n\n')
       : 'No reference solutions provided.';
 
     const response = await openai.chat.completions.create({
@@ -125,12 +125,13 @@ Analyze this problem and all provided solution methods. Generate a comprehensive
       data: parsedResponse,
     });
 
-  } catch (error: any) {
-    console.error('OpenAI API Error:', error);
+  } catch (error: unknown) {
+    const err = error as { message?: string, response?: { data?: unknown } };
+    console.error('OpenAI API Error:', err);
     return NextResponse.json(
       {
-        error: error.message || 'Failed to generate related problems',
-        details: error.response?.data || null,
+        error: err.message || 'Failed to generate related problems',
+        details: err.response?.data || null,
       },
       { status: 500 }
     );

@@ -4,9 +4,8 @@
 "use client"
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Crown, Flame, Search, MessageSquare, Trophy, LineChart, LayoutDashboard, Network, Users, Brain, Home } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Crown, LayoutDashboard, Network, Users, Brain, Home, LineChart } from "lucide-react";
 import UserHomePage from "@/components/User_home_page";
 import Problems from "@/components/Problems";
 import Stats from "@/components/Stats";
@@ -31,6 +30,7 @@ import Footer from "@/components/footer";
  * @param isAdmin - Boolean whether the current user is an admin
  */
 function SideNav({ active, onChange, isAdmin }: { active: string; onChange: (k: string) => void, isAdmin: boolean }) {
+  const { data: session } = useSession();
   // Navigation menu items with icons and labels
   const items = [
     { key: "main", label: "Home", icon: <Home className="h-4 w-4" /> },
@@ -79,10 +79,17 @@ function SideNav({ active, onChange, isAdmin }: { active: string; onChange: (k: 
             <div className="text-sm font-semibold">Your Profile</div>
           </div>
           <div className="flex items-center gap-3">
-            <Avatar className="h-8 w-8"><AvatarFallback>MS</AvatarFallback></Avatar>
-            <div>
-              <div className="text-sm font-medium">M. Seo</div>
-              <div className="text-xs text-muted-foreground">Rank #3 • Level 7</div>
+            <Avatar className="h-8 w-8">
+              {session?.user?.image ? (
+                <AvatarImage src={session.user.image} alt={session.user.name || "User"} />
+              ) : (
+                <AvatarFallback>{session?.user?.name?.charAt(0) || "U"}</AvatarFallback>
+              )}
+            </Avatar>
+            <div className="overflow-hidden">
+              <div className="text-sm font-medium truncate">{session?.user?.name || "Loading..."}</div>
+              <div className="text-xs text-muted-foreground truncate">{session?.user?.email || "Loading..."}</div>
+              {/* Prepare placeholders for data not yet available but user asked to keep it if any */}
             </div>
           </div>
           <Button
@@ -108,11 +115,6 @@ export default function MathQuestUIMock() {
   const [page, setPage] = useState("main");
   const [communityTab, setCommunityTab] = useState<CommunityTab>("discussions");
 
-  const handleCommunityNavigate = (tab: CommunityTab) => {
-    setPage("community");
-    setCommunityTab(tab);
-  };
-
   // Listen for navigation events from child components (like Dashboard)
   React.useEffect(() => {
     const handleNavigate = (event: CustomEvent) => {
@@ -135,7 +137,6 @@ export default function MathQuestUIMock() {
       {/* Main Layout Container */}
       <div className="flex flex-1">
         {/* Left Sidebar Navigation */}
-        {/* @ts-expect-error - Custom role property in session */}
         <SideNav active={page} onChange={setPage} isAdmin={session?.user?.role === 'admin'} />
 
         {/* Main Content Area */}

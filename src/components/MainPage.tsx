@@ -6,10 +6,10 @@ import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Trophy, ChevronRight, BookOpen, Star, Loader2, Sparkles, TrendingUp } from "lucide-react";
+import { Trophy, BookOpen, Loader2 } from "lucide-react";
 import MathPreview from "@/components/MathPreview";
 import { problemsAPI, getDifficultyLabel, type Problem as SupabaseProblem } from "@/lib/supabase";
 
@@ -47,87 +47,6 @@ function convertSupabaseProblem(sp: SupabaseProblem): ProblemDisplay {
   };
 }
 
-// Problem Tree Node Component - Recursive component to display problem hierarchy
-function ProblemTreeNode({
-  problem,
-  allProblems,
-  depth = 0,
-  onProblemClick
-}: {
-  problem: ProblemDisplay;
-  allProblems: ProblemDisplay[];
-  depth?: number;
-  onProblemClick: (problem: ProblemDisplay) => void;
-}) {
-  // Find children (problems that have this problem as parent)
-  // For now, we'll use linked_problem_ids as a fallback
-  // Will be populated from parent component
-
-  const indent = depth * 24;
-
-  return (
-    <div className="relative">
-      {/* Tree connector line */}
-      {depth > 0 && (
-        <div
-          className="absolute left-0 top-0 bottom-0 w-0.5 bg-gradient-to-b from-blue-300 to-blue-200"
-          style={{ left: `${(depth - 1) * 24 + 8}px` }}
-        />
-      )}
-
-      {/* Problem card */}
-      <div
-        className={`relative mb-3 rounded-lg border-2 transition-all hover:shadow-lg ${depth === 0
-          ? 'bg-gradient-to-br from-yellow-50 to-amber-50 border-yellow-300 shadow-md'
-          : depth === 1
-            ? 'bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-300'
-            : 'bg-white border-gray-200'
-          }`}
-        style={{ marginLeft: `${indent}px` }}
-      >
-        <div className="p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-2">
-                {depth === 0 && (
-                  <Trophy className="h-5 w-5 text-yellow-600 flex-shrink-0" />
-                )}
-                <h3 className={`font-bold text-gray-900 ${depth === 0 ? 'text-lg' : 'text-base'}`}>
-                  {problem.title}
-                </h3>
-              </div>
-
-              {problem.category_path && (
-                <p className="text-xs text-gray-600 mb-2">{problem.category_path}</p>
-              )}
-
-              <div className="flex flex-wrap items-center gap-2 mb-2">
-                <Badge className="bg-yellow-600 text-white">XP {problem.xp}</Badge>
-                <Badge variant="outline" className="border-gray-300 text-gray-700">
-                  {problem.difficulty}
-                </Badge>
-                {problem.tags && problem.tags.slice(0, 3).map((tag, idx) => (
-                  <Badge key={idx} variant="secondary" className="bg-gray-100 text-gray-700 text-xs">
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-
-            <Button
-              size="sm"
-              onClick={() => onProblemClick(problem)}
-              className="flex-shrink-0 bg-blue-600 text-white hover:bg-blue-700"
-            >
-              <BookOpen className="h-4 w-4 mr-1" />
-              Solve
-            </Button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // Problem Dialog Component
 function ProblemDialog({ problem }: { problem: ProblemDisplay }) {
@@ -215,18 +134,6 @@ function ProblemDialog({ problem }: { problem: ProblemDisplay }) {
   );
 }
 
-// Build problem tree for a given olympiad problem
-// Build problem tree for a given olympiad problem
-function buildProblemTree(rootProblem: ProblemDisplay, _allProblems: ProblemDisplay[]): ProblemDisplay[] {
-  const tree: ProblemDisplay[] = [rootProblem];
-
-  // Find direct children (problems with this as parent_problem_id)
-  // Since we're working with ProblemDisplay, we need to check the original Supabase data
-  // For now, we'll return just the root problem
-  // The actual tree building will be done in the parent component with full Supabase data
-
-  return tree;
-}
 
 /**
  * Main Page Component
@@ -470,8 +377,6 @@ export default function MainPage() {
               officialProblems.map((rootProblem) => {
                 const treeProblems = problemTrees.get(rootProblem.id) || [rootProblem];
                 // Check if this problem has children in the full dataset
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const hasChildren = allProblems.some(p => ((p as unknown) as any).parent_problem_id === rootProblem.id);
                 return (
                   <Card key={rootProblem.id} className="overflow-hidden shadow-lg border-2 border-yellow-200">
                     <CardHeader className="bg-gradient-to-r from-yellow-50 to-amber-50 border-b border-yellow-200">
