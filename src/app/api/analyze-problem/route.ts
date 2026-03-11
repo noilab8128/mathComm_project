@@ -170,7 +170,7 @@ CRITICAL: Respond ONLY with valid JSON:
       parsedResponse = JSON.parse(cleanJson);
 
       // 데이터 정규화 및 하위 호환성 유지
-      const normalizeProblem = (p: any) => {
+      const normalizeProblem = (p: { solutions?: { title?: string, content: string }[], solution?: string }) => {
         if (p.solutions && Array.isArray(p.solutions) && p.solutions.length > 0) {
           if (!p.solution) {
             p.solution = p.solutions[0].content;
@@ -203,11 +203,12 @@ CRITICAL: Respond ONLY with valid JSON:
       data: parsedResponse,
     });
 
-  } catch (error: any) {
-    console.error('OpenAI API Error:', error);
+  } catch (error: unknown) {
+    const err = error as { status?: number, code?: string, message?: string, response?: { data?: unknown }, error?: string };
+    console.error('OpenAI API Error:', err);
 
     // Check for OpenAI specific errors
-    if (error.status === 413 || error.code === 'payload_too_large') {
+    if (err.status === 413 || err.code === 'payload_too_large') {
       return NextResponse.json(
         { error: 'The image file is too large for the AI to process. Please try a smaller image.' },
         { status: 413 }
@@ -216,12 +217,12 @@ CRITICAL: Respond ONLY with valid JSON:
 
     return NextResponse.json(
       {
-        error: error.message || 'Failed to analyze problem',
-        status: error.status,
-        code: error.code,
-        details: error.response?.data || error.error || null,
+        error: err.message || 'Failed to analyze problem',
+        status: err.status,
+        code: err.code,
+        details: err.response?.data || err.error || null,
       },
-      { status: error.status || 500 }
+      { status: err.status || 500 }
     );
   }
 }

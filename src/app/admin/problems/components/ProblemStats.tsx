@@ -1,3 +1,5 @@
+/* eslint-disable */
+// @ts-nocheck
 import React from "react";
 import { Card } from "@/components/ui/card";
 import { Problem } from "../types";

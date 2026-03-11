@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
@@ -5,7 +6,6 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 
 export async function GET() {
     const session = await getServerSession(authOptions);
-    // @ts-expect-error - Custom role property
     if (session?.user?.role !== 'admin') {
         return new NextResponse('Unauthorized', { status: 403 });
     }
@@ -36,7 +36,6 @@ export async function GET() {
 
 export async function POST(req: Request) {
     const session = await getServerSession(authOptions);
-    // @ts-expect-error - Custom role property
     if (session?.user?.role !== 'admin') {
         return new NextResponse('Unauthorized', { status: 403 });
     }

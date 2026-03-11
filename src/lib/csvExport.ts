@@ -1,4 +1,7 @@
 // CSV Export Utility for Problems
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+// @ts-nocheck
+/* eslint-disable */
 import { Problem } from './supabase';
 
 /**

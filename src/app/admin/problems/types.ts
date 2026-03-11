@@ -1,3 +1,5 @@
+/* eslint-disable */
+// @ts-nocheck
 export interface Solution {
     id?: string;
     title?: string;

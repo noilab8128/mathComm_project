@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Mail, MapPin, Phone, Send, MessageCircle, Clock } from "lucide-react";
+import { Mail, Send, MessageCircle, Clock } from "lucide-react";
 
 const ContactPage = () => {
     const [formData, setFormData] = useState({
@@ -34,7 +34,7 @@ const ContactPage = () => {
                     <div className="text-center">
                         <h1 className="text-4xl md:text-5xl font-bold mb-4">Get in Touch</h1>
                         <p className="text-xl text-indigo-100 max-w-2xl mx-auto">
-                            We'd love to hear from you. Send us a message and we'll respond as soon as possible.
+                            We&apos;d love to hear from you. Send us a message and we&apos;ll respond as soon as possible.
                         </p>
                     </div>
                 </div>

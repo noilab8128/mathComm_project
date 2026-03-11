@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { FileText, CheckCircle, AlertCircle } from "lucide-react";
+import { FileText, AlertCircle } from 'lucide-react';
 
 const TermsPage = () => {
     const lastUpdated = "November 21, 2025";
