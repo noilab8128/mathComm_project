@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 
 export default function SettingsPage() {
     const { data: session, update } = useSession();
+    const router = useRouter();
 
     const [isLoading, setIsLoading] = useState(false);
     const [message, setMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
@@ -121,6 +123,38 @@ export default function SettingsPage() {
             const err = error as Error;
             setMessage({ text: err.message, type: "error" });
         } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleResetOnboarding = async () => {
+        if (!confirm("Are you sure you want to reset your onboarding state? This will clear your math category levels and you'll be redirected to the onboarding flow.")) return;
+
+        setIsLoading(true);
+        setMessage(null);
+
+        try {
+            const res = await fetch("/api/user/reset-onboarding", {
+                method: "POST",
+            });
+
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.message || "Failed to reset onboarding");
+            }
+
+            // Update session so is_onboarded becomes false contextually
+            await update({ is_onboarded: false });
+            
+            setMessage({ text: "Onboarding reset successfully! Redirecting...", type: "success" });
+            
+            setTimeout(() => {
+                router.push("/onboarding");
+            }, 1000);
+
+        } catch (error: unknown) {
+            const err = error as Error;
+            setMessage({ text: err.message, type: "error" });
             setIsLoading(false);
         }
     };
@@ -305,6 +339,22 @@ export default function SettingsPage() {
                                 </button>
                             </div>
                         </form>
+                    </div>
+
+                    {/* Danger Zone: Testing / Reset */}
+                    <div className="bg-red-50 p-6 rounded-lg shadow-sm border border-red-100 mt-8">
+                        <h3 className="text-lg font-medium text-red-900 mb-2">Danger Zone / Testing</h3>
+                        <p className="text-sm text-red-700 mb-4">
+                            For testing purposes, you can reset your onboarding state. 
+                            This will clear your selected goals, roles, and math categories, returning you to the onboarding flow.
+                        </p>
+                        <button
+                            onClick={handleResetOnboarding}
+                            disabled={isLoading}
+                            className="px-4 py-2 bg-red-600 text-white font-medium rounded-md hover:bg-red-700 disabled:opacity-50 transition-colors"
+                        >
+                            {isLoading ? 'Processing...' : 'Reset Onboarding State'}
+                        </button>
                     </div>
 
                 </div>

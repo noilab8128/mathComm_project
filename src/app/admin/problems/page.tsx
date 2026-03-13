@@ -47,7 +47,8 @@ export default function ProblemManagementPage() {
     selectedProblemIds,
     toggleProblemSelection,
     selectAllProblems,
-    clearSelection
+    clearSelection,
+    uniqueSources
   } = useProblems();
 
   // --- UI State ---
@@ -75,6 +76,7 @@ export default function ProblemManagementPage() {
   const [selectedLevel2, setSelectedLevel2] = useState("");
   const [selectedLevel3, setSelectedLevel3] = useState("");
   const [diagramImageUrl, setDiagramImageUrl] = useState("");
+  const [source, setSource] = useState("");
   const [linkedProblems, setLinkedProblems] = useState<string[]>([]);
   const [inputMethod, setInputMethod] = useState<"manual" | "file">("manual");
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
@@ -141,6 +143,7 @@ export default function ProblemManagementPage() {
     setSelectedLevel2("");
     setSelectedLevel3("");
     setDiagramImageUrl("");
+    setSource("");
     setLinkedProblems([]);
     setUploadedFile(null);
     setUploadedFilePreview("");
@@ -173,6 +176,7 @@ export default function ProblemManagementPage() {
     setDifficulty(problem.difficulty);
     setCategory(problem.category || "");
     setDiagramImageUrl(problem.diagramImageUrl || "");
+    setSource(problem.source || "");
     setLinkedProblems(problem.linkedProblems || []);
     setUploadedFile(null);
     setUploadedFilePreview("");
@@ -255,6 +259,7 @@ export default function ProblemManagementPage() {
           category: prob.category || "",
           xp: calculateXP(prob.difficulty || 5),
           diagramImageUrl: "",
+          source: source || "PDF-Extracted",
           linkedProblems: [],
           isGenerated: false,
           createdAt: new Date().toISOString(),
@@ -292,6 +297,14 @@ export default function ProblemManagementPage() {
       category: category,
       xp: calculateXP(difficulty),
       diagramImageUrl: diagramImageUrl,
+      source: source,
+      // Preservation of analytics counts if editing
+      startsCount: selectedProblem?.startsCount,
+      completesCount: selectedProblem?.completesCount,
+      attemptsCount: selectedProblem?.attemptsCount,
+      rating: selectedProblem?.rating,
+      likesCount: selectedProblem?.likesCount,
+      lastSolvedAt: selectedProblem?.lastSolvedAt,
       linkedProblems: linkedProblems,
       isGenerated: selectedProblem?.isGenerated || false,
       parentProblemId: selectedProblem?.parentProblemId,
@@ -326,6 +339,7 @@ export default function ProblemManagementPage() {
               xp: calculateXP(relatedProblem.difficulty),
               tags: categoryToTags(relatedProblem.category),
               is_generated: true,
+              source: "AI-Generated",
               // parent_problem_id: saved.id, // Removed from columns, use hierarchy table
             };
 
@@ -1080,10 +1094,13 @@ export default function ProblemManagementPage() {
         setSolutionPageRange={setSolutionPageRange}
         questionIndices={questionIndices}
         setQuestionIndices={setQuestionIndices}
-        totalPdfPages={totalPdfPages}
-        selectedProblemIndices={selectedProblemIndices}
-        setSelectedProblemIndices={setSelectedProblemIndices}
-      />
+            totalPdfPages={totalPdfPages}
+            selectedProblemIndices={selectedProblemIndices}
+            setSelectedProblemIndices={setSelectedProblemIndices}
+            source={source}
+            setSource={setSource}
+            allSources={uniqueSources}
+        />
 
       <LinkManagerDialog
         isOpen={showLinkManagerDialog}

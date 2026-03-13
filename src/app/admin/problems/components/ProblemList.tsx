@@ -164,6 +164,7 @@ export function ProblemList({
                                                     />
                                                 </TableHead>
                                                 <TableHead>Title</TableHead>
+                                                <TableHead>Source</TableHead>
                                                 <TableHead>Category</TableHead>
                                                 <TableHead
                                                     className="cursor-pointer hover:bg-gray-100 transition-colors"
@@ -265,6 +266,22 @@ export function ProblemList({
                                                                     )}
                                                                 </div>
                                                             </TableCell>
+                                                            <TableCell>
+                                                                {problem.source ? (
+                                                                    <Badge 
+                                                                        variant="outline" 
+                                                                        className={`text-[10px] px-1.5 py-0 h-5 font-normal uppercase tracking-tight ${
+                                                                            problem.source.toLowerCase().includes('ai') 
+                                                                            ? "bg-purple-50 text-purple-600 border-purple-200" 
+                                                                            : "bg-gray-50 text-gray-500 border-gray-200"
+                                                                        }`}
+                                                                    >
+                                                                        {problem.source}
+                                                                    </Badge>
+                                                                ) : (
+                                                                    <span className="text-gray-300 text-xs">-</span>
+                                                                )}
+                                                            </TableCell>
                                                             <TableCell>{problem.category}</TableCell>
                                                             <TableCell>
                                                                 <Badge className={`text-xs ${getDifficultyColor(problem.difficulty)} border`}>
@@ -307,7 +324,7 @@ export function ProblemList({
                                                             if (sortedGroups.length > 1) {
                                                                 rows.push(
                                                                     <TableRow key={`group-${problem.id}-${groupName}`} className="bg-gray-50/50">
-                                                                        <TableCell colSpan={7} className="py-1">
+                                                                        <TableCell colSpan={8} className="py-1">
                                                                             <div className="flex items-center gap-2 text-xs font-semibold text-blue-600/80 uppercase tracking-wider" style={{ paddingLeft: `${(depth + 1) * 24 + 20}px` }}>
                                                                                 <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
                                                                                 Stage: {groupName}

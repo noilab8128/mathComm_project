@@ -12,6 +12,7 @@ declare module "next-auth" {
             gender?: string;
             country?: string;
             language?: string;
+            is_onboarded?: boolean;
         };
     }
 

@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import MathPreview from "@/components/MathPreview";
+import { ChevronRight, ChevronDown, Trash2, Plus, PlusCircle, Search, Hash, X } from "lucide-react";
 import { Problem, RelatedProblem, Solution } from "../types";
 import { CATEGORIES } from "@/lib/categories";
 
@@ -37,6 +38,9 @@ interface ProblemEditorProps {
     setSelectedLevel3: (value: string) => void;
     diagramImageUrl: string;
     setDiagramImageUrl: (value: string) => void;
+    source: string;
+    setSource: (value: string) => void;
+    allSources: string[];
     linkedProblems: string[];
 
     // AI & Upload State
@@ -126,6 +130,9 @@ export function ProblemEditor({
     setSelectedLevel3,
     diagramImageUrl,
     setDiagramImageUrl,
+    source,
+    setSource,
+    allSources,
     linkedProblems,
     inputMethod,
     setInputMethod,
@@ -182,6 +189,10 @@ export function ProblemEditor({
     const [progress, setProgress] = React.useState(0);
     const [stepIndex, setStepIndex] = React.useState(0);
 
+    const [inputValue, setInputValue] = React.useState(source);
+    const [isDropdownOpen, setIsDropdownOpen] = React.useState(false);
+    const dropdownRef = React.useRef<HTMLDivElement>(null);
+
     // AI Generation Progress Logic
     React.useEffect(() => {
         let interval: NodeJS.Timeout;
@@ -212,10 +223,39 @@ export function ProblemEditor({
         }
 
         return () => {
-            if (interval) clearInterval(interval);
-            if (stepInterval) clearInterval(stepInterval);
+            clearInterval(interval);
+            clearInterval(stepInterval);
         };
     }, [isAnalyzing, isAnalyzingSolution, isGeneratingRelated]);
+
+    // Filter unique sources based on input
+    const filteredSources = allSources.filter(s =>
+        s.toLowerCase().includes(inputValue.toLowerCase()) && s !== inputValue
+    );
+
+    const showCreateNew = inputValue.trim() !== "" && !allSources.includes(inputValue);
+
+    // Sync input value with source prop when it changes (e.g. when selecting a new problem)
+    React.useEffect(() => {
+        setInputValue(source);
+    }, [source]);
+
+    // Handle clicking outside to close dropdown
+    React.useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsDropdownOpen(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    const handleSelectSource = (value: string) => {
+        setSource(value);
+        setInputValue(value);
+        setIsDropdownOpen(false);
+    };
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -577,28 +617,88 @@ export function ProblemEditor({
                                             )}
                                         </div>
                                     </div>
-                                    <div>
-                                        <label htmlFor="difficulty" className="text-sm font-medium text-gray-800">
-                                            Difficulty (1-10)
-                                        </label>
-                                        <div className="flex items-center gap-2 mt-1">
-                                            <Input
-                                                id="difficulty"
-                                                type="number"
-                                                min="1"
-                                                max="10"
-                                                value={difficulty}
-                                                onChange={(e) => setDifficulty(parseInt(e.target.value) || 1)}
-                                                className="p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                                            />
-                                            <Button
-                                                onClick={onAIDifficulty}
-                                                variant="outline"
-                                                className="text-xs text-gray-700 border-gray-300 hover:bg-gray-50"
-                                                disabled={isAnalyzing}
-                                            >
-                                                AI
-                                            </Button>
+
+                                    {/* Source & Difficulty */}
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="relative" ref={dropdownRef}>
+                                            <label htmlFor="source" className="text-sm font-medium text-gray-800 flex items-center gap-1.5">
+                                                Problem Source
+                                            </label>
+                                            <div className="relative mt-1">
+                                                <Input
+                                                    id="source"
+                                                    value={inputValue}
+                                                    onChange={(e) => {
+                                                        setInputValue(e.target.value);
+                                                        setSource(e.target.value); // Keep parent in sync
+                                                        setIsDropdownOpen(true);
+                                                    }}
+                                                    onFocus={() => setIsDropdownOpen(true)}
+                                                    placeholder="Type to search or add new..."
+                                                    className="p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 pr-8"
+                                                />
+                                                {inputValue && (
+                                                    <button 
+                                                        onClick={() => handleSelectSource("")}
+                                                        className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                                    >
+                                                        <X className="w-4 h-4" />
+                                                    </button>
+                                                )}
+                                            </div>
+
+                                            {/* Autocomplete Dropdown */}
+                                            {isDropdownOpen && (inputValue.trim() || filteredSources.length > 0) && (
+                                                <div className="absolute z-50 mt-1 w-full bg-slate-900 text-slate-100 rounded-lg shadow-xl border border-slate-700 overflow-hidden py-1 animate-in fade-in zoom-in-95 duration-100">
+                                                    {filteredSources.length > 0 && (
+                                                        <div className="max-h-48 overflow-y-auto">
+                                                            {filteredSources.map((s) => (
+                                                                <button
+                                                                    key={s}
+                                                                    onClick={() => handleSelectSource(s)}
+                                                                    className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-slate-800 transition-colors text-left group"
+                                                                >
+                                                                    <span className="flex-1 truncate">{s}</span>
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    )}
+
+                                                    {showCreateNew && (
+                                                        <button
+                                                            onClick={() => handleSelectSource(inputValue)}
+                                                            className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-slate-800 transition-colors text-left border-t border-slate-700/50 group"
+                                                        >
+                                                            <PlusCircle className="w-4 h-4 text-emerald-400 group-hover:text-emerald-300" />
+                                                            <span className="truncate">Add as new source <span className="font-semibold text-emerald-100">"{inputValue}"</span></span>
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div>
+                                            <label htmlFor="difficulty" className="text-sm font-medium text-gray-800">
+                                                Difficulty (1-10)
+                                            </label>
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <Input
+                                                    id="difficulty"
+                                                    type="number"
+                                                    min="1"
+                                                    max="10"
+                                                    value={difficulty}
+                                                    onChange={(e) => setDifficulty(parseInt(e.target.value) || 1)}
+                                                    className="p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                                                />
+                                                <Button
+                                                    onClick={onAIDifficulty}
+                                                    variant="outline"
+                                                    className="text-xs text-gray-700 border-gray-300 hover:bg-gray-50"
+                                                    disabled={isAnalyzing}
+                                                >
+                                                    AI
+                                                </Button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

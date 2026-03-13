@@ -96,6 +96,7 @@ export const authOptions: NextAuthOptions = {
                 session.user.gender = token.gender as string;
                 session.user.country = token.country as string;
                 session.user.language = token.language as string;
+                session.user.is_onboarded = token.is_onboarded as boolean;
             }
             return session;
         },
@@ -108,6 +109,7 @@ export const authOptions: NextAuthOptions = {
                 if (session.country !== undefined) token.country = session.country;
                 if (session.language !== undefined) token.language = session.language;
                 if (session.image !== undefined) token.picture = session.image; // NextAuth standard for image
+                if (session.is_onboarded !== undefined) token.is_onboarded = session.is_onboarded;
             }
 
             if (user) {
@@ -120,11 +122,11 @@ export const authOptions: NextAuthOptions = {
                 );
 
                 try {
-                    // Fetch full user profile from next_auth schema
+                    // Fetch full user profile from next_auth schema including onboarding status
                     const { data: profile } = await adminSupabase
                         .schema("next_auth")
                         .from('users')
-                        .select('nickname, gender, country, language')
+                        .select('nickname, gender, country, language, is_onboarded')
                         .eq('id', user.id)
                         .maybeSingle();
 
@@ -133,9 +135,11 @@ export const authOptions: NextAuthOptions = {
                         token.gender = profile.gender;
                         token.country = profile.country;
                         token.language = profile.language;
+                        token.is_onboarded = profile.is_onboarded || false;
                     }
                 } catch (err) {
                     console.error("Error fetching user profile:", err);
+                    token.is_onboarded = false;
                 }
 
                 // Fetch user role from public.user_roles on sign in

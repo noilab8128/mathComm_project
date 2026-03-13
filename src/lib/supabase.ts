@@ -207,6 +207,21 @@ export const problemsAPI = {
 
     if (error) throw error;
   },
+
+  // Get all unique source names
+  async getUniqueSources() {
+    const { data, error } = await supabase
+      .from('problems')
+      .select('source')
+      .not('source', 'is', null)
+      .not('source', 'eq', '');
+    
+    if (error) throw error;
+
+    // Return unique values
+    const sources = data.map(item => item.source);
+    return Array.from(new Set(sources)).sort();
+  }
 };
 
 // Hierarchy API

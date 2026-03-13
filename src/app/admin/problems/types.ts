@@ -31,8 +31,18 @@ export interface Problem {
     xp: number;
     tags?: string[];
     diagramImageUrl?: string;
+    source?: string;
+
+    // Analytics (New)
+    startsCount?: number;
+    completesCount?: number;
+    attemptsCount?: number;
+    rating?: number;
+    likesCount?: number;
+    lastSolvedAt?: string;
 
     // AI & Hierarchy
+
     isGenerated: boolean;
     aiConfidence?: number;
     concepts?: string[];
