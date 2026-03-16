@@ -154,7 +154,6 @@ export const authOptions: NextAuthOptions = {
                     console.log("[AUTH DEBUG] user_roles query result - error:", error);
 
                     if (data && !error) {
-                        console.log("[AUTH DEBUG] Role found! Assigning role:", (data as { role?: string }).role);
                         token.role = (data as { role?: string }).role;
                     } else {
                         console.log("[AUTH DEBUG] No role found. Defaulting to 'user'.");
