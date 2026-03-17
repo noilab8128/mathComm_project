@@ -4,6 +4,55 @@ import { authOptions } from "@/lib/auth";
 import { createClient } from "@supabase/supabase-js";
 import bcrypt from "bcryptjs";
 
+export async function GET() {
+    try {
+        const session = await getServerSession(authOptions);
+
+        if (!session?.user?.email) {
+            return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+        }
+
+        const adminSupabase = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL as string,
+            process.env.SUPABASE_SERVICE_ROLE_KEY as string
+        );
+
+        // Fetch onboarding preferences from next_auth.users
+        const { data: userRaw } = await adminSupabase
+            .schema("next_auth")
+            .from("users")
+            .select("id, interested_categories, category_levels")
+            .eq("email", session.user.email)
+            .maybeSingle();
+
+        if (!userRaw) {
+            return NextResponse.json({ interested_categories: [], category_levels: {}, user_category_levels: [] });
+        }
+
+        // Fetch user_category_levels joined with categories (public schema)
+        const { data: catLevels } = await adminSupabase
+            .from("user_category_levels")
+            .select("category_id, level_score, categories(name)")
+            .eq("user_id", userRaw.id);
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const userCategoryLevels = ((catLevels || []) as any[]).map((row) => ({
+            category_id: row.category_id as number,
+            level_score: row.level_score as number,
+            category_name: (Array.isArray(row.categories) ? row.categories[0]?.name : row.categories?.name) ?? null,
+        }));
+
+        return NextResponse.json({
+            interested_categories: userRaw.interested_categories || [],
+            category_levels: userRaw.category_levels || {},
+            user_category_levels: userCategoryLevels,
+        });
+    } catch (error) {
+        console.error("Profile GET error:", error);
+        return NextResponse.json({ message: "Internal server error" }, { status: 500 });
+    }
+}
+
 export async function PUT(req: Request) {
     try {
         const session = await getServerSession(authOptions);

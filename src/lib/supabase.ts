@@ -217,9 +217,12 @@ export const problemsAPI = {
       .not('source', 'eq', '');
     
     if (error) throw error;
+    if (!data) return [];
 
-    // Return unique values
-    const sources = data.map(item => item.source);
+    // Cast through unknown to escape Supabase's over-narrowed 'never' inference
+    const rows = data as unknown as { source: string | null }[];
+    // Return unique values (filter nulls and narrow type to string[])
+    const sources = rows.map(item => item.source).filter((s): s is string => s !== null);
     return Array.from(new Set(sources)).sort();
   }
 };
@@ -286,6 +289,23 @@ export const problemHierarchiesAPI = {
       .match({ parent_problem_id: parentProblemId, child_problem_id: childProblemId });
 
     if (error) throw error;
+  },
+
+  // Get all parents (ancestors) for a given child problem
+  async getParents(childProblemId: string) {
+    const { data, error } = await supabase
+      .from('problem_hierarchies')
+      .select('*, parent_problem:problems!parent_problem_id(*)')
+      .eq('child_problem_id', childProblemId)
+      .order('sequence_order', { ascending: true });
+
+    if (error) throw error;
+    return data;
+  },
+
+  // Get all children for a given parent problem (alias of getChain without solution filter)
+  async getChildren(parentProblemId: string) {
+    return problemHierarchiesAPI.getChain(parentProblemId);
   }
 }
 

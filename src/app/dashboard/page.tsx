@@ -5,13 +5,12 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Crown, LayoutDashboard, Network, Users, Brain, Home, LineChart } from "lucide-react";
+import { Crown, Network, Users, Brain, Home, LineChart } from "lucide-react";
 import UserHomePage from "@/components/User_home_page";
 import Problems from "@/components/Problems";
 import Stats from "@/components/Stats";
 import Community, { CommunityTab } from "@/components/Community";
 import SkillTree from "@/components/SkillTree";
-import MainPage from "@/components/MainPage";
 import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
 import { ShieldAlert } from "lucide-react";
@@ -33,8 +32,7 @@ function SideNav({ active, onChange, isAdmin }: { active: string; onChange: (k: 
   const { data: session } = useSession();
   // Navigation menu items with icons and labels
   const items = [
-    { key: "main", label: "Home", icon: <Home className="h-4 w-4" /> },
-    { key: "dashboard", label: "My board", icon: <LayoutDashboard className="h-4 w-4" /> },
+    { key: "dashboard", label: "Home", icon: <Home className="h-4 w-4" /> },
     { key: "skill-tree", label: "Skill Tree", icon: <Network className="h-4 w-4" /> },
     { key: "problems", label: "Problems", icon: <Brain className="h-4 w-4" /> },
     { key: "stats", label: "Stats", icon: <LineChart className="h-4 w-4" /> },
@@ -112,7 +110,7 @@ function SideNav({ active, onChange, isAdmin }: { active: string; onChange: (k: 
 export default function MathQuestUIMock() {
   const { data: session } = useSession();
   // State to track the currently active page/section
-  const [page, setPage] = useState("main");
+  const [page, setPage] = useState("dashboard");
   const [communityTab, setCommunityTab] = useState<CommunityTab>("discussions");
 
   // Listen for navigation events from child components (like Dashboard)
@@ -142,7 +140,6 @@ export default function MathQuestUIMock() {
         {/* Main Content Area */}
         <main className="flex-1 overflow-auto">
           {/* Conditional Rendering based on active page */}
-          {page === "main" && <MainPage />}
           {page === "dashboard" && <UserHomePage />}
           {page === "skill-tree" && <SkillTree />}
           {page === "problems" && <Problems />}
