@@ -10,7 +10,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { BookOpen, Send, Lock, Unlock, Star, Filter, Loader2 } from "lucide-react";
+import { BookOpen, Send, Lock, Unlock, Star, Filter, Loader2, Heart } from "lucide-react";
+import { useLikes } from "@/hooks/useUserInteractions";
 import MathPreview from "@/components/MathPreview";
 import { problemsAPI, getDifficultyLabel, type Problem as SupabaseProblem } from "@/lib/supabase";
 import { StepsButton } from "@/components/ProblemHierarchyModal";
@@ -29,6 +30,7 @@ export default function Problems() {
   const [problems, setProblems] = useState<ProblemDisplay[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { likedIds, toggleLike } = useLikes();
 
   // State for filtering
   const [selectedLevel, setSelectedLevel] = useState("All");
@@ -211,6 +213,7 @@ export default function Problems() {
                     <div className="font-semibold text-gray-800">{problem.title}</div>
                     <div className="text-xs text-gray-500 mt-0.5">
                       Level: {problem.level} • Age: {problem.age} • XP: {problem.xp} • Difficulty: {problem.difficulty}
+                      {problem.likes_count !== undefined && ` • Likes: ${problem.likes_count}`}
                     </div>
                     {problem.category_path && (
                       <div className="text-xs text-gray-500 mt-0.5">
@@ -228,6 +231,17 @@ export default function Problems() {
                     )}
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
+                    <button
+                      onClick={() => toggleLike(problem.id, (liked) => {
+                        setProblems(prev => prev.map(p => 
+                          p.id === problem.id ? { ...p, likes_count: (p.likes_count ?? 0) + (liked ? 1 : -1) } : p
+                        ));
+                      })}
+                      className="p-1 rounded-full hover:bg-pink-50 transition-colors"
+                      title={likedIds.has(problem.id) ? "Unlike" : "Like"}
+                    >
+                      <Heart className={`h-5 w-5 ${likedIds.has(problem.id) ? "fill-pink-500 text-pink-500" : "text-gray-400"}`} />
+                    </button>
                     <StepsButton problemId={problem.id} problemTitle={problem.title} />
                     <Dialog>
                       <DialogTrigger asChild>

@@ -94,6 +94,7 @@ function LoginContent() {
                 redirect: false,
                 email,
                 password,
+                turnstileToken,
             });
 
             if (result?.error) {

@@ -7,6 +7,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { SupabaseAdapter } from "@auth/supabase-adapter";
 import { supabase } from "./supabase";
+import { verifyTurnstileToken } from "./turnstile";
 
 export const authOptions: NextAuthOptions = {
     adapter: SupabaseAdapter({
@@ -31,11 +32,18 @@ export const authOptions: NextAuthOptions = {
             name: "Credentials",
             credentials: {
                 email: { label: "Email", type: "email", placeholder: "test@example.com" },
-                password: { label: "Password", type: "password" }
+                password: { label: "Password", type: "password" },
+                turnstileToken: { label: "Turnstile Token", type: "text" }
             },
             async authorize(credentials) {
                 if (!credentials?.email || !credentials?.password) {
                     throw new Error("Invalid credentials");
+                }
+
+                // 0. Verify Turnstile Token
+                const isVerified = await verifyTurnstileToken(credentials.turnstileToken || "");
+                if (!isVerified) {
+                    throw new Error("Security verification failed. Please try again.");
                 }
 
                 // Create a service role client to access next_auth schema

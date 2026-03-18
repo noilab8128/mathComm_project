@@ -23,6 +23,7 @@ import { MathPreview } from "@/components/MathPreview";
 import { supabase, problemsAPI, problemHierarchiesAPI, getDifficultyLabel } from "@/lib/supabase";
 import { Sparkles } from "lucide-react";
 import { StepsButton } from "@/components/ProblemHierarchyModal";
+import { useMyQueue, useLikes, useStarts, type QueuedProblem } from "@/hooks/useUserInteractions";
 import { ProblemDialog, convertSupabaseProblem, type ProblemDisplay } from "@/components/ProblemDialog";
 
 // -------------------------------------------------------
@@ -65,48 +66,10 @@ function matchesPreferences(problem: { category_path?: string | null; level?: st
 }
 
 // -------------------------------------------------------
-// My Queue — localStorage-backed picked problems
+// Helper components and types
 // -------------------------------------------------------
-const QUEUE_STORAGE_KEY = 'mathcomm_my_queue';
 
-interface QueuedProblem {
-  id: string;
-  title: string;
-  difficulty: string;
-  source?: string | null;
-  xp: number;
-}
-
-function useMyQueue() {
-  const [queue, setQueue] = useState<QueuedProblem[]>(() => {
-    try {
-      const stored = typeof window !== 'undefined' ? localStorage.getItem(QUEUE_STORAGE_KEY) : null;
-      return stored ? JSON.parse(stored) : [];
-    } catch { return []; }
-  });
-
-  const persist = (next: QueuedProblem[]) => {
-    setQueue(next);
-    try { localStorage.setItem(QUEUE_STORAGE_KEY, JSON.stringify(next)); } catch { /* ignore */ }
-  };
-
-  const addToQueue = (p: QueuedProblem) => {
-    setQueue(prev => {
-      if (prev.find(q => q.id === p.id)) return prev;
-      const next = [...prev, p];
-      try { localStorage.setItem(QUEUE_STORAGE_KEY, JSON.stringify(next)); } catch { /* ignore */ }
-      return next;
-    });
-  };
-
-  const removeFromQueue = (id: string) => {
-    persist(queue.filter(q => q.id !== id));
-  };
-
-  const isQueued = (id: string) => queue.some(q => q.id === id);
-
-  return { queue, addToQueue, removeFromQueue, isQueued };
-}
+// (removed useMyQueue and useLikes hooks)
 
 // Weekly leaderboard data
 const leaderboard: { name: string; xp: number; streak: number }[] = [
@@ -315,7 +278,15 @@ function LeaderboardCard() {
 /**
  * RecommendedProblems Component - Shows personalized problem recommendations
  */
-function RecommendedProblems({ prefs }: { prefs: UserPreferences | null }) {
+function RecommendedProblems({ prefs, queueIds, onToggleQueue, likedIds, onToggleLike, startedIds, onStart }: {
+  prefs: UserPreferences | null;
+  queueIds: Set<string>;
+  onToggleQueue: (p: QueuedProblem) => void;
+  likedIds: Set<string>;
+  onToggleLike: (id: string, onToggle?: (liked: boolean) => void) => void;
+  startedIds: Set<string>;
+  onStart: (id: string) => void;
+}) {
   const [recommendedProblems, setRecommendedProblems] = useState<(ProblemDisplay & { likes_count?: number; starts_count?: number; completes_count?: number; source?: string | null })[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -406,10 +377,10 @@ function RecommendedProblems({ prefs }: { prefs: UserPreferences | null }) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        {recommendedProblems.length === 0 ? (
+        {recommendedProblems.filter(p => !queueIds.has(p.id)).length === 0 ? (
           <div className="text-center py-4 text-gray-500 text-sm">No recommended problems available</div>
         ) : (
-          recommendedProblems.map((p) => (
+          recommendedProblems.filter(p => !queueIds.has(p.id)).map((p) => (
             <div key={p.id} className="flex items-center justify-between rounded-xl border border-gray-200 p-3 bg-white hover:shadow-sm transition-shadow">
               <div className="flex-1 min-w-0">
                 <div className="font-medium text-sm text-gray-800 truncate">{p.title}</div>
@@ -441,10 +412,39 @@ function RecommendedProblems({ prefs }: { prefs: UserPreferences | null }) {
                 </div>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                <button
+                  onClick={() => onToggleLike(p.id, (liked) => {
+                    setRecommendedProblems(prev => prev.map(rp => 
+                      rp.id === p.id ? { ...rp, likes_count: (rp.likes_count ?? 0) + (liked ? 1 : -1) } : rp
+                    ));
+                  })}
+                  className="p-1 rounded-full hover:bg-pink-50 transition-colors"
+                  title={likedIds.has(p.id) ? "Unlike" : "Like"}
+                >
+                  <Heart className={`h-5 w-5 ${likedIds.has(p.id) ? "fill-pink-500 text-pink-500" : "text-gray-400"}`} />
+                </button>
                 <StepsButton problemId={p.id} problemTitle={p.title} />
-                <Dialog>
+                <button
+                  title={queueIds.has(p.id) ? 'Remove from My Queue' : 'Add to My Queue'}
+                  onClick={() => onToggleQueue({ id: p.id, title: p.title, difficulty: p.difficulty, source: p.source, xp: p.xp })}
+                  className="p-1 rounded-full hover:bg-gray-100 transition-colors"
+                >
+                  {queueIds.has(p.id)
+                    ? <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                    : <PlusCircle className="h-5 w-5 text-blue-500" />}
+                </button>
+                <Dialog onOpenChange={(open) => {
+                  if (open) {
+                    onStart(p.id);
+                    setRecommendedProblems(prev => prev.map(rp => 
+                      rp.id === p.id && !startedIds.has(p.id) ? { ...rp, starts_count: (rp.starts_count ?? 0) + 1 } : rp
+                    ));
+                  }
+                }}>
                   <DialogTrigger asChild>
-                    <Button size="sm" variant="outline">Solve</Button>
+                    <Button size="sm" variant={startedIds.has(p.id) ? "default" : "outline"} className={startedIds.has(p.id) ? "bg-blue-600 hover:bg-blue-700" : ""}>
+                      {startedIds.has(p.id) ? "Resume" : "Solve"}
+                    </Button>
                   </DialogTrigger>
                   <ProblemDialog problem={p} />
                 </Dialog>
@@ -468,10 +468,14 @@ function RecommendedProblems({ prefs }: { prefs: UserPreferences | null }) {
 // PersonalizedLearningPath — replaces the skill tree canvas
 // Shows problems matched to the user's category levels from DB
 // ------------------------------------------------------------
-function PersonalizedLearningPath({ prefs, queueIds, onToggleQueue }: {
+function PersonalizedLearningPath({ prefs, queueIds, onToggleQueue, likedIds, onToggleLike, startedIds, onStart }: {
   prefs: UserPreferences | null;
   queueIds: Set<string>;
   onToggleQueue: (p: QueuedProblem) => void;
+  likedIds: Set<string>;
+  onToggleLike: (id: string, onToggle?: (liked: boolean) => void) => void;
+  startedIds: Set<string>;
+  onStart: (id: string) => void;
 }) {
   const [problems, setProblems] = useState<ProblemDisplay[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -590,12 +594,12 @@ function PersonalizedLearningPath({ prefs, queueIds, onToggleQueue }: {
         )}
       </CardHeader>
       <CardContent className="space-y-3">
-        {problems.length === 0 ? (
+        {problems.filter(p => !queueIds.has(p.id)).length === 0 ? (
           <div className="text-center py-6 text-gray-500 text-sm">
             No matching problems found. Try updating your preferences in onboarding.
           </div>
         ) : (
-          problems.map(p => (
+          problems.filter(p => !queueIds.has(p.id)).map(p => (
             <div
               key={p.id}
               className="flex items-center justify-between rounded-xl border border-gray-200 bg-white p-3 hover:shadow-sm transition-shadow"
@@ -623,8 +627,19 @@ function PersonalizedLearningPath({ prefs, queueIds, onToggleQueue }: {
                   ))}
                 </div>
               </div>
-                <div className="flex items-center gap-1 flex-shrink-0 ml-2">
-                  <StepsButton problemId={p.id} problemTitle={p.title} />
+                <div className="flex items-center gap-2 flex-shrink-0 ml-2 text-gray-500">
+                <button
+                  onClick={() => onToggleLike(p.id, (liked) => {
+                    setProblems(prev => prev.map(pro => 
+                      pro.id === p.id ? { ...pro, likes_count: (pro.likes_count ?? 0) + (liked ? 1 : -1) } : pro
+                    ));
+                  })}
+                  className="p-1 rounded-full hover:bg-pink-50 transition-colors"
+                  title={likedIds.has(p.id) ? "Unlike" : "Like"}
+                >
+                  <Heart className={`h-5 w-5 ${likedIds.has(p.id) ? "fill-pink-500 text-pink-500" : "text-gray-400"}`} />
+                </button>
+                <StepsButton problemId={p.id} problemTitle={p.title} />
                   <button
                     title={queueIds.has(p.id) ? 'Remove from My Queue' : 'Add to My Queue'}
                     onClick={() => onToggleQueue({ id: p.id, title: p.title, difficulty: p.difficulty, source: p.source, xp: p.xp })}
@@ -634,10 +649,25 @@ function PersonalizedLearningPath({ prefs, queueIds, onToggleQueue }: {
                       ? <CheckCircle2 className="h-5 w-5 text-emerald-500" />
                       : <PlusCircle className="h-5 w-5 text-blue-500" />}
                   </button>
-                  <Dialog open={openProblem?.id === p.id} onOpenChange={o => setOpenProblem(o ? p : null)}>
+                  <Dialog 
+                    open={openProblem?.id === p.id} 
+                    onOpenChange={o => {
+                      if (o) {
+                        onStart(p.id);
+                        setProblems(prev => prev.map(pro => 
+                          pro.id === p.id && !startedIds.has(p.id) ? { ...pro, starts_count: (pro.starts_count ?? 0) + 1 } : pro
+                        ));
+                      }
+                      setOpenProblem(o ? p : null);
+                    }}
+                  >
                   <DialogTrigger asChild>
-                    <Button size="sm" variant="outline" className="flex-shrink-0">
-                      Solve
+                    <Button 
+                      size="sm" 
+                      variant={startedIds.has(p.id) ? "default" : "outline"} 
+                      className={`flex-shrink-0 ${startedIds.has(p.id) ? "bg-blue-600 hover:bg-blue-700" : ""}`}
+                    >
+                      {startedIds.has(p.id) ? "Resume" : "Solve"}
                     </Button>
                   </DialogTrigger>
                   <ProblemDialog problem={p} />
@@ -661,6 +691,8 @@ function PersonalizedLearningPath({ prefs, queueIds, onToggleQueue }: {
 export default function UserHomePage() {
   const [prefs, setPrefs] = useState<UserPreferences | null>(null);
   const { queue, addToQueue, removeFromQueue, isQueued } = useMyQueue();
+  const { likedIds, toggleLike } = useLikes();
+  const { startedIds, markStarted } = useStarts();
   const queueIds = new Set(queue.map(q => q.id));
 
   const handleToggleQueue = (p: QueuedProblem) => {
@@ -739,6 +771,11 @@ export default function UserHomePage() {
                           </Badge>
                           {q.source && <span className="text-blue-600 text-[10px]">📚 {q.source}</span>}
                           <span className="text-gray-400">XP {q.xp}</span>
+                          {q.likes_count !== undefined && (
+                            <span className="flex items-center gap-0.5 text-pink-500 ml-1">
+                              <Heart className="h-3 w-3 fill-pink-500" /> {q.likes_count}
+                            </span>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0 ml-2">
@@ -758,11 +795,27 @@ export default function UserHomePage() {
             </CardContent>
           </Card>
 
-          {/* Problems for You — pass queue state */}
-          <PersonalizedLearningPath prefs={prefs} queueIds={queueIds} onToggleQueue={handleToggleQueue} />
+          {/* Problems for You — pass interaction state */}
+          <PersonalizedLearningPath 
+            prefs={prefs} 
+            queueIds={queueIds} 
+            onToggleQueue={handleToggleQueue} 
+            likedIds={likedIds} 
+            onToggleLike={toggleLike}
+            startedIds={startedIds}
+            onStart={markStarted}
+          />
 
           {/* Recommended Problems — filtered by preferences */}
-          <RecommendedProblems prefs={prefs} />
+          <RecommendedProblems 
+            prefs={prefs} 
+            queueIds={queueIds} 
+            onToggleQueue={handleToggleQueue} 
+            likedIds={likedIds} 
+            onToggleLike={toggleLike}
+            startedIds={startedIds}
+            onStart={markStarted}
+          />
         </div>
 
         {/* Sidebar */}

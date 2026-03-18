@@ -164,6 +164,63 @@ export interface Database {
                     created_at?: string
                 }
             }
+            user_queue: {
+                Row: {
+                    user_id: string
+                    problem_id: string
+                    created_at: string
+                }
+                Insert: {
+                    user_id: string
+                    problem_id: string
+                    created_at?: string
+                }
+                Update: {
+                    user_id?: string
+                    problem_id?: string
+                    created_at?: string
+                }
+            }
+            user_category_levels: {
+                Row: {
+                    user_id: string
+                    category_id: number
+                    level_score: number
+                    is_inferred: boolean
+                    updated_at: string
+                }
+                Insert: {
+                    user_id: string
+                    category_id: number
+                    level_score: number
+                    is_inferred?: boolean
+                    updated_at?: string
+                }
+                Update: {
+                    user_id?: string
+                    category_id?: number
+                    level_score?: number
+                    is_inferred?: boolean
+                    updated_at?: string
+                }
+            }
+            user_likes: {
+                Row: {
+                    user_id: string
+                    problem_id: string
+                    created_at: string
+                }
+                Insert: {
+                    user_id: string
+                    problem_id: string
+                    created_at?: string
+                }
+                Update: {
+                    user_id?: string
+                    problem_id?: string
+                    created_at?: string
+                }
+            }
         }
     }
 }

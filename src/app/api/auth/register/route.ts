@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import bcrypt from "bcryptjs";
+import { verifyTurnstileToken } from "@/lib/turnstile";
 
 export async function POST(req: Request) {
     try {
@@ -15,6 +16,12 @@ export async function POST(req: Request) {
         }
         if (!turnstileToken) {
             return NextResponse.json({ message: "Please verify you are human" }, { status: 400 });
+        }
+
+        // 2. Server-side Turnstile verification
+        const isVerified = await verifyTurnstileToken(turnstileToken);
+        if (!isVerified) {
+            return NextResponse.json({ message: "Security verification failed. Please try again." }, { status: 403 });
         }
 
         // Initialize Admin Supabase Client to access next_auth schema
