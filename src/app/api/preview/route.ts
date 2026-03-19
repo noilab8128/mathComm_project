@@ -27,7 +27,8 @@ function convertToHtmlWithLatex(content: string): string {
 
   // Split content by LaTeX blocks (both inline and display)
   // Handle: $$...$$ (display), \(...\) (inline), \[...\] (display), $...$ (inline - less common)
-  const latexPattern = /(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\)|\$[^$\n]+\$)/g;
+  // Also catch raw LaTeX commands like \geq, \cdots, etc. and math-like patterns
+  const latexPattern = /(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\)|\$[^$\n]+\$|\\[a-zA-Z]+|[\w\d]*[\^_]\{?[^}\s]+\}?)/g;
   
   const parts: Array<{ text: string; isLatex: boolean }> = [];
   let lastIndex = 0;
@@ -64,22 +65,17 @@ function convertToHtmlWithLatex(content: string): string {
   let html = "";
   for (const part of parts) {
     if (part.isLatex) {
-      // LaTeX blocks - preserve as-is (MathJax will process them)
+      // LaTeX blocks - preserve as-is
       html += part.text;
     } else {
-      // Regular text - convert Markdown-like syntax and escape HTML
+      // Regular text - escape HTML and handle newlines with <br>
       let text = sanitizeToHtml(part.text);
-      // Convert newlines to <br> or wrap in <p> tags
-      text = text.replace(/\n\n+/g, "</p><p>").replace(/\n/g, "<br>");
-      if (text && !text.startsWith("<p>")) {
-        text = "<p>" + text + "</p>";
-      }
+      text = text.replace(/\n\n+/g, "<br><br>").replace(/\n/g, "<br>");
       html += text;
     }
   }
 
-  // Wrap in a container if needed
-  return html || `<p>${sanitizeToHtml(content)}</p>`;
+  return html;
 }
 
 export async function POST(request: Request) {

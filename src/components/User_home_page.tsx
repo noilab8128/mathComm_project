@@ -22,7 +22,6 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recha
 import { MathPreview } from "@/components/MathPreview";
 import { supabase, problemsAPI, problemHierarchiesAPI, getDifficultyLabel } from "@/lib/supabase";
 import { Sparkles } from "lucide-react";
-import { StepsButton } from "@/components/ProblemHierarchyModal";
 import { useMyQueue, useLikes, useStarts, type QueuedProblem } from "@/hooks/useUserInteractions";
 import { ProblemDialog, convertSupabaseProblem, type ProblemDisplay } from "@/components/ProblemDialog";
 
@@ -423,10 +422,19 @@ function RecommendedProblems({ prefs, queueIds, onToggleQueue, likedIds, onToggl
                 >
                   <Heart className={`h-5 w-5 ${likedIds.has(p.id) ? "fill-pink-500 text-pink-500" : "text-gray-400"}`} />
                 </button>
-                <StepsButton problemId={p.id} problemTitle={p.title} />
                 <button
                   title={queueIds.has(p.id) ? 'Remove from My Queue' : 'Add to My Queue'}
-                  onClick={() => onToggleQueue({ id: p.id, title: p.title, difficulty: p.difficulty, source: p.source, xp: p.xp })}
+                  onClick={() => onToggleQueue({ 
+                    id: p.id, 
+                    title: p.title, 
+                    difficulty: p.difficulty_score, 
+                    source: p.source, 
+                    xp: p.xp,
+                    content: p.content,
+                    level: p.level,
+                    category_path: p.category_path,
+                    tags: p.tags
+                  })}
                   className="p-1 rounded-full hover:bg-gray-100 transition-colors"
                 >
                   {queueIds.has(p.id)
@@ -639,10 +647,19 @@ function PersonalizedLearningPath({ prefs, queueIds, onToggleQueue, likedIds, on
                 >
                   <Heart className={`h-5 w-5 ${likedIds.has(p.id) ? "fill-pink-500 text-pink-500" : "text-gray-400"}`} />
                 </button>
-                <StepsButton problemId={p.id} problemTitle={p.title} />
                   <button
                     title={queueIds.has(p.id) ? 'Remove from My Queue' : 'Add to My Queue'}
-                    onClick={() => onToggleQueue({ id: p.id, title: p.title, difficulty: p.difficulty, source: p.source, xp: p.xp })}
+                    onClick={() => onToggleQueue({ 
+                      id: p.id, 
+                      title: p.title, 
+                      difficulty: p.difficulty_score, 
+                      source: p.source, 
+                      xp: p.xp,
+                      content: p.content,
+                      level: p.level,
+                      category_path: p.category_path,
+                      tags: p.tags
+                    })}
                     className="p-1 rounded-full hover:bg-gray-100 transition-colors"
                   >
                     {queueIds.has(p.id)
@@ -760,14 +777,14 @@ export default function UserHomePage() {
                         <div className="flex gap-2 mt-0.5 items-center text-xs text-muted-foreground">
                           <Badge
                             className={`text-[10px] ${
-                              q.difficulty === 'Easy' ? 'bg-emerald-100 text-emerald-700' :
-                              q.difficulty === 'Medium' ? 'bg-amber-100 text-amber-700' :
-                              q.difficulty === 'Hard' ? 'bg-orange-100 text-orange-700' :
+                              getDifficultyLabel(q.difficulty) === 'Easy' ? 'bg-emerald-100 text-emerald-700' :
+                              getDifficultyLabel(q.difficulty) === 'Medium' ? 'bg-amber-100 text-amber-700' :
+                              getDifficultyLabel(q.difficulty) === 'Hard' ? 'bg-orange-100 text-orange-700' :
                               'bg-red-100 text-red-700'
                             }`}
                             variant="secondary"
                           >
-                            {q.difficulty}
+                            {getDifficultyLabel(q.difficulty)}
                           </Badge>
                           {q.source && <span className="text-blue-600 text-[10px]">📚 {q.source}</span>}
                           <span className="text-gray-400">XP {q.xp}</span>
@@ -779,7 +796,14 @@ export default function UserHomePage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                        <StepsButton problemId={q.id} problemTitle={q.title} />
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button size="sm" variant="outline" className="h-8 border-blue-200 text-blue-600 hover:bg-blue-50">
+                              Solve
+                            </Button>
+                          </DialogTrigger>
+                          <ProblemDialog problem={convertSupabaseProblem(q)} />
+                        </Dialog>
                         <button
                           onClick={() => removeFromQueue(q.id)}
                           className="p-1 rounded-full hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"

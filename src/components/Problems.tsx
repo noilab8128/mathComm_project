@@ -14,7 +14,6 @@ import { BookOpen, Send, Lock, Unlock, Star, Filter, Loader2, Heart } from "luci
 import { useLikes } from "@/hooks/useUserInteractions";
 import MathPreview from "@/components/MathPreview";
 import { problemsAPI, getDifficultyLabel, type Problem as SupabaseProblem } from "@/lib/supabase";
-import { StepsButton } from "@/components/ProblemHierarchyModal";
 import { ProblemDialog, convertSupabaseProblem, type ProblemDisplay } from "@/components/ProblemDialog";
 
 
@@ -242,15 +241,14 @@ export default function Problems() {
                     >
                       <Heart className={`h-5 w-5 ${likedIds.has(problem.id) ? "fill-pink-500 text-pink-500" : "text-gray-400"}`} />
                     </button>
-                    <StepsButton problemId={problem.id} problemTitle={problem.title} />
                     <Dialog>
                       <DialogTrigger asChild>
                         <Button
                           size="sm"
                           variant="outline"
-                          className="border-gray-300 text-gray-700 hover:bg-gray-100"
+                          className="border-blue-200 text-blue-600 hover:bg-blue-50"
                         >
-                          Open
+                          Solve
                         </Button>
                       </DialogTrigger>
                       <ProblemDialog problem={problem} />

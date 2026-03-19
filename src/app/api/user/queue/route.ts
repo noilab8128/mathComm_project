@@ -31,7 +31,10 @@ export async function GET() {
                     difficulty,
                     xp,
                     source,
-                    level
+                    level,
+                    content,
+                    category_path,
+                    tags
                 )
             `)
             .eq("user_id", session.user.id)
@@ -45,7 +48,6 @@ export async function GET() {
         // Flatten the response
         const formattedQueue = (data || []).map((item: any) => ({
             ...item.problem,
-            difficulty: item.problem.level || "Medium", // Fallback to level string if difficulty number isn't enough
             xp: item.problem.xp || 0
         }));
 

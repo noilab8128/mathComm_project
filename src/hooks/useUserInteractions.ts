@@ -3,9 +3,13 @@ import { useState, useEffect } from "react";
 export interface QueuedProblem {
   id: string;
   title: string;
-  difficulty: string;
+  difficulty: number;
   source?: string | null;
   xp: number;
+  level?: string;
+  content?: string;
+  category_path?: string;
+  tags?: string[];
 }
 
 export function useMyQueue() {
