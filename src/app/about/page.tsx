@@ -43,7 +43,7 @@ const AboutPage = () => {
                     <div className="text-center max-w-4xl mx-auto">
                         <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full mb-6">
                             <Sparkles className="h-5 w-5" />
-                            <span className="text-sm font-semibold">About NOI.LAB</span>
+                            <span className="text-sm font-semibold">About noi.lab</span>
                         </div>
                         <h1 className="text-5xl md:text-6xl font-bold mb-6 leading-tight">
                             Innovating the Future of
@@ -52,7 +52,7 @@ const AboutPage = () => {
                             </span>
                         </h1>
                         <p className="text-xl text-indigo-100 leading-relaxed">
-                            NOI.LAB is dedicated to developing novel solutions and helping people use web pages conveniently using AI technologies. We create intelligent, user-friendly platforms that transform how people interact with the digital world.
+                            noi.lab is dedicated to developing novel solutions and helping people use web pages conveniently using AI technologies. We create intelligent, user-friendly platforms that transform how people interact with the digital world.
                         </p>
                     </div>
                 </div>

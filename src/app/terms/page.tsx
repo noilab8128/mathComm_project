@@ -27,12 +27,12 @@ const TermsPage = () => {
                     <div className="prose prose-lg max-w-none">
                         <h2 className="text-3xl font-bold text-gray-900 mb-6">1. Acceptance of Terms</h2>
                         <p className="text-gray-600 mb-6 leading-relaxed">
-                            By accessing and using NOI.LAB&apos;s services, you accept and agree to be bound by the terms and provisions of this agreement. If you do not agree to abide by the above, please do not use this service.
+                            By accessing and using noi.lab&apos;s services, you accept and agree to be bound by the terms and provisions of this agreement. If you do not agree to abide by the above, please do not use this service.
                         </p>
 
                         <h2 className="text-3xl font-bold text-gray-900 mb-6 mt-10">2. Use License</h2>
                         <p className="text-gray-600 mb-4 leading-relaxed">
-                            Permission is granted to temporarily access the materials on NOI.LAB&apos;s platform for personal, non-commercial use only. This is the grant of a license, not a transfer of title, and under this license you may not:
+                            Permission is granted to temporarily access the materials on noi.lab&apos;s platform for personal, non-commercial use only. This is the grant of a license, not a transfer of title, and under this license you may not:
                         </p>
                         <ul className="space-y-2 mb-6">
                             <li className="flex items-start gap-3 text-gray-600">
@@ -45,7 +45,7 @@ const TermsPage = () => {
                             </li>
                             <li className="flex items-start gap-3 text-gray-600">
                                 <AlertCircle className="h-5 w-5 text-indigo-600 mt-1 flex-shrink-0" />
-                                <span>Attempt to reverse engineer any software contained on NOI.LAB&apos;s platform</span>
+                                <span>Attempt to reverse engineer any software contained on noi.lab&apos;s platform</span>
                             </li>
                             <li className="flex items-start gap-3 text-gray-600">
                                 <AlertCircle className="h-5 w-5 text-indigo-600 mt-1 flex-shrink-0" />
@@ -57,12 +57,12 @@ const TermsPage = () => {
 
                         <h3 className="text-lg font-semibold text-gray-800 mb-2 mt-6">4.1 Platform Content</h3>
                         <p className="text-gray-700 leading-relaxed mb-4">
-                            All content on MathQuest, including but not limited to algorithms, curricula, problem sets, designs, and text, is owned by or licensed to NOI.LAB and is protected by intellectual property laws. You may not copy, modify, distribute, or reverse engineer any part of the platform without explicit written permission. It&apos;s illegal to copy content.
+                            All content on MathQuest, including but not limited to algorithms, curricula, problem sets, designs, and text, is owned by or licensed to noi.lab and is protected by intellectual property laws. You may not copy, modify, distribute, or reverse engineer any part of the platform without explicit written permission. It&apos;s illegal to copy content.
                         </p>
 
                         <h2 className="text-3xl font-bold text-gray-900 mb-6 mt-10">4. Intellectual Property</h2>
                         <p className="text-gray-600 mb-6 leading-relaxed">
-                            The service and its original content, features, and functionality are and will remain the exclusive property of NOI.LAB and its licensors. The service is protected by copyright, trademark, and other laws.
+                            The service and its original content, features, and functionality are and will remain the exclusive property of noi.lab and its licensors. The service is protected by copyright, trademark, and other laws.
                         </p>
 
                         <h2 className="text-3xl font-bold text-gray-900 mb-6 mt-10">5. User Content</h2>
@@ -100,7 +100,7 @@ const TermsPage = () => {
 
                         <h2 className="text-3xl font-bold text-gray-900 mb-6 mt-10">8. Limitation of Liability</h2>
                         <p className="text-gray-600 mb-6 leading-relaxed">
-                            In no event shall NOI.LAB, nor its directors, employees, partners, agents, suppliers, or affiliates, be liable for any indirect, incidental, special, consequential, or punitive damages, including without limitation, loss of profits, data, use, goodwill, or other intangible losses.
+                            In no event shall noi.lab, nor its directors, employees, partners, agents, suppliers, or affiliates, be liable for any indirect, incidental, special, consequential, or punitive damages, including without limitation, loss of profits, data, use, goodwill, or other intangible losses.
                         </p>
 
                         <h2 className="text-3xl font-bold text-gray-900 mb-6 mt-10">9. Changes to Terms</h2>

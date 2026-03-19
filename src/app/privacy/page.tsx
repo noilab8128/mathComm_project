@@ -165,7 +165,7 @@ const PrivacyPage = () => {
                             If you have any questions or concerns about this Privacy Policy or our data practices, please contact our Data Protection Officer at:
                         </p>
                         <div className="bg-gray-50 border border-gray-100 rounded-lg p-6">
-                            <p className="font-semibold text-gray-900 mb-2">NOI.LAB Privacy Team</p>
+                            <p className="font-semibold text-gray-900 mb-2">noi.lab Privacy Team</p>
                             <p className="text-gray-600">Email: privacy@noilab.com</p>
                             <p className="text-gray-600">Address: 123 Education Way, Suite 400, Tech District</p>
                             <p className="text-gray-600 mt-4 text-sm italic">Please include &quot;Privacy Inquiry&quot; in your subject line for faster routing.</p>

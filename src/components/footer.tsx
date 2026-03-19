@@ -18,7 +18,7 @@ const Footer = () => {
                                     href="/about"
                                     className="text-gray-600 hover:text-indigo-600 transition-colors text-sm flex items-center gap-2"
                                 >
-                                    About NOI.LAB
+                                    About Math Quest
                                 </Link>
                             </li>
                             <li>
@@ -180,12 +180,12 @@ const Footer = () => {
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img
                                     src="/noilab_logo.png"
-                                    alt="NOI.LAB Logo"
+                                    alt="noi.lab Logo"
                                     className="object-contain w-full h-full mix-blend-multiply"
                                 />
                             </div>
                             <div className="text-sm text-gray-600">
-                                © {new Date().getFullYear()} NOI.LAB. All rights reserved.
+                                © {new Date().getFullYear()} noi.lab. All rights reserved.
                             </div>
                         </div>
 

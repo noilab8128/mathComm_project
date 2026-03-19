@@ -36,12 +36,12 @@ const Header = () => {
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
                                 src="/noilab_logo.png"
-                                alt="NOI.LAB Logo"
+                                alt="noi.lab Logo"
                                 className="object-contain w-full h-full mix-blend-multiply"
                             />
                         </div>
                         <span className="font-bold text-xl tracking-tight text-gray-900">
-                            NOI.LAB
+                            Math Quest
                         </span>
                     </div>
 

@@ -841,12 +841,12 @@ export default function UserHomePage() {
             <CardHeader className="pb-2">
               <CardTitle className="text-base text-amber-800 flex items-center gap-2">
                 <Heart className="h-4 w-4 text-amber-600" />
-                Support MathComm
+                Support Math Quest
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-xs text-amber-700 mb-3">
-                Your donation helps us keep MathComm free and growing for students everywhere.
+                Your donation helps us keep Math Quest free and growing for students everywhere.
               </p>
               <a href="https://paypal.me/mookwonseo" target="_blank" rel="noopener noreferrer">
                 <Button size="sm" className="w-full gap-2 bg-amber-500 hover:bg-amber-600 text-white border-0">
