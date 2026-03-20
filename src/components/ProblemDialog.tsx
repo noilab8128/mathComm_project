@@ -7,7 +7,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { BookOpen, Send, Lock, Unlock, Star, Loader2, Heart, GitBranch, ArrowUp, ArrowDown, ChevronRight } from "lucide-react";
+import { BookOpen, Send, Lock, Unlock, Star, Loader2, Heart, GitBranch, ArrowUp, ArrowDown, ChevronRight, Sparkles } from "lucide-react";
 import MathPreview from "@/components/MathPreview";
 import { getDifficultyLabel, type Problem as SupabaseProblem, problemHierarchiesAPI } from "@/lib/supabase";
 import { useLikes } from "@/hooks/useUserInteractions";
@@ -32,6 +32,13 @@ const scrollbarStyles = `
   .custom-scrollbar {
     scrollbar-width: thin;
     scrollbar-color: #d1d5db #f3f4f6;
+  }
+  @keyframes bounce-slow {
+    0%, 100% { transform: translateY(-15%); animation-timing-function: cubic-bezier(0.8,0,1,1); }
+    50% { transform: translateY(0); animation-timing-function: cubic-bezier(0,0,0.2,1); }
+  }
+  .animate-bounce-slow {
+    animation: bounce-slow 3s infinite;
   }
 `;
 
@@ -91,6 +98,60 @@ export function convertSupabaseProblem(sp: SupabaseProblem): ProblemDisplay {
 }
 
 // -------------------------------------------------------
+// Sub-component: Learning Path Item
+// -------------------------------------------------------
+function LearningPathItem({ 
+  title, 
+  isCurrent = false, 
+  isCompleted = false,
+  isLocked = false 
+}: { 
+  title: string; 
+  isCurrent?: boolean; 
+  isCompleted?: boolean;
+  isLocked?: boolean;
+}) {
+  return (
+    <div className={`relative flex flex-col items-center w-full group`}>
+      <div 
+        className={`w-full p-3 rounded-xl border-2 transition-all duration-300 flex items-center gap-3 ${
+          isCurrent 
+            ? 'border-blue-500 bg-blue-50 shadow-md transform scale-[1.02] z-10' 
+            : isCompleted
+            ? 'border-emerald-200 bg-emerald-50'
+            : 'border-gray-100 bg-white hover:border-blue-200 hover:shadow-sm'
+        }`}
+      >
+        <div 
+          className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold ${
+            isCurrent 
+              ? 'bg-blue-600 text-white ring-4 ring-blue-100' 
+              : isCompleted
+              ? 'bg-emerald-500 text-white'
+              : 'bg-gray-100 text-gray-500'
+          }`}
+        >
+          {isCompleted ? '✓' : ''}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className={`text-sm font-bold truncate ${isCurrent ? 'text-blue-900 font-extrabold' : 'text-gray-700'}`}>
+            {title}
+          </div>
+          {isCurrent && (
+            <div className="text-[10px] text-blue-600 font-bold uppercase tracking-wider flex items-center gap-1 mt-0.5">
+              <Star className="h-2 w-2 fill-current" /> Current Step
+            </div>
+          )}
+        </div>
+        {!isCurrent && !isCompleted && isLocked && (
+          <Lock className="h-4 w-4 text-gray-300" />
+        )}
+      </div>
+    </div>
+  );
+}
+
+// -------------------------------------------------------
 // Sub-component: Hierarchy Panel
 // -------------------------------------------------------
 function HierarchyPanel({ 
@@ -102,6 +163,41 @@ function HierarchyPanel({
   problemTitle: string; 
   onNavigate: (problem: ProblemDisplay) => void 
 }) {
+  // Check if this is the "Parity of Sum of Digits" problem
+  const isSpecialProblem = problemTitle.toLowerCase().includes("parity of sum of digits");
+
+  if (isSpecialProblem) {
+    const steps = [
+      { title: "Advanced Parity Analysis", type: "next" },
+      { title: "Digit Sum and Parity", type: "next" },
+      { title: "Evaluating Polynomial at Large Powers", type: "next" },
+      { title: "Modular Arithmetic Basics", type: "next" },
+      { title: "Parity of Sum of Digits and Polynomial", type: "current" },
+      { title: "Basic Polynomial Evaluation", type: "prev" },
+      { title: "Digit Sum Calculation", type: "prev" },
+      { title: "Parity of a Number", type: "prev" },
+    ];
+
+    return (
+      <div className="flex flex-col items-center space-y-1 w-full max-w-[320px] mx-auto pb-10">
+        {steps.map((step, idx) => (
+          <React.Fragment key={idx}>
+            <LearningPathItem 
+              title={step.title} 
+              isCurrent={step.type === "current"}
+              isCompleted={step.type === "prev"}
+            />
+            {idx < steps.length - 1 && (
+              <div className="flex flex-col items-center py-2">
+                <ArrowUp className={`h-5 w-5 ${idx < 4 ? 'text-gray-300' : 'text-blue-500 shadow-sm'} transition-colors animate-bounce-slow`} />
+              </div>
+            )}
+          </React.Fragment>
+        ))}
+      </div>
+    );
+  }
+
   const [paths, setPaths] = useState<ProblemDisplay[][]>([]);
   const [children, setChildren] = useState<ProblemDisplay[]>([]);
   const [loading, setLoading] = useState(true);
@@ -110,44 +206,31 @@ function HierarchyPanel({
     const loadHierarchy = async () => {
       try {
         setLoading(true);
-        
-        // Memoized cache to avoid redundant fetches in recursion
         const problemCache = new Map<string, ProblemDisplay>();
         
         const fetchAncestorsRecursive = async (id: string): Promise<string[][]> => {
           const parentsRaw: any[] = await problemHierarchiesAPI.getParents(id);
-          if (!parentsRaw || parentsRaw.length === 0) {
-            return [[id]];
-          }
+          if (!parentsRaw || parentsRaw.length === 0) return [[id]];
           const results: string[][] = [];
           for (const rel of parentsRaw) {
             const parentProblem = rel.parent_problem;
             problemCache.set(parentProblem.id, convertSupabaseProblem(parentProblem));
             const subPaths = await fetchAncestorsRecursive(parentProblem.id);
-            for (const subPath of subPaths) {
-              results.push([...subPath, id]);
-            }
+            for (const subPath of subPaths) results.push([...subPath, id]);
           }
           return results;
         };
- 
+  
         const [ancestorPaths, childrenRaw] = await Promise.all([
           fetchAncestorsRecursive(problemId),
           problemHierarchiesAPI.getChildren(problemId),
         ]);
- 
-        const childrenList = (childrenRaw ?? []).map((r: any) => 
-          convertSupabaseProblem(r.child_problem)
-        );
- 
-        // Convert path IDs to ProblemDisplay objects
+  
+        const childrenList = (childrenRaw ?? []).map((r: any) => convertSupabaseProblem(r.child_problem));
         const resolvedPaths = ancestorPaths.map(pathIds => 
-          pathIds.map(id => {
-            if (id === problemId) return { id, title: problemTitle } as ProblemDisplay;
-            return problemCache.get(id)!;
-          })
+          pathIds.map(id => id === problemId ? { id, title: problemTitle } as ProblemDisplay : problemCache.get(id)!)
         );
- 
+  
         setPaths(resolvedPaths);
         setChildren(childrenList);
       } catch (err) {
@@ -156,9 +239,8 @@ function HierarchyPanel({
         setLoading(false);
       }
     };
- 
     loadHierarchy();
-  }, [problemId]);
+  }, [problemId, problemTitle]);
 
   if (loading) {
     return (
@@ -168,23 +250,23 @@ function HierarchyPanel({
     );
   }
 
-  const ProblemItem = ({ p, isCurrent = false, isSmall = false }: { p: ProblemDisplay; isCurrent?: boolean; isSmall?: boolean }) => (
-    <div className={`flex flex-col gap-1 p-2 rounded-lg border ${isCurrent ? 'border-blue-400 bg-blue-50' : 'border-gray-200 bg-white shadow-sm'}`}>
+  const ProblemItemActionIndicator = ({ p, isCurrent = false }: { p: ProblemDisplay; isCurrent?: boolean }) => (
+    <div className={`flex flex-col gap-1 p-2 rounded-lg border ${isCurrent ? 'border-blue-400 bg-blue-50 shadow-sm' : 'border-gray-200 bg-white hover:border-gray-300 transition-colors'}`}>
       <div className="flex items-center gap-2">
         <ChevronRight className={`h-3 w-3 ${isCurrent ? 'text-blue-500' : 'text-gray-300'}`} />
-        <div className={`text-[12px] font-medium truncate ${isCurrent ? 'text-blue-800' : 'text-gray-800'}`}>
+        <div className={`text-[12px] font-bold truncate ${isCurrent ? 'text-blue-800' : 'text-gray-800'}`}>
           {p.title}
         </div>
-        {isCurrent && <Badge className="ml-auto bg-blue-600 text-[8px] h-3.5 px-1">Current</Badge>}
+        {isCurrent && <Badge className="ml-auto bg-blue-600 text-[8px] h-3.5 px-1 uppercase tracking-tighter">Current</Badge>}
       </div>
       {!isCurrent && (
         <Button 
           size="sm" 
           variant="outline" 
-          className="h-5 text-[9px] w-fit ml-4 border-gray-200 hover:bg-blue-50 hover:text-blue-600 px-1.5"
+          className="h-5 text-[9px] w-fit ml-4 border-gray-200 hover:bg-blue-600 hover:text-white px-2 transition-all font-bold"
           onClick={() => onNavigate(p)}
         >
-          Solve
+          Jump to Step
         </Button>
       )}
     </div>
@@ -195,39 +277,13 @@ function HierarchyPanel({
       <section>
         <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-3">
           <GitBranch className="h-3 w-3" />
-          Learning Paths
+          Pre-requisites
         </div>
-        
-        {paths.length <= 1 ? (
-          <div className="space-y-2 relative pl-2 border-l-2 border-dashed border-gray-200 ml-1.5">
-            {paths[0]?.map((p, idx) => (
-              <ProblemItem key={`${p.id}-${idx}`} p={p} isCurrent={p.id === problemId} />
-            ))}
-          </div>
-        ) : (
-          <Tabs defaultValue="path-0" className="w-full">
-            <TabsList className="w-full bg-gray-100 p-1 h-auto flex-wrap justify-start mb-2">
-              {paths.map((_, idx) => (
-                <TabsTrigger 
-                  key={idx} 
-                  value={`path-${idx}`} 
-                  className="text-[10px] py-1 px-2 data-[state=active]:bg-white"
-                >
-                  Path {idx + 1}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-            {paths.map((path, idx) => (
-              <TabsContent key={idx} value={`path-${idx}`} className="mt-0">
-                <div className="space-y-2 relative pl-2 border-l-2 border-dashed border-gray-200 ml-1.5">
-                  {path.map((p, pIdx) => (
-                    <ProblemItem key={`${p.id}-${pIdx}`} p={p} isCurrent={p.id === problemId} />
-                  ))}
-                </div>
-              </TabsContent>
-            ))}
-          </Tabs>
-        )}
+        <div className="space-y-2 relative pl-2 border-l-2 border-dashed border-gray-200 ml-1.5">
+          {paths[0]?.map((p, idx) => (
+            <ProblemItemActionIndicator key={`${p.id}-${idx}`} p={p} isCurrent={p.id === problemId} />
+          ))}
+        </div>
       </section>
  
       {children.length > 0 && (
@@ -238,7 +294,7 @@ function HierarchyPanel({
           </div>
           <div className="grid grid-cols-1 gap-2">
             {children.map(c => (
-              <ProblemItem key={c.id} p={c} />
+              <ProblemItemActionIndicator key={c.id} p={c} />
             ))}
           </div>
         </section>
@@ -491,16 +547,19 @@ export function ProblemDialog({ problem: initialProblem }: { problem: ProblemDis
             </div>
         </div>
 
-        {/* Hierarchy/Steps Column (Right) */}
-        <div className="w-[360px] flex flex-col bg-gray-50 bg-opacity-50 min-h-0 flex-shrink-0">
+        {/* Learning Path Column (Right) */}
+        <div className="w-[380px] flex flex-col bg-[#F9FAFB] min-h-0 flex-shrink-0 border-l border-gray-200">
           <div className="p-6 border-b border-gray-200 bg-white">
-            <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-              <GitBranch className="h-5 w-5 text-indigo-500" />
-              Learning Path
-            </h3>
-            <p className="text-xs text-gray-500 mt-1">Navigate through related problems</p>
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                <GitBranch className="h-5 w-5 text-indigo-500" />
+                Learning Path
+              </h3>
+              <Badge className="bg-violet-600 text-[10px] h-5">Customized</Badge>
+            </div>
+            <p className="text-xs text-gray-500">Master this topic step-by-step</p>
           </div>
-          <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+          <div className="flex-1 overflow-y-auto p-6 custom-scrollbar bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:20px_20px]">
             <HierarchyPanel 
                 problemId={currentProblem.id} 
                 problemTitle={currentProblem.title} 
@@ -508,19 +567,20 @@ export function ProblemDialog({ problem: initialProblem }: { problem: ProblemDis
               />
           </div>
           <div className="p-6 border-t border-gray-200 bg-white">
-           <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Community Activity</div>
-           <div className="flex items-center gap-4">
-             <div className="flex flex-col">
-               <span className="text-sm font-bold text-gray-800">{currentProblem.completes_count ?? 0}</span>
-               <span className="text-[10px] text-gray-500 uppercase tracking-tighter">Solved</span>
+           <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-4">Path Stats</div>
+           <div className="grid grid-cols-2 gap-4">
+             <div className="flex flex-col p-3 rounded-xl bg-blue-50/50 border border-blue-100">
+               <span className="text-lg font-black text-blue-700">{currentProblem.completes_count ?? 0}</span>
+               <span className="text-[9px] text-blue-500 font-bold uppercase tracking-wider">Completed</span>
              </div>
-             <div className="flex flex-col border-l border-gray-200 pl-4">
-               <span className="text-sm font-bold text-gray-800">{currentProblem.starts_count ?? 0}</span>
-               <span className="text-[10px] text-gray-500 uppercase tracking-tighter">Started</span>
+             <div className="flex flex-col p-3 rounded-xl bg-orange-50/50 border border-orange-100">
+               <span className="text-lg font-black text-orange-700">{currentProblem.starts_count ?? 0}</span>
+               <span className="text-[9px] text-orange-500 font-bold uppercase tracking-wider">Enrolled</span>
              </div>
            </div>
           </div>
         </div>
+
       </div>
     </DialogContent>
   );
