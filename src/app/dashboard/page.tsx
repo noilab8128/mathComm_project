@@ -22,86 +22,7 @@ import { ShieldAlert } from "lucide-react";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
 
-/**
- * SideNav Component - Left sidebar navigation
- * @param active - Currently active page/section
- * @param onChange - Callback function to change active page
- * @param isAdmin - Boolean whether the current user is an admin
- */
-function SideNav({ active, onChange, isAdmin }: { active: string; onChange: (k: string) => void, isAdmin: boolean }) {
-  const { data: session } = useSession();
-  // Navigation menu items with icons and labels
-  const items = [
-    { key: "dashboard", label: "Home", icon: <Home className="h-4 w-4" /> },
-    { key: "skill-tree", label: "Skill Tree", icon: <Network className="h-4 w-4" /> },
-    { key: "problems", label: "Problems", icon: <Brain className="h-4 w-4" /> },
-    { key: "stats", label: "Stats", icon: <LineChart className="h-4 w-4" /> },
-    { key: "community", label: "Community", icon: <Users className="h-4 w-4" /> },
-  ];
-
-  return (
-    <div className="h-full w-64 border-r bg-white/60 backdrop-blur p-3 hidden xl:flex xl:flex-col">
-      {/* App Logo and Title */}
-      <div className="flex items-center gap-2 px-2 py-3">
-        <Crown className="h-5 w-5" />
-        <div className="font-bold">MathQuest</div>
-      </div>
-
-      {/* Navigation Menu Items */}
-      <div className="mt-2 space-y-1">
-        {items.map((it) => (
-          <button
-            key={it.key}
-            onClick={() => onChange(it.key)}
-            className={`w-full flex items-center gap-2 rounded-xl px-3 py-2 text-left hover:bg-muted ${active === it.key ? "bg-muted font-semibold" : ""
-              }`}
-          >
-            {it.icon}
-            <span>{it.label}</span>
-          </button>
-        ))}
-        {isAdmin && (
-          <Link href="/admin" className="block w-full">
-            <button className="w-full flex items-center gap-2 rounded-xl px-3 py-2 text-left text-indigo-600 hover:bg-indigo-50 font-medium mt-4 border border-indigo-100">
-              <ShieldAlert className="h-4 w-4" />
-              <span>Admin Dashboard</span>
-            </button>
-          </Link>
-        )}
-      </div>
-
-      {/* User Profile Section */}
-      <div className="mt-auto p-3">
-        <div className="rounded-xl border bg-white/60 backdrop-blur p-3">
-          <div className="pb-2">
-            <div className="text-sm font-semibold">Your Profile</div>
-          </div>
-          <div className="flex items-center gap-3">
-            <Avatar className="h-8 w-8">
-              {session?.user?.image ? (
-                <AvatarImage src={session.user.image} alt={session.user.name || "User"} />
-              ) : (
-                <AvatarFallback>{session?.user?.name?.charAt(0) || "U"}</AvatarFallback>
-              )}
-            </Avatar>
-            <div className="overflow-hidden">
-              <div className="text-sm font-medium truncate">{session?.user?.name || "Loading..."}</div>
-              <div className="text-xs text-muted-foreground truncate">{session?.user?.email || "Loading..."}</div>
-              {/* Prepare placeholders for data not yet available but user asked to keep it if any */}
-            </div>
-          </div>
-          <Button
-            variant="ghost"
-            className="w-full mt-2 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 justify-start"
-            onClick={() => signOut({ callbackUrl: '/' })}
-          >
-            Log out
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-}
+import SideNav from "@/components/SideNav";
 
 /**
  * Main MathQuest UI Component
@@ -143,7 +64,6 @@ export default function MathQuestUIMock() {
           {page === "dashboard" && <UserHomePage />}
           {page === "skill-tree" && <SkillTree />}
           {page === "problems" && <Problems />}
-          {page === "stats" && <Stats />}
           {page === "community" && <Community activeTab={communityTab} onTabChange={setCommunityTab} />}
         </main>
       </div>
