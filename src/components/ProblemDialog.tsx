@@ -155,84 +155,47 @@ function LearningPathItem({
 // Sub-component: Hierarchy Panel
 // -------------------------------------------------------
 function HierarchyPanel({ 
-  problemId, 
-  problemTitle, 
-  onNavigate 
+  path, 
+  onNavigate,
+  onBackTo
 }: { 
-  problemId: string; 
-  problemTitle: string; 
-  onNavigate: (problem: ProblemDisplay) => void 
+  path: ProblemDisplay[]; 
+  onNavigate: (problem: ProblemDisplay) => void;
+  onBackTo: (index: number) => void;
 }) {
-  // Check if this is the "Parity of Sum of Digits" problem
-  const isSpecialProblem = problemTitle.toLowerCase().includes("parity of sum of digits");
-
-  if (isSpecialProblem) {
-    const steps = [
-      { title: "Advanced Parity Analysis", type: "next" },
-      { title: "Digit Sum and Parity", type: "next" },
-      { title: "Evaluating Polynomial at Large Powers", type: "next" },
-      { title: "Modular Arithmetic Basics", type: "next" },
-      { title: "Parity of Sum of Digits and Polynomial", type: "current" },
-      { title: "Basic Polynomial Evaluation", type: "prev" },
-      { title: "Digit Sum Calculation", type: "prev" },
-      { title: "Parity of a Number", type: "prev" },
-    ];
-
-    return (
-      <div className="flex flex-col items-center space-y-1 w-full max-w-[320px] mx-auto pb-10">
-        {steps.map((step, idx) => (
-          <React.Fragment key={idx}>
-            <LearningPathItem 
-              title={step.title} 
-              isCurrent={step.type === "current"}
-              isCompleted={step.type === "prev"}
-            />
-            {idx < steps.length - 1 && (
-              <div className="flex flex-col items-center py-2">
-                <ArrowUp className={`h-5 w-5 ${idx < 4 ? 'text-gray-300' : 'text-blue-500 shadow-sm'} transition-colors animate-bounce-slow`} />
-              </div>
-            )}
-          </React.Fragment>
-        ))}
-      </div>
-    );
-  }
-
-  const [paths, setPaths] = useState<ProblemDisplay[][]>([]);
-  const [children, setChildren] = useState<ProblemDisplay[]>([]);
+  const currentProblem = path[path.length - 1];
+  const [solutionsMap, setSolutionsMap] = useState<Record<string, any[]>>({});
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<string>("");
 
   useEffect(() => {
     const loadHierarchy = async () => {
       try {
         setLoading(true);
-        const problemCache = new Map<string, ProblemDisplay>();
+        // Get all children associated with the CURRENT focused problem
+        const childrenRaw: any[] = await problemHierarchiesAPI.getChildren(currentProblem.id);
         
-        const fetchAncestorsRecursive = async (id: string): Promise<string[][]> => {
-          const parentsRaw: any[] = await problemHierarchiesAPI.getParents(id);
-          if (!parentsRaw || parentsRaw.length === 0) return [[id]];
-          const results: string[][] = [];
-          for (const rel of parentsRaw) {
-            const parentProblem = rel.parent_problem;
-            problemCache.set(parentProblem.id, convertSupabaseProblem(parentProblem));
-            const subPaths = await fetchAncestorsRecursive(parentProblem.id);
-            for (const subPath of subPaths) results.push([...subPath, id]);
-          }
-          return results;
-        };
-  
-        const [ancestorPaths, childrenRaw] = await Promise.all([
-          fetchAncestorsRecursive(problemId),
-          problemHierarchiesAPI.getChildren(problemId),
-        ]);
-  
-        const childrenList = (childrenRaw ?? []).map((r: any) => convertSupabaseProblem(r.child_problem));
-        const resolvedPaths = ancestorPaths.map(pathIds => 
-          pathIds.map(id => id === problemId ? { id, title: problemTitle } as ProblemDisplay : problemCache.get(id)!)
-        );
-  
-        setPaths(resolvedPaths);
-        setChildren(childrenList);
+        if (!childrenRaw || childrenRaw.length === 0) {
+          setSolutionsMap({});
+          return;
+        }
+
+        // Group by parent_solution_id
+        const grouped: Record<string, any[]> = {};
+        childrenRaw.forEach(rel => {
+          const solId = rel.parent_solution_id || "default";
+          if (!grouped[solId]) grouped[solId] = [];
+          grouped[solId].push(rel);
+        });
+
+        // Sort each group by sequence order DESC (largest at top)
+        Object.keys(grouped).forEach(solId => {
+          grouped[solId].sort((a, b) => b.sequence_order - a.sequence_order);
+        });
+
+        setSolutionsMap(grouped);
+        const firstSolId = Object.keys(grouped)[0];
+        if (firstSolId) setActiveTab(firstSolId);
       } catch (err) {
         console.error("Failed to fetch hierarchy:", err);
       } finally {
@@ -240,74 +203,140 @@ function HierarchyPanel({
       }
     };
     loadHierarchy();
-  }, [problemId, problemTitle]);
+  }, [currentProblem.id]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
-      </div>
-    );
-  }
-
-  const ProblemItemActionIndicator = ({ p, isCurrent = false }: { p: ProblemDisplay; isCurrent?: boolean }) => (
-    <div className={`flex flex-col gap-1 p-2 rounded-lg border ${isCurrent ? 'border-blue-400 bg-blue-50 shadow-sm' : 'border-gray-200 bg-white hover:border-gray-300 transition-colors'}`}>
-      <div className="flex items-center gap-2">
-        <ChevronRight className={`h-3 w-3 ${isCurrent ? 'text-blue-500' : 'text-gray-300'}`} />
-        <div className={`text-[12px] font-bold truncate ${isCurrent ? 'text-blue-800' : 'text-gray-800'}`}>
-          {p.title}
-        </div>
-        {isCurrent && <Badge className="ml-auto bg-blue-600 text-[8px] h-3.5 px-1 uppercase tracking-tighter">Current</Badge>}
-      </div>
-      {!isCurrent && (
-        <Button 
-          size="sm" 
-          variant="outline" 
-          className="h-5 text-[9px] w-fit ml-4 border-gray-200 hover:bg-blue-600 hover:text-white px-2 transition-all font-bold"
-          onClick={() => onNavigate(p)}
-        >
-          Jump to Step
-        </Button>
-      )}
-    </div>
-  );
+  const solutionIds = Object.keys(solutionsMap);
 
   return (
-    <div className="space-y-6">
-      <section>
-        <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-3">
-          <GitBranch className="h-3 w-3" />
-          Pre-requisites
-        </div>
-        <div className="space-y-2 relative pl-2 border-l-2 border-dashed border-gray-200 ml-1.5">
-          {paths[0]?.map((p, idx) => (
-            <ProblemItemActionIndicator key={`${p.id}-${idx}`} p={p} isCurrent={p.id === problemId} />
-          ))}
-        </div>
-      </section>
- 
-      {children.length > 0 && (
-        <section>
-          <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-3">
-            <ArrowDown className="h-3 w-3" />
-            Next Steps
+    <div className="flex flex-col h-full">
+      {/* Top Section: Persistent Title & Path Selector (Tabs) */}
+      <div className="space-y-4 mb-6">
+        {/* If the current focused problem has multiple solutions, show them at the very top of the panel content */}
+        {solutionIds.length > 1 && (
+          <div className="sticky top-0 z-20 bg-transparent">
+             <div className="text-[10px] font-extrabold text-blue-600 uppercase tracking-widest mb-1.5 px-0.5">Focus Strategy</div>
+             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="bg-white/50 backdrop-blur-sm border border-gray-100 flex-wrap h-auto min-h-10 p-1 mb-2 grid grid-cols-2 gap-1 shadow-sm rounded-xl">
+                  {solutionIds.map((solId, idx) => (
+                    <TabsTrigger 
+                      key={solId} 
+                      value={solId} 
+                      className="text-[10px] font-bold h-7 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-300 rounded-lg"
+                    >
+                      {solId === "default" ? "Primary Method" : `Solution ${idx + 1}`}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+             </Tabs>
           </div>
-          <div className="grid grid-cols-1 gap-2">
-            {children.map(c => (
-              <ProblemItemActionIndicator key={c.id} p={c} />
+        )}
+      </div>
+
+      <div className="flex-1 space-y-1">
+        {/* Ancestors Path (Persistent) */}
+        {path.length > 1 && (
+          <div className="flex flex-col items-center space-y-1 w-full max-w-[320px] mx-auto opacity-70 hover:opacity-100 transition-opacity">
+            {path.slice(0, -1).map((p, idx) => (
+              <React.Fragment key={p.id}>
+                <div 
+                  className="w-full cursor-pointer hover:scale-[1.01] transition-transform"
+                  onClick={() => onBackTo(idx)}
+                >
+                  <LearningPathItem 
+                    title={p.title} 
+                    isCompleted={true}
+                  />
+                </div>
+                <div className="flex flex-col items-center py-1">
+                   <ArrowUp className="h-4 w-4 text-gray-300" />
+                </div>
+              </React.Fragment>
             ))}
           </div>
-        </section>
+        )}
+
+        {/* Current Problem & Children */}
+        <PathDisplay 
+          problemId={currentProblem.id} 
+          problemTitle={currentProblem.title} 
+          steps={solutionIds.length > 0 ? solutionsMap[activeTab || solutionIds[0]] : []} 
+          onNavigate={onNavigate} 
+          isLoading={loading}
+        />
+      </div>
+    </div>
+  );
+}
+
+function PathDisplay({ 
+  problemId, 
+  problemTitle, 
+  steps, 
+  onNavigate,
+  isLoading
+}: { 
+  problemId: string; 
+  problemTitle: string; 
+  steps: any[]; 
+  onNavigate: (problem: ProblemDisplay) => void;
+  isLoading: boolean;
+}) {
+  return (
+    <div className="flex flex-col items-center space-y-1 w-full max-w-[320px] mx-auto pb-10">
+      {/* Current Problem Anchor */}
+      <LearningPathItem 
+        title={problemTitle} 
+        isCurrent={true}
+      />
+      
+      {isLoading ? (
+        <div className="flex flex-col items-center py-12 gap-3">
+          <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
+          <span className="text-[10px] text-gray-400 font-bold uppercase">Loading Roadmap...</span>
+        </div>
+      ) : steps?.length > 0 ? (
+        <>
+          {/* Children below sorted by sequence order (largest at top) */}
+          {steps.map((rel, idx) => {
+            const child = convertSupabaseProblem(rel.child_problem);
+            return (
+              <React.Fragment key={child.id}>
+                 <div className="flex flex-col items-center py-2">
+                    <ArrowUp className="h-5 w-5 text-blue-500 shadow-sm transition-colors animate-bounce-slow" />
+                  </div>
+                  <div 
+                    className="w-full cursor-pointer group"
+                    onClick={() => onNavigate(child)}
+                  >
+                    <LearningPathItem 
+                      title={child.title} 
+                      isCompleted={false}
+                    />
+                  </div>
+              </React.Fragment>
+            );
+          })}
+        </>
+      ) : (
+        <div className="text-center py-12 px-6 mt-4 bg-white/30 backdrop-blur-sm rounded-2xl border border-dashed border-gray-200 w-full">
+          <GitBranch className="h-10 w-10 text-gray-200 mx-auto mb-4" />
+          <p className="text-[11px] text-gray-400 font-medium italic leading-relaxed">
+            This problem is a foundational step.<br/>Master it to unlock more complex challenges!
+          </p>
+        </div>
       )}
     </div>
   );
 }
 
+
 // -------------------------------------------------------
 // Component: ProblemDialog
 // -------------------------------------------------------
 export function ProblemDialog({ problem: initialProblem }: { problem: ProblemDisplay }) {
-  const [currentProblem, setCurrentProblem] = useState<ProblemDisplay>(initialProblem);
+  const [navigationPath, setNavigationPath] = useState<ProblemDisplay[]>([initialProblem]);
+  const currentProblem = navigationPath[navigationPath.length - 1];
+
   const [tab, setTab] = useState<"write" | "auto">("write");
   const [solutionDraft, setSolutionDraft] = useState("");
   const [previewVisible, setPreviewVisible] = useState(false);
@@ -321,9 +350,18 @@ export function ProblemDialog({ problem: initialProblem }: { problem: ProblemDis
 
   const { likedIds, toggleLike } = useLikes();
 
+  // Navigation handlers
+  const handleNavigate = useCallback((problem: ProblemDisplay) => {
+    setNavigationPath(prev => [...prev, problem]);
+  }, []);
+
+  const handleBackTo = useCallback((index: number) => {
+    setNavigationPath(prev => prev.slice(0, index + 1));
+  }, []);
+
   // Reset local state when initialProblem changes (if the whole dialog is reopened with a different problem)
   useEffect(() => {
-    setCurrentProblem(initialProblem);
+    setNavigationPath([initialProblem]);
   }, [initialProblem.id]);
 
   const previewHeaderStatus = useMemo(() => {
@@ -555,18 +593,18 @@ export function ProblemDialog({ problem: initialProblem }: { problem: ProblemDis
                 <GitBranch className="h-5 w-5 text-indigo-500" />
                 Learning Path
               </h3>
-              <Badge className="bg-violet-600 text-[10px] h-5">Customized</Badge>
+              <Badge className="bg-violet-600 text-[10px] h-5 px-2">Hierarchical</Badge>
             </div>
-            <p className="text-xs text-gray-500">Master this topic step-by-step</p>
+            <p className="text-xs text-gray-500 font-medium">Master this topic step-by-step</p>
           </div>
           <div className="flex-1 overflow-y-auto p-6 custom-scrollbar bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:20px_20px]">
             <HierarchyPanel 
-                problemId={currentProblem.id} 
-                problemTitle={currentProblem.title} 
-                onNavigate={setCurrentProblem} 
+                path={navigationPath} 
+                onNavigate={handleNavigate} 
+                onBackTo={handleBackTo}
               />
           </div>
-          <div className="p-6 border-t border-gray-200 bg-white">
+          <div className="p-6 border-t border-gray-200 bg-white bg-opacity-90 backdrop-blur-sm">
            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-4">Path Stats</div>
            <div className="grid grid-cols-2 gap-4">
              <div className="flex flex-col p-3 rounded-xl bg-blue-50/50 border border-blue-100">
