@@ -74,4 +74,5 @@ export interface RelatedProblem {
     stage?: string;
     concept?: string;
     explanation?: string;
+    solutionIndex?: number;
 }

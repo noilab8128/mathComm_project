@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useProblems } from "./hooks/useProblems";
-import { problemsAPI, problemHierarchiesAPI, getDifficultyLabel, calculateXP, categoryToTags } from "@/lib/supabase";
+import { problemsAPI, problemHierarchiesAPI, getDifficultyLabel, calculateXP, categoryToTags, supabase } from "@/lib/supabase";
 import { ProblemHeader } from "./components/ProblemHeader";
 import { ProblemStats } from "./components/ProblemStats";
 import { ProblemFilters } from "./components/ProblemFilters";
@@ -317,8 +317,18 @@ export default function ProblemManagementPage() {
       if (saved) {
         // Now save all staged related problems with hierarchy
         // We need to know which solution/stage they belong to
-        // For now, we assume simple linear generation or rely on 'concepts' (stages) mapping if available
-        // In the new 'relatedProblems' structure from API, we might expect stage info.
+        // Fetch the generated solutions of the parent to map solutionIndex to solution.id
+        let parentSolutions: any[] = [];
+        try {
+          const { data } = await supabase
+            .from('solutions')
+            .select('id, sequence_order')
+            .eq('problem_id', saved.id)
+            .order('sequence_order', { ascending: true });
+          if (data) parentSolutions = data;
+        } catch (err) {
+          console.error("Failed to fetch parent solutions for mapping.", err);
+        }
 
         const problemsToSave = relatedProblems.filter(p => addedProblemTitles.has(p.title));
 
@@ -357,11 +367,26 @@ export default function ProblemManagementPage() {
               const stageName = concepts?.[0] || "Next Step";
               const currentDepth = saved.hierarchyInfo?.depth || 1;
 
+              // Find exact parent solution ID based on solutionIndex (1-based index mapped to sequence_order)
+              let exactParentSolutionId = null;
+              if (relatedProblem.solutionIndex && parentSolutions.length > 0) {
+                const matchedSolution = parentSolutions.find(s => s.sequence_order === relatedProblem.solutionIndex);
+                if (matchedSolution) {
+                  exactParentSolutionId = matchedSolution.id;
+                } else {
+                  // Fallback to first solution if index out of bounds
+                  exactParentSolutionId = parentSolutions[0].id;
+                }
+              } else if (parentSolutions.length > 0) {
+                // If AI missed returning solutionIndex, fallback securely
+                exactParentSolutionId = parentSolutions[0].id;
+              }
+
               // Create Hierarchy Link
               await problemHierarchiesAPI.create(
                 saved.id,
                 savedChild.id,
-                null, // parent_solution_id
+                exactParentSolutionId, // mapped parent_solution_id
                 stageName,
                 i + 1, // sequence_order
                 currentDepth + 1 // depth
@@ -684,13 +709,17 @@ export default function ProblemManagementPage() {
       const response = await fetch('/api/generate-solution', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: problemContent }),
+        body: JSON.stringify({ problemContent: problemContent, category: category }),
       });
 
       if (!response.ok) throw new Error('Generation failed');
 
       const data = await response.json();
-      setSolution(data.solution);
+      setSolutions(prev => [...prev, {
+        id: `ai-generated-${Date.now()}`,
+        title: `AI Method ${prev.length + 1}`,
+        content: data.solution
+      }]);
       showToast("Solution generated successfully!", "success");
     } catch (error) {
       console.error('Generation error:', error);

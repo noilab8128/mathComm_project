@@ -180,18 +180,33 @@ export const problemsAPI = {
 
     if (error) throw error;
 
-    // 2. Replace Solutions (Delete all for this problem, insert new)
-    // This is simple strategy. For smarter updates, we'd need solution IDs.
-    // For now, full overwrite of solutions is safer for "edit" mode.
+    // 2. Replace Solutions (Upsert strategy to preserve hierarchy foreign keys)
     if (solutions) {
-      // Delete existing
-      await supabase.from('solutions').delete().eq('problem_id', id);
+      // Get existing ones to calculate what to delete
+      const { data: existingSolutions } = await supabase.from('solutions').select('id').eq('problem_id', id);
+      const existingIds = new Set((existingSolutions as any[])?.map(s => s.id) || []);
 
-      // Insert new
-      if (solutions.length > 0) {
-        const solutionsWithId = solutions.map(s => ({ ...s, problem_id: id }));
-        // @ts-expect-error - problem_id is added above
-        await supabase.from('solutions').insert(solutionsWithId);
+      const solutionsToUpsert: any[] = [];
+
+      for (const s of solutions) {
+        const solId = (s as any).id;
+        if (solId) {
+            existingIds.delete(solId);
+            solutionsToUpsert.push({ ...s, problem_id: id });
+        } else {
+            // New solution (no id provided, Supabase generates it via DEFAULT)
+            solutionsToUpsert.push({ ...s, problem_id: id });
+        }
+      }
+
+      // Delete the ones missing from the payload
+      if (existingIds.size > 0) {
+        await supabase.from('solutions').delete().in('id', Array.from(existingIds));
+      }
+
+      // Upsert new and remaining
+      if (solutionsToUpsert.length > 0) {
+        await supabase.from('solutions').upsert(solutionsToUpsert as any, { onConflict: 'id' });
       }
     }
 

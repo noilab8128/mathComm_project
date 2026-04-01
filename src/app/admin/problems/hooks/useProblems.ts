@@ -223,14 +223,19 @@ export function useProblems() {
             };
 
             // Prepare solutions for separate table
-            const solutionsToSave = problem.solutions?.map((s, index) => ({
-                content: s.content,
-                sequence_order: s.sequenceOrder || index + 1
-            })) || [];
+            const solutionsToSave = problem.solutions?.map((s, index) => {
+                const isValidUUID = s.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s.id);
+                return {
+                    id: isValidUUID ? s.id : undefined,
+                    content: s.content,
+                    sequence_order: s.sequenceOrder || index + 1
+                };
+            }) || [];
 
             // If no solutions in array but legacy 'solution' exists (e.g. from UI input), add it
             if (solutionsToSave.length === 0 && problem.solution) {
                 solutionsToSave.push({
+                    id: undefined,
                     content: problem.solution,
                     sequence_order: 1
                 });

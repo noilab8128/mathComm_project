@@ -58,6 +58,7 @@ Based on the guide above, analyze the original problem and its provided solution
 5. For each difficulty level (1 to ${difficulty || 5}), you may generate multiple problems if there are different concepts or skills from different solution paths to address.
 6. Do not feel limited to a small number of problems; provide as many as needed to build a solid foundation across all identified methods.
 7. Each sub-problem must have a clear "stage", "concept", and "difficulty" (1-10).
+8. CRITICAL: Each sub-problem MUST map to one of the provided solution methods. Include a "solutionIndex" integer (1, 2, 3...) corresponding to the reference solution method order it stems from.
 
 CRITICAL: Respond ONLY with valid JSON in this exact format:
 {
@@ -71,7 +72,8 @@ CRITICAL: Respond ONLY with valid JSON in this exact format:
       "category": "Algebra",
       "stage": "Stage 1: Description",
       "concept": "Which concept this teaches",
-      "explanation": "Why this is foundational for this stage"
+      "explanation": "Why this is foundational for this stage",
+      "solutionIndex": 1
     }
   ]
 }
