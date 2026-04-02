@@ -7,7 +7,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { BookOpen, Send, Lock, Unlock, Star, Loader2, Heart, GitBranch, ArrowUp, ArrowDown, ChevronRight, Sparkles } from "lucide-react";
+import { BookOpen, Send, Lock, Unlock, Star, Loader2, Heart, GitBranch, ArrowUp, ArrowDown, ChevronRight, Sparkles, CheckCircle2, XCircle, AlertCircle, RefreshCcw } from "lucide-react";
 import MathPreview from "@/components/MathPreview";
 import { getDifficultyLabel, type Problem as SupabaseProblem, problemHierarchiesAPI } from "@/lib/supabase";
 import { useLikes } from "@/hooks/useUserInteractions";
@@ -63,6 +63,27 @@ export interface ProblemDisplay {
   likes_count?: number;
   starts_count?: number;
   completes_count?: number;
+}
+
+interface GradingFeedback {
+  criterion: string;
+  comment: string;
+  hint?: string;
+}
+
+interface GradingResult {
+  scores: {
+    accuracy: number;
+    communication: number;
+    logic: number;
+    presentation: number;
+    justification: number;
+  };
+  totalScore: number;
+  maxScore: number;
+  feedback: GradingFeedback[];
+  overallSummary: string;
+  isCorrect: boolean;
 }
 
 // -------------------------------------------------------
@@ -348,6 +369,11 @@ export function ProblemDialog({ problem: initialProblem }: { problem: ProblemDis
   const [problemHtml, setProblemHtml] = useState<string>("");
   const [problemContentLoading, setProblemContentLoading] = useState(true);
 
+  // New Grading State
+  const [isGrading, setIsGrading] = useState(false);
+  const [gradingResult, setGradingResult] = useState<GradingResult | null>(null);
+  const [showGradingResult, setShowGradingResult] = useState(false);
+
   const { likedIds, toggleLike } = useLikes();
 
   // Navigation handlers
@@ -411,6 +437,37 @@ export function ProblemDialog({ problem: initialProblem }: { problem: ProblemDis
     }
   }, [solutionDraft]);
 
+  const handleSubmitSolution = useCallback(async () => {
+    if (!solutionDraft.trim() || isGrading) return;
+
+    try {
+      setIsGrading(true);
+      const response = await fetch("/api/grade-solution", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          problemId: currentProblem.id,
+          problemContent: currentProblem.content, 
+          studentSolution: solutionDraft 
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Grading failed.");
+      }
+
+      setGradingResult(data.gradingResult);
+      setShowGradingResult(true);
+    } catch (error) {
+      console.error("Grading error:", error);
+      // Fallback for UI if needed
+    } finally {
+      setIsGrading(false);
+    }
+  }, [solutionDraft, currentProblem.content, isGrading]);
+
   useEffect(() => {
     const loadProblemContent = async () => {
       if (!currentProblem?.content) {
@@ -448,6 +505,8 @@ export function ProblemDialog({ problem: initialProblem }: { problem: ProblemDis
     setSolutionDraft("");
     setPreviewStatus("idle");
     setPreviewHtml("");
+    setGradingResult(null);
+    setShowGradingResult(false);
   }, [currentProblem?.id, currentProblem?.content]);
 
   return (
@@ -512,63 +571,159 @@ export function ProblemDialog({ problem: initialProblem }: { problem: ProblemDis
                   </TabsList>
 
                   <TabsContent value="write" className="mt-0 outline-none">
-                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 items-stretch">
-                      {/* Editor */}
-                      <div className="flex flex-col h-[300px] rounded-2xl border border-gray-200 bg-white overflow-hidden shadow-sm focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent transition-all">
-                        <div className="bg-gray-50 border-b border-gray-200 px-3 py-2 flex justify-between items-center">
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">LaTeX Editor</span>
-                        </div>
-                        <textarea
-                          className="flex-1 w-full p-4 text-[13px] font-mono leading-relaxed text-gray-800 resize-none outline-none bg-white"
-                          placeholder="Write your proof here using LaTeX..."
-                          value={solutionDraft}
-                          onChange={(e) => setSolutionDraft(e.target.value)}
-                        />
-                      </div>
- 
-                      {/* Preview */}
-                      <div className="flex flex-col h-[300px] rounded-2xl border border-gray-200 bg-white overflow-hidden shadow-sm">
-                        <div className="bg-gray-50 border-b border-gray-200 px-3 py-2 flex justify-between items-center">
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Live Preview</span>
-                          <Badge variant="outline" className="text-[9px] font-mono">{previewHeaderStatus}</Badge>
-                        </div>
-                        <div className="flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-gray-200">
-                          {previewStatus === "loading" && <div className="flex items-center gap-2 text-gray-400 text-sm"><Loader2 className="h-4 w-4 animate-spin" /> Rendering...</div>}
-                          {previewStatus === "error" && previewError && (
-                            <div className="p-3 bg-red-50 border border-red-100 text-red-600 text-xs rounded-lg">{previewError}</div>
-                          )}
-                          {previewStatus === "ready" && (
-                            <>
-                              {previewSource !== solutionDraft && (
-                                <div className="mb-4 p-2 bg-amber-50 border border-amber-100 text-amber-600 text-[10px] rounded text-center">Content changed - refresh needed</div>
-                              )}
-                              <MathPreview html={previewHtml} />
-                            </>
-                          )}
-                          {previewStatus === "idle" && (
-                            <div className="h-full flex flex-col items-center justify-center text-gray-400 gap-3 py-10">
-                              <GitBranch className="h-10 w-10 opacity-20" />
-                              <p className="text-sm">Click preview to see your progress</p>
+                    {showGradingResult && gradingResult ? (
+                      <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <div className={`rounded-3xl p-8 mb-8 border-2 ${gradingResult.isCorrect ? 'bg-emerald-50 border-emerald-200' : 'bg-blue-50 border-blue-200'}`}>
+                          <div className="flex items-start justify-between mb-8">
+                            <div>
+                               <div className="flex items-center gap-3 mb-2">
+                                  {gradingResult.isCorrect ? (
+                                    <CheckCircle2 className="h-8 w-8 text-emerald-500" />
+                                  ) : (
+                                    <Sparkles className="h-8 w-8 text-blue-500" />
+                                  )}
+                                  <h3 className="text-2xl font-black text-gray-900">
+                                    {gradingResult.isCorrect ? "Mastered!" : "AI Analysis Complete"}
+                                  </h3>
+                               </div>
+                               <p className="text-gray-600 font-medium max-w-xl leading-relaxed">
+                                 {gradingResult.overallSummary}
+                               </p>
                             </div>
-                          )}
+                            <div className="text-right">
+                               <div className="text-4xl font-black text-gray-900">{gradingResult.totalScore}<span className="text-xl text-gray-400">/{gradingResult.maxScore}</span></div>
+                               <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Total Performance</div>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+                             {Object.entries(gradingResult.scores).map(([key, score]) => (
+                               <div key={key} className="bg-white/80 backdrop-blur-sm p-4 rounded-2xl border border-white shadow-sm">
+                                  <div className="text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-1 truncate">
+                                    {key.replace('_', ' ')}
+                                  </div>
+                                  <div className="flex items-end gap-1">
+                                    <span className="text-xl font-black text-gray-800">{score}</span>
+                                    <span className="text-[10px] text-gray-400 font-bold mb-1">/10</span>
+                                  </div>
+                               </div>
+                             ))}
+                          </div>
+
+                          <div className="space-y-4">
+                             <div className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                               <ChevronRight className="h-4 w-4" /> Actionable Feedback
+                             </div>
+                             <div className="grid gap-3">
+                                {gradingResult.feedback.map((f, idx) => (
+                                  <div key={idx} className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-md transition-shadow group">
+                                     <div className="flex items-start gap-4">
+                                        <div className="h-8 w-8 rounded-full bg-gray-50 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-50 transition-colors">
+                                          <AlertCircle className="h-4 w-4 text-gray-400 group-hover:text-blue-500" />
+                                        </div>
+                                        <div className="flex-1">
+                                           <div className="text-[10px] font-extrabold text-blue-600 uppercase tracking-widest mb-1">{f.criterion}</div>
+                                           <div className="text-sm text-gray-700 leading-relaxed font-medium mb-3">{f.comment}</div>
+                                           {f.hint && (
+                                             <div className="bg-orange-50 border border-orange-100 rounded-xl p-3 flex items-start gap-3">
+                                                <Star className="h-4 w-4 text-orange-400 mt-0.5 fill-current" />
+                                                <div className="text-xs text-orange-800 font-medium">
+                                                  <span className="font-bold uppercase text-[9px] block mb-0.5">Scaffolded Hint</span>
+                                                  {f.hint}
+                                                </div>
+                                             </div>
+                                           )}
+                                        </div>
+                                     </div>
+                                  </div>
+                                ))}
+                             </div>
+                          </div>
+                          
+                          <div className="mt-8 flex justify-center">
+                             <Button 
+                               variant="outline" 
+                               onClick={() => setShowGradingResult(false)}
+                               className="bg-white border-2 border-gray-200 text-gray-600 font-bold px-8 h-12 rounded-2xl hover:bg-gray-50 hover:border-blue-200 hover:text-blue-600 transition-all gap-2"
+                             >
+                               <RefreshCcw className="h-4 w-4" /> Return to Editor
+                             </Button>
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    ) : (
+                      <>
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 items-stretch">
+                          {/* Editor */}
+                          <div className="flex flex-col h-[300px] rounded-2xl border border-gray-200 bg-white overflow-hidden shadow-sm focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent transition-all">
+                            <div className="bg-gray-50 border-b border-gray-200 px-3 py-2 flex justify-between items-center">
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">LaTeX Editor</span>
+                            </div>
+                            <textarea
+                              className="flex-1 w-full p-4 text-[13px] font-mono leading-relaxed text-gray-800 resize-none outline-none bg-white"
+                              placeholder="Write your proof here using LaTeX..."
+                              value={solutionDraft}
+                              onChange={(e) => setSolutionDraft(e.target.value)}
+                            />
+                          </div>
+    
+                          {/* Preview */}
+                          <div className="flex flex-col h-[300px] rounded-2xl border border-gray-200 bg-white overflow-hidden shadow-sm">
+                            <div className="bg-gray-50 border-b border-gray-200 px-3 py-2 flex justify-between items-center">
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Live Preview</span>
+                              <Badge variant="outline" className="text-[9px] font-mono">{previewHeaderStatus}</Badge>
+                            </div>
+                            <div className="flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-gray-200">
+                              {previewStatus === "loading" && <div className="flex items-center gap-2 text-gray-400 text-sm"><Loader2 className="h-4 w-4 animate-spin" /> Rendering...</div>}
+                              {previewStatus === "error" && previewError && (
+                                <div className="p-3 bg-red-50 border border-red-100 text-red-600 text-xs rounded-lg">{previewError}</div>
+                              )}
+                              {previewStatus === "ready" && (
+                                <>
+                                  {previewSource !== solutionDraft && (
+                                    <div className="mb-4 p-2 bg-amber-50 border border-amber-100 text-amber-600 text-[10px] rounded text-center">Content changed - refresh needed</div>
+                                  )}
+                                  <MathPreview html={previewHtml} />
+                                </>
+                              )}
+                              {previewStatus === "idle" && (
+                                <div className="h-full flex flex-col items-center justify-center text-gray-400 gap-3 py-10">
+                                  <GitBranch className="h-10 w-10 opacity-20" />
+                                  <p className="text-sm">Click preview to see your progress</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
 
-                    <div className="mt-8 flex items-center justify-between border-t border-gray-100 pt-8">
-                      <div className="flex gap-3">
-                        <Button className="bg-blue-600 hover:bg-blue-700 text-white px-8 h-12 shadow-md shadow-blue-100">
-                          Submit Solution <Send className="ml-2 h-4 w-4" />
-                        </Button>
-                        <Button variant="outline" className="px-6 h-12 border-gray-200 hover:bg-gray-50" onClick={handlePreviewClick} disabled={previewStatus === "loading"}>
-                          {previewStatus === "loading" ? "Processing..." : "Preview"}
-                        </Button>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button variant="ghost" size="sm" className="text-gray-500 hover:text-blue-600"><Star className="h-4 w-4 mr-1.5" /> Hint (-10 XP)</Button>
-                        <Button variant="ghost" size="sm" className="text-gray-500 hover:text-blue-600"><BookOpen className="h-4 w-4 mr-1.5" /> Theory</Button>
-                      </div>
-                    </div>
+                        <div className="mt-8 flex items-center justify-between border-t border-gray-100 pt-8">
+                          <div className="flex gap-3">
+                            <Button 
+                              onClick={handleSubmitSolution}
+                              disabled={isGrading || !solutionDraft.trim()}
+                              className="bg-blue-600 hover:bg-blue-700 text-white px-8 h-12 shadow-md shadow-blue-100 min-w-[180px]"
+                            >
+                              {isGrading ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Grading...
+                                </>
+                              ) : (
+                                <>
+                                  Submit Solution <Send className="ml-2 h-4 w-4" />
+                                </>
+                              )}
+                            </Button>
+                            <Button variant="outline" className="px-6 h-12 border-gray-200 hover:bg-gray-50" onClick={handlePreviewClick} disabled={previewStatus === "loading" || isGrading}>
+                              {previewStatus === "loading" ? "Processing..." : "Preview"}
+                            </Button>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button variant="ghost" size="sm" className="text-gray-500 hover:text-blue-600"><Star className="h-4 w-4 mr-1.5" /> Hint (-10 XP)</Button>
+                            <Button variant="ghost" size="sm" className="text-gray-500 hover:text-blue-600"><BookOpen className="h-4 w-4 mr-1.5" /> Theory</Button>
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </TabsContent>
 
                   <TabsContent value="auto" className="mt-0">
