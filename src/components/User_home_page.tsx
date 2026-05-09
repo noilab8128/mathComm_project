@@ -34,10 +34,30 @@ interface UserCategoryLevel {
   category_name: string | null;
 }
 
+interface UserStats {
+  current_level: number;
+  total_xp: number;
+  ranking_points: number;
+  tier: string;
+  current_streak: number;
+  longest_streak: number;
+  problems_solved: number;
+  problems_attempted: number;
+}
+
+interface UserCategoryStat {
+  category_id: number;
+  ranking_points: number;
+  tier: string;
+  category_name: string | null;
+}
+
 interface UserPreferences {
   interestedCategories: string[];
   categoryLevels: Record<string, number>; // { categoryName: 1-10 }
   userCategoryLevels: UserCategoryLevel[]; // from user_category_levels DB table
+  userStats?: UserStats;
+  userCategoryStats?: UserCategoryStat[];
 }
 
 /** Convert average category-level score (1-10) to a problem level label */
@@ -67,24 +87,6 @@ function matchesPreferences(problem: { category_path?: string | null; level?: st
 // -------------------------------------------------------
 // Helper components and types
 // -------------------------------------------------------
-
-// (removed useMyQueue and useLikes hooks)
-
-// Weekly leaderboard data
-const leaderboard: { name: string; xp: number; streak: number }[] = [
-  { name: "Ada L.", xp: 12450, streak: 21 },
-  { name: "Carl F.", xp: 11880, streak: 12 },
-  { name: "M. Seo", xp: 10320, streak: 8 },
-  { name: "Noether E.", xp: 9920, streak: 5 },
-];
-
-// Mock data for mastery chart
-const masteryByTopic = [
-  { topic: "Number Theory", percent: 65 },
-  { topic: "Algebra", percent: 45 },
-  { topic: "Geometry", percent: 30 },
-  { topic: "Combinatorics", percent: 20 },
-];
 
 // Skill Node Interface
 interface SkillNode {
@@ -231,19 +233,37 @@ function StatBar({ label, value }: { label: string; value: number }) {
  * MasteryChart Component - Bar chart showing user's mastery by topic
  * Uses Recharts library for data visualization
  */
-function MasteryChart() {
+function MasteryChart({ userCategoryStats }: { userCategoryStats?: UserCategoryStat[] }) {
+  // If no stats, show empty state or fallback
+  const data = userCategoryStats && userCategoryStats.length > 0
+    ? userCategoryStats.map(stat => ({
+        topic: stat.category_name || "Unknown",
+        rp: stat.ranking_points,
+        tier: stat.tier
+      })).sort((a, b) => b.rp - a.rp).slice(0, 5) // Top 5 categories
+    : [];
+
   return (
     <Card>
-      <CardHeader className="pb-2"><CardTitle className="text-base">Mastery by Topic</CardTitle></CardHeader>
-      <CardContent className="h-56">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={masteryByTopic}>
-            <XAxis dataKey="topic" tickLine={false} axisLine={false} />
-            <YAxis hide />
-            <Tooltip />
-            <Bar dataKey="percent" radius={[6, 6, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
+      <CardHeader className="pb-2"><CardTitle className="text-base">Domain Mastery (RP)</CardTitle></CardHeader>
+      <CardContent>
+        {data.length === 0 ? (
+          <div className="text-sm text-gray-500 py-4 text-center">No category stats yet. Solve problems to earn RP!</div>
+        ) : (
+          <div className="space-y-4 pt-2">
+            {data.map(d => (
+               <div key={d.topic}>
+                 <div className="flex justify-between items-center text-sm mb-1">
+                   <span className="font-medium text-gray-700">{d.topic}</span>
+                   <span className="text-xs font-mono text-blue-600">{d.rp} RP</span>
+                 </div>
+                 <div className="flex justify-between items-center text-xs text-gray-500 mt-0.5">
+                   <span>Tier: <strong className="text-gray-700">{d.tier}</strong></span>
+                 </div>
+               </div>
+            ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -254,20 +274,94 @@ function MasteryChart() {
  * Displays rank, name, XP, and current streak
  */
 function LeaderboardCard() {
+  const [leaderboard, setLeaderboard] = useState<{ name: string; xp: number; streak: number }[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchLeaderboard = async () => {
+      try {
+        const res = await fetch('/api/leaderboard');
+        if (res.ok) {
+          const data = await res.json();
+          setLeaderboard(data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch leaderboard:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchLeaderboard();
+  }, []);
+
   return (
     <Card>
-      <CardHeader className="pb-2"><CardTitle className="text-base">Top Solvers (This Week)</CardTitle></CardHeader>
+      <CardHeader className="pb-2"><CardTitle className="text-base flex items-center justify-between">Top Solvers <Badge variant="secondary" className="text-[10px]">Global</Badge></CardTitle></CardHeader>
       <CardContent>
-        <div className="space-y-3">
-          {leaderboard.map((u, i) => (
-            <div key={u.name} className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Badge variant="secondary" className="w-6 justify-center">{i + 1}</Badge>
-                <div className="font-medium">{u.name}</div>
+        {isLoading ? (
+          <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin text-blue-500" /></div>
+        ) : leaderboard.length === 0 ? (
+           <div className="text-center text-sm text-gray-500 py-2">No solvers yet.</div>
+        ) : (
+          <div className="space-y-3">
+            {leaderboard.map((u, i) => (
+              <div key={i + u.name} className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Badge variant={i === 0 ? "default" : "secondary"} className={`w-6 justify-center ${i === 0 ? 'bg-amber-500' : ''}`}>{i + 1}</Badge>
+                  <div className="font-medium text-sm">{u.name}</div>
+                </div>
+                <div className="text-xs text-muted-foreground">XP {u.xp} • 🔥 {u.streak}</div>
               </div>
-              <div className="text-sm text-muted-foreground">XP {u.xp} • 🔥 {u.streak}</div>
-            </div>
-          ))}
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+/**
+ * ProgressionProfileCard - Shows user's personal XP, Level, Tier, and RP
+ */
+function ProgressionProfileCard({ stats }: { stats?: UserStats }) {
+  if (!stats) return null;
+  
+  // Calculate XP needed for next level: nextLevel = currentLevel + 1
+  // Formula: Level = floor(sqrt(XP/100)) + 1
+  // So XP required for Level L = (L - 1)^2 * 100
+  const nextLevel = stats.current_level + 1;
+  const xpForNextLevel = Math.pow(nextLevel - 1, 2) * 100;
+  const xpForCurrentLevel = Math.pow(stats.current_level - 1, 2) * 100;
+  const xpProgressInLevel = stats.total_xp - xpForCurrentLevel;
+  const xpRequiredForLevel = xpForNextLevel - xpForCurrentLevel;
+  const progressPercent = Math.min(100, Math.max(0, (xpProgressInLevel / xpRequiredForLevel) * 100));
+
+  return (
+    <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-100">
+      <CardContent className="p-4">
+        <div className="flex justify-between items-start mb-4">
+          <div>
+            <h3 className="text-lg font-bold text-slate-800">Level {stats.current_level}</h3>
+            <div className="text-xs text-slate-500 mt-0.5">{stats.total_xp} / {xpForNextLevel} XP</div>
+          </div>
+          <div className="flex flex-col items-end gap-1">
+             <Badge className="bg-indigo-600 hover:bg-indigo-700">{stats.tier}</Badge>
+             <span className="text-xs font-mono text-indigo-700 font-semibold">{stats.ranking_points} RP</span>
+          </div>
+        </div>
+        
+        <div className="mb-3">
+          <Progress value={progressPercent} className="h-2 bg-blue-100 [&>div]:bg-blue-600" />
+        </div>
+        
+        <div className="flex justify-between items-center text-sm pt-2 border-t border-blue-100/50">
+          <div className="flex items-center gap-1.5 font-medium text-slate-700">
+             <Flame className={`h-4 w-4 ${stats.current_streak > 0 ? 'text-orange-500 fill-orange-500' : 'text-slate-300'}`} />
+             {stats.current_streak} Day Streak
+          </div>
+          <div className="text-slate-500 text-xs">
+            {stats.problems_solved} solved
+          </div>
         </div>
       </CardContent>
     </Card>
@@ -727,6 +821,8 @@ export default function UserHomePage() {
             interestedCategories: data.interested_categories || [],
             categoryLevels: data.category_levels || {},
             userCategoryLevels: data.user_category_levels || [],
+            userStats: data.user_stats,
+            userCategoryStats: data.user_category_stats,
           });
         }
       } catch (err) {
@@ -760,7 +856,10 @@ export default function UserHomePage() {
                     : `${queue.length} problem${queue.length > 1 ? 's' : ''} you\'re working on`}
                 </div>
               </div>
-              <Badge variant="secondary" className="gap-1"><Flame className="h-3 w-3" />Streak 8</Badge>
+              <Badge variant="secondary" className="gap-1">
+                <Flame className={`h-3 w-3 ${prefs?.userStats?.current_streak ? 'text-orange-500 fill-orange-500' : ''}`} />
+                Streak {prefs?.userStats?.current_streak || 0}
+              </Badge>
             </CardHeader>
             <CardContent>
               {queue.length === 0 ? (
@@ -844,7 +943,8 @@ export default function UserHomePage() {
 
         {/* Sidebar */}
         <div className="space-y-4">
-          <MasteryChart />
+          <ProgressionProfileCard stats={prefs?.userStats} />
+          <MasteryChart userCategoryStats={prefs?.userCategoryStats} />
           <LeaderboardCard />
 
           <Card>

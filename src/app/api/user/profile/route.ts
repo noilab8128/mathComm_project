@@ -35,6 +35,19 @@ export async function GET() {
             .select("category_id, level_score, categories(name)")
             .eq("user_id", userRaw.id);
 
+        // Fetch progression user stats (Global)
+        const { data: userStats } = await adminSupabase
+            .from("user_stats")
+            .select("*")
+            .eq("user_id", userRaw.id)
+            .maybeSingle();
+
+        // Fetch progression category stats (Mastery)
+        const { data: userCategoryStats } = await adminSupabase
+            .from("user_category_stats")
+            .select("category_level1_id, ranking_points, tier, categories(name)")
+            .eq("user_id", userRaw.id);
+
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const userCategoryLevels = ((catLevels || []) as any[]).map((row) => ({
             category_id: row.category_id as number,
@@ -42,10 +55,29 @@ export async function GET() {
             category_name: (Array.isArray(row.categories) ? row.categories[0]?.name : row.categories?.name) ?? null,
         }));
 
+        // Format progression category stats
+        const formattedCategoryStats = ((userCategoryStats || []) as any[]).map((row) => ({
+            category_id: row.category_level1_id as number,
+            ranking_points: row.ranking_points as number,
+            tier: row.tier as string,
+            category_name: (Array.isArray(row.categories) ? row.categories[0]?.name : row.categories?.name) ?? null,
+        }));
+
         return NextResponse.json({
             interested_categories: userRaw.interested_categories || [],
             category_levels: userRaw.category_levels || {},
             user_category_levels: userCategoryLevels,
+            user_stats: userStats || {
+                current_level: 1,
+                total_xp: 0,
+                ranking_points: 0,
+                tier: 'Bronze III',
+                current_streak: 0,
+                longest_streak: 0,
+                problems_solved: 0,
+                problems_attempted: 0
+            },
+            user_category_stats: formattedCategoryStats
         });
     } catch (error) {
         console.error("Profile GET error:", error);

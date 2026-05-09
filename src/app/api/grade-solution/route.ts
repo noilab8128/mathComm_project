@@ -3,6 +3,7 @@ import OpenAI from 'openai';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { createClient } from "@supabase/supabase-js";
+import { calculateRewards, calculateLevel, calculateTier } from "@/lib/progression";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -104,7 +105,39 @@ Grade the solution now and respond in strict JSON format.`;
     try {
       const session = await getServerSession(authOptions);
       if (session?.user?.id) {
-        // Save to database
+        // 1. Fetch Problem Details for XP/RP scaling
+        let difficulty = 1;
+        let categoryLevel1: number | null = null;
+        let isFirstConqueror = false;
+        
+        if (problemId) {
+          const { data: problemData } = await adminSupabase
+            .from('problems')
+            .select('difficulty, category_level1')
+            .eq('id', problemId)
+            .single();
+            
+          if (problemData) {
+            difficulty = problemData.difficulty || 1;
+            categoryLevel1 = problemData.category_level1;
+            
+            if (gradingResult.isCorrect) {
+               // Check first conqueror
+               const { count } = await adminSupabase
+                 .from('user_submissions')
+                 .select('id', { count: 'exact', head: true })
+                 .eq('problem_id', problemId)
+                 .eq('is_correct', true);
+                 
+               isFirstConqueror = (count || 0) < 3;
+            }
+          }
+        }
+        
+        // 2. Calculate XP/RP
+        const { xpEarned, rpEarned } = calculateRewards(difficulty, gradingResult.isCorrect, isFirstConqueror);
+
+        // 3. Save Submission
         const { error: dbError } = await adminSupabase
           .from('user_submissions')
           .insert({
@@ -120,6 +153,71 @@ Grade the solution now and respond in strict JSON format.`;
           console.error('[DATABASE ERROR] Failed to save submission:', dbError);
         } else {
           console.log('[DATABASE SUCCESS] Submission saved for user:', session.user.id);
+          
+          // 4. Update Stats & Logs
+          // NOTE: A proper SQL RPC function is recommended for atomicity and handling current_streak logic,
+          // but we do direct updates here as MVP.
+          
+          if (xpEarned > 0 || rpEarned > 0) {
+              // 4.1 Log Activity
+              await adminSupabase.from('activity_logs').insert({
+                  user_id: session.user.id,
+                  action_type: gradingResult.isCorrect ? 'SOLVE_CORRECT' : 'SOLVE_INCORRECT',
+                  problem_id: problemId || null,
+                  xp_change: xpEarned,
+                  rp_change: rpEarned,
+                  description: gradingResult.isCorrect ? 'Correct solution submitted' : 'Attempt submitted'
+              });
+
+              // 4.2 Update Global User Stats
+              // Since we don't have atomic increment in simple upsert via API, we fetch first
+              const { data: currentStats } = await adminSupabase
+                  .from('user_stats')
+                  .select('*')
+                  .eq('user_id', session.user.id)
+                  .single();
+              
+              const newXp = (currentStats?.total_xp || 0) + xpEarned;
+              const newRp = (currentStats?.ranking_points || 0) + rpEarned;
+              const newLevel = calculateLevel(newXp);
+              const newTier = calculateTier(newRp);
+              
+              const newStats = {
+                  user_id: session.user.id,
+                  total_xp: newXp,
+                  ranking_points: newRp,
+                  current_level: newLevel,
+                  tier: newTier,
+                  problems_attempted: (currentStats?.problems_attempted || 0) + 1,
+                  problems_solved: (currentStats?.problems_solved || 0) + (gradingResult.isCorrect ? 1 : 0),
+                  last_activity_date: new Date().toISOString().split('T')[0],
+                  updated_at: new Date().toISOString()
+              };
+              
+              await adminSupabase.from('user_stats').upsert(newStats, { onConflict: 'user_id' });
+              
+              // 4.3 Update Category Specific Stats
+              if (categoryLevel1 && gradingResult.isCorrect) {
+                  const { data: currentCatStats } = await adminSupabase
+                      .from('user_category_stats')
+                      .select('*')
+                      .eq('user_id', session.user.id)
+                      .eq('category_level1_id', categoryLevel1)
+                      .single();
+                      
+                  const newCatRp = (currentCatStats?.ranking_points || 0) + rpEarned;
+                  const newCatTier = calculateTier(newCatRp);
+                  
+                  await adminSupabase.from('user_category_stats').upsert({
+                      id: currentCatStats?.id, // include ID if exists to update
+                      user_id: session.user.id,
+                      category_level1_id: categoryLevel1,
+                      ranking_points: newCatRp,
+                      tier: newCatTier,
+                      updated_at: new Date().toISOString()
+                  }, { onConflict: 'user_id, category_level1_id' });
+              }
+          }
         }
       }
     } catch (persistError) {
