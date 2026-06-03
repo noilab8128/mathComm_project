@@ -63,25 +63,30 @@ ALTER TABLE public.activity_logs ENABLE ROW LEVEL SECURITY;
 
 -- 5. Create RLS Policies
 -- Users can view their own stats
+DROP POLICY IF EXISTS "Users can view their own stats" ON public.user_stats;
 CREATE POLICY "Users can view their own stats" 
     ON public.user_stats FOR SELECT 
     USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can view their own category stats" ON public.user_category_stats;
 CREATE POLICY "Users can view their own category stats" 
     ON public.user_category_stats FOR SELECT 
     USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can view their own activity logs" ON public.activity_logs;
 CREATE POLICY "Users can view their own activity logs" 
     ON public.activity_logs FOR SELECT 
     USING (auth.uid() = user_id);
 
 -- Anyone can view leaderboards (assuming public leaderboards, or restricted to authenticated)
 -- If we want public leaderboards, we can add a SELECT policy for everyone.
+DROP POLICY IF EXISTS "Public leaderboard stats viewing" ON public.user_stats;
 CREATE POLICY "Public leaderboard stats viewing" 
     ON public.user_stats FOR SELECT 
     TO public
     USING (true);
 
+DROP POLICY IF EXISTS "Public leaderboard category stats viewing" ON public.user_category_stats;
 CREATE POLICY "Public leaderboard category stats viewing" 
     ON public.user_category_stats FOR SELECT 
     TO public

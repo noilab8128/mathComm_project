@@ -26,7 +26,6 @@ CREATE TABLE IF NOT EXISTS problems (
   -- 추가 분류 (사용자 페이지용)
   level TEXT,  -- "Beginner", "Intermediate", "Advanced", "Olympiad"
   age_range TEXT,  -- "8-9", "9-11", "10-12", "11-13" 등
-  xp INTEGER DEFAULT 0,  -- 문제 해결 시 획득 XP
   tags TEXT[],  -- 검색용 태그 배열
   
   -- 미디어
@@ -34,7 +33,6 @@ CREATE TABLE IF NOT EXISTS problems (
   
   -- 문제 연결 (Learning Path)
   linked_problem_ids UUID[],  -- 연결된 문제 ID 배열
-  parent_problem_id UUID REFERENCES problems(id),  -- 파생 문제의 경우 원본 문제
   
   -- AI 관련
   is_generated BOOLEAN DEFAULT false,  -- AI가 생성한 문제인지
@@ -57,7 +55,6 @@ CREATE INDEX IF NOT EXISTS idx_problems_difficulty ON problems(difficulty);
 CREATE INDEX IF NOT EXISTS idx_problems_category_level1 ON problems(category_level1);
 CREATE INDEX IF NOT EXISTS idx_problems_level ON problems(level);
 CREATE INDEX IF NOT EXISTS idx_problems_is_generated ON problems(is_generated);
-CREATE INDEX IF NOT EXISTS idx_problems_parent ON problems(parent_problem_id);
 CREATE INDEX IF NOT EXISTS idx_problems_created ON problems(created_at DESC);
 
 -- ========================================

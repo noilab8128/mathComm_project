@@ -16,6 +16,7 @@ export function useProblems() {
     // Filtering and sorting states
     const [filterCategory, setFilterCategory] = useState<string>("all");
     const [filterDifficulty, setFilterDifficulty] = useState<string>("all");
+    const [filterStatus, setFilterStatus] = useState<string>("all");
     const [sortBy, setSortBy] = useState<"newest" | "oldest" | "difficulty_asc" | "difficulty_desc">("newest");
     const [searchQuery, setSearchQuery] = useState("");
 
@@ -77,6 +78,8 @@ export function useProblems() {
             const { data: roots, count } = await problemsAPI.getPaginated(currentPage, pageSize, {
                 category: filterCategory === 'all' ? undefined : filterCategory,
                 difficulty: difficultyFilter,
+                isGenerated: filterStatus === "pending-review" ? true : undefined,
+                isReviewed: filterStatus === "pending-review" ? false : undefined,
                 search: searchQuery,
                 onlyRoots: true, // This filter needs to be implemented correctly in supabase.ts or refined
                 sortBy: sortBy
@@ -140,6 +143,8 @@ export function useProblems() {
                     lastSolvedAt: sp.last_solved_at,
                     linkedProblems: sp.linked_problem_ids || [],
                     isGenerated: sp.is_generated,
+                    isReviewed: sp.is_reviewed,
+                    reviewerId: sp.reviewer_id,
                     parentProblemId: hierarchyLink?.parent_problem_id,
                     hierarchyInfo: hierarchyLink ? {
                         parentSolutionId: hierarchyLink.parent_solution_id,
@@ -170,7 +175,7 @@ export function useProblems() {
         } finally {
             setIsLoadingFromDb(false);
         }
-    }, [currentPage, pageSize, filterCategory, filterDifficulty, searchQuery, sortBy, showToast]);
+    }, [currentPage, pageSize, filterCategory, filterDifficulty, filterStatus, searchQuery, sortBy, showToast]);
 
     // Reload when filters or page change
     useEffect(() => {
@@ -206,7 +211,6 @@ export function useProblems() {
                 category_level2: selectedLevel2 ? parseInt(selectedLevel2) : undefined,
                 category_level3: selectedLevel3 ? parseInt(selectedLevel3) : undefined,
                 level: getDifficultyLabel(problem.difficulty),
-                xp: calculateXP(problem.difficulty),
                 tags: problem.category ? problem.category.split(' > ').map(t => t.trim()) : [],
                 diagram_image_url: problem.diagramImageUrl || undefined,
                 source: problem.source || undefined,
@@ -294,6 +298,20 @@ export function useProblems() {
         }
     };
 
+    const approveProblem = async (id: string) => {
+        try {
+            if (isDbConnected && !id.startsWith('temp-')) {
+                // @ts-expect-error - update accepts partial
+                await problemsAPI.update(id, { is_reviewed: true });
+                setProblems(prev => prev.map(p => p.id === id ? { ...p, isReviewed: true } : p));
+                showToast("✅ Problem approved successfully!", "success");
+            }
+        } catch (error: any) {
+            console.error('❌ Failed to approve problem:', error);
+            showToast(`❌ Failed to approve: ${error.message}`, "error");
+        }
+    };
+
     const handleExportCSV = () => {
         try {
             // @ts-expect-error - Mismatch between Problem interface and what CSV export expects
@@ -321,6 +339,8 @@ export function useProblems() {
         setFilterCategory,
         filterDifficulty,
         setFilterDifficulty,
+        filterStatus,
+        setFilterStatus,
         sortBy,
         setSortBy,
         searchQuery,
@@ -333,6 +353,7 @@ export function useProblems() {
         loadProblemsFromSupabase,
         saveProblemToSupabase,
         deleteProblem,
+        approveProblem,
         handleExportCSV,
         selectedProblemIds,
         toggleProblemSelection,

@@ -52,6 +52,7 @@ interface ProblemListProps {
     clearSelection: () => void;
     sortBy: "newest" | "oldest" | "difficulty_asc" | "difficulty_desc";
     onSortChange: (sort: "newest" | "oldest" | "difficulty_asc" | "difficulty_desc") => void;
+    onApproveProblem?: (id: string) => void;
 }
 
 export function ProblemList({
@@ -88,7 +89,8 @@ export function ProblemList({
     selectAllProblems,
     clearSelection,
     sortBy,
-    onSortChange
+    onSortChange,
+    onApproveProblem
 }: ProblemListProps) {
 
     const getDifficultyColor = (diff: number) => {
@@ -260,8 +262,8 @@ export function ProblemList({
                                                                     </span>
 
                                                                     {problem.isGenerated && (
-                                                                        <Badge variant="secondary" className="text-xs bg-green-100 text-green-700">
-                                                                            AI
+                                                                        <Badge variant="secondary" className={`text-xs ${problem.isReviewed ? "bg-green-100 text-green-700" : "bg-orange-100 text-orange-700"}`}>
+                                                                            {problem.isReviewed ? "AI (Reviewed)" : "AI (Pending Review)"}
                                                                         </Badge>
                                                                     )}
                                                                 </div>
@@ -301,6 +303,19 @@ export function ProblemList({
                                                                 {new Date(problem.createdAt).toLocaleDateString()}
                                                             </TableCell>
                                                             <TableCell className="text-right">
+                                                                {problem.isGenerated && !problem.isReviewed && onApproveProblem && (
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="sm"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            onApproveProblem(problem.id);
+                                                                        }}
+                                                                        className="text-green-600 hover:text-green-800 hover:bg-green-50 mr-2"
+                                                                    >
+                                                                        Approve
+                                                                    </Button>
+                                                                )}
                                                                 <Button
                                                                     variant="ghost"
                                                                     size="sm"

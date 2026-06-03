@@ -70,30 +70,16 @@ export default function Community({ activeTab = "discussions", onTabChange }: Co
           <TabsTrigger value="peer">Peer Review</TabsTrigger>
         </TabsList>
         <TabsContent value="discussions" className="mt-4">
-          <Discussions />
+          <Discussions category="discussions" title="Problem Discussions" description="Discuss problems, share hints, and help each other." />
         </TabsContent>
         <TabsContent value="theory" className="mt-4">
-          <div className="rounded-xl border p-4 space-y-3">
-            <div className="text-sm font-medium">Ask a question</div>
-            <Input placeholder="e.g., When to use Lifting The Exponent Lemma?" />
-            <Button className="w-fit">Post</Button>
-          </div>
+          <Discussions category="theory" title="Theory Q&A" description="Ask questions about mathematical concepts and theorems." />
         </TabsContent>
         <TabsContent value="leaderboard" className="mt-4">
           <LeaderboardCard />
         </TabsContent>
         <TabsContent value="peer" className="mt-4">
-          <div className="rounded-xl border p-4">
-            <div className="text-sm text-muted-foreground">
-              Submit your solution for community feedback and earn points by reviewing others.
-            </div>
-            <div className="mt-3 flex items-center gap-2">
-              <Button size="sm">Submit Solution</Button>
-              <Button size="sm" variant="outline">
-                Review Queue
-              </Button>
-            </div>
-          </div>
+          <Discussions category="peer" title="Peer Review" description="Submit your solutions for community feedback." />
         </TabsContent>
       </Tabs>
     </div>

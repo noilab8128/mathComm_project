@@ -28,10 +28,11 @@ export interface Problem {
     // Metadata
     level?: string;
     ageRange?: string;
-    xp: number;
     tags?: string[];
     diagramImageUrl?: string;
     source?: string;
+    isReviewed?: boolean;
+    reviewerId?: string;
 
     // Analytics (New)
     startsCount?: number;

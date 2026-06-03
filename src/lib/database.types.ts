@@ -41,7 +41,6 @@ export interface Database {
                     category_path: string | null
                     level: string | null
                     age_range: string | null
-                    xp: number
                     tags: string[] | null
                     diagram_image_url: string | null
                     is_generated: boolean
@@ -66,7 +65,6 @@ export interface Database {
                     category_path?: string | null
                     level?: string | null
                     age_range?: string | null
-                    xp?: number
                     tags?: string[] | null
                     diagram_image_url?: string | null
                     is_generated?: boolean
@@ -91,7 +89,6 @@ export interface Database {
                     category_path?: string | null
                     level?: string | null
                     age_range?: string | null
-                    xp?: number
                     tags?: string[] | null
                     diagram_image_url?: string | null
                     is_generated?: boolean

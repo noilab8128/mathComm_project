@@ -38,6 +38,7 @@ export const problemsAPI = {
     category?: string;
     level?: string;
     isGenerated?: boolean;
+    isReviewed?: boolean;
     search?: string;
     onlyRoots?: boolean;
     sortBy?: 'newest' | 'oldest' | 'difficulty_asc' | 'difficulty_desc';
@@ -82,6 +83,10 @@ export const problemsAPI = {
 
     if (filters?.isGenerated !== undefined) {
       query = query.eq('is_generated', filters.isGenerated);
+    }
+    
+    if (filters?.isReviewed !== undefined) {
+      query = query.eq('is_reviewed', filters.isReviewed);
     }
 
     if (filters?.search) {
