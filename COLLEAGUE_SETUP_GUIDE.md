@@ -133,3 +133,43 @@ npm run dev
    - **`Clear cache and deploy site`** 를 선택하여 기존 캐시를 지우고 깨끗하게 새로 배포를 진행합니다.
 
 이 과정이 완료되면 Netlify 실서버 URL에서도 소셜 로그인 팝업과 이메일 인증이 정상적으로 작동하게 됩니다.
+
+---
+
+## 🔒 보안 업데이트 안내 (2026-07-13 적용)
+
+아래 보안 강화 사항이 코드에 반영되었습니다. 동료 분들도 로컬 환경 설정 시 참고해 주세요.
+
+### 1. `NEXTAUTH_SECRET` 교체 필요
+JWT 토큰 서명에 사용되는 시크릿 키가 강력한 랜덤 값으로 교체되었습니다.
+- **새 시크릿 값은 안전한 채널(DM 등)로 별도 공유받아 `.env.local`에 입력해 주세요.**
+- Netlify 등 배포 환경에서도 동일한 값으로 업데이트가 필요합니다.
+
+### 2. 비밀번호 정책 강화
+기존 6자 이상 → **8자 이상 + 대문자 + 소문자 + 숫자 포함 필수**로 변경되었습니다.
+- 기존 사용자의 비밀번호는 유지되며, **신규 가입 및 비밀번호 변경** 시에만 새 정책이 적용됩니다.
+- 서버사이드(API)에서 강제 검증하므로 API 직접 호출로도 우회 불가능합니다.
+
+### 3. API Rate Limiting 적용
+Brute Force 공격 방지를 위해 민감한 API에 요청 횟수 제한이 추가되었습니다.
+- **로그인/회원가입**: 이메일/IP당 15분에 10회까지 허용
+- **게시글 작성**: IP당 1분에 5회까지 허용
+- 초과 시 `429 Too Many Requests` 응답을 받게 됩니다.
+- 개발 중 테스트로 Rate Limit에 걸리면, **서버를 재시작**(`npm run dev`)하면 인메모리 카운터가 초기화됩니다.
+
+### 4. 보안 헤더 (Security Headers) 추가
+`next.config.ts`에 아래 HTTP 보안 헤더들이 자동 적용됩니다.
+
+| 헤더 | 역할 |
+|------|------|
+| `X-Frame-Options: DENY` | 클릭재킹(iframe 삽입) 방지 |
+| `X-Content-Type-Options: nosniff` | MIME 타입 스니핑 방지 |
+| `Referrer-Policy` | 외부 이동 시 URL 정보 노출 제한 |
+| `Strict-Transport-Security` | HTTPS 강제 접속 |
+| `X-XSS-Protection` | 레거시 브라우저 XSS 필터 활성화 |
+| `Permissions-Policy` | 카메라/마이크/위치정보 등 불필요 API 차단 |
+
+### 5. NextAuth 디버그 모드 변경
+- `debug: true` → `debug: process.env.NODE_ENV === "development"` 로 변경
+- **프로덕션 환경에서는 디버그 로그가 자동으로 비활성화**됩니다.
+- 개발 환경(`npm run dev`)에서는 기존과 동일하게 디버그 정보가 출력됩니다.

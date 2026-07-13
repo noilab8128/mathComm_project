@@ -2,17 +2,34 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import bcrypt from "bcryptjs";
 import { verifyTurnstileToken } from "@/lib/turnstile";
+import { authRateLimiter } from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
     try {
+        // Rate Limiting: IP당 15분에 10회까지 허용
+        const forwarded = req.headers.get("x-forwarded-for");
+        const ip = forwarded?.split(",")[0]?.trim() || "unknown";
+        const rateLimitResult = authRateLimiter.check(ip);
+        if (!rateLimitResult.success) {
+            return NextResponse.json(
+                { message: "Too many requests. Please try again later." },
+                { status: 429, headers: { "Retry-After": String(Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000)) } }
+            );
+        }
+
         const { email, password, turnstileToken } = await req.json();
 
         // 1. Basic validation
         if (!email || !password) {
             return NextResponse.json({ message: "Email and password are required" }, { status: 400 });
         }
-        if (password.length < 6) {
-            return NextResponse.json({ message: "Password must be at least 6 characters" }, { status: 400 });
+
+        // Password policy: min 8 chars, at least 1 uppercase, 1 lowercase, 1 number
+        const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+        if (!PASSWORD_REGEX.test(password)) {
+            return NextResponse.json({ 
+                message: "Password must be at least 8 characters with uppercase, lowercase, and a number" 
+            }, { status: 400 });
         }
         if (!turnstileToken) {
             return NextResponse.json({ message: "Please verify you are human" }, { status: 400 });

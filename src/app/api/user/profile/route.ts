@@ -117,6 +117,14 @@ export async function PUT(req: Request) {
                 return NextResponse.json({ message: "Current password is required to set a new password" }, { status: 400 });
             }
 
+            // Server-side password policy: min 8 chars, uppercase, lowercase, number
+            const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+            if (!PASSWORD_REGEX.test(newPassword)) {
+                return NextResponse.json({ 
+                    message: "Password must be at least 8 characters with uppercase, lowercase, and a number" 
+                }, { status: 400 });
+            }
+
             const { data: userRaw } = await adminSupabase
                 .schema("next_auth")
                 .from("users")
