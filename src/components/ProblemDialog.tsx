@@ -174,178 +174,177 @@ function LearningPathItem({
 
 // -------------------------------------------------------
 // Sub-component: Hierarchy Panel
+// Shows the whole path from the top (final) problem down to the easiest step. The path stays
+// the same while the student moves between steps; only the "current step" mark moves.
 // -------------------------------------------------------
-function HierarchyPanel({ 
-  path, 
-  onNavigate,
-  onBackTo
-}: { 
-  path: ProblemDisplay[]; 
-  onNavigate: (problem: ProblemDisplay) => void;
-  onBackTo: (index: number) => void;
+type PathNode = { problem: ProblemDisplay; depth: number };
+type LearningPathRoute = { id: string; nodes: PathNode[] };
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const byOrderDesc = (a: any, b: any) => b.sequence_order - a.sequence_order;
+
+async function loadRoutes(openedProblem: ProblemDisplay): Promise<{ root: ProblemDisplay; routes: LearningPathRoute[] }> {
+  // 1. Climb to the top problem (each problem has at most one parent).
+  let root = openedProblem;
+  const climbed = new Set([root.id]);
+  for (;;) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const parents: any[] = await problemHierarchiesAPI.getParents(root.id);
+    const parent = parents?.[0]?.parent_problem;
+    if (!parent || climbed.has(parent.id)) break;
+    root = convertSupabaseProblem(parent);
+    climbed.add(root.id);
+  }
+
+  // 2. Load every level below the top problem.
+  const seen = new Set([root.id]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const childrenOf = new Map<string, any[]>();
+  let level = [root.id];
+  while (level.length > 0) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const results: any[][] = await Promise.all(level.map((id) => problemHierarchiesAPI.getChildren(id)));
+    const next: string[] = [];
+    level.forEach((id, i) => {
+      const rels = (results[i] || []).filter((rel) => rel.child_problem && !seen.has(rel.child_problem.id));
+      rels.forEach((rel) => { seen.add(rel.child_problem.id); next.push(rel.child_problem.id); });
+      childrenOf.set(id, rels);
+    });
+    level = next;
+  }
+
+  // 3. A route is one full path from the top problem down. Where a problem splits into several
+  //    solutions (parent_solution_id), each choice is a separate route.
+  const groupKey = (rel: { parent_solution_id: string | null }) => rel.parent_solution_id || "default";
+  const splits = [...childrenOf.entries()]
+    .map(([id, rels]) => ({ id, keys: [...new Set(rels.map(groupKey))] }))
+    .filter((node) => node.keys.length > 1);
+
+  let choices: Record<string, string>[] = [{}];
+  for (const node of splits) {
+    choices = choices.flatMap((c) => node.keys.map((key) => ({ ...c, [node.id]: key }))).slice(0, 16);
+  }
+
+  const flatten = (id: string, depth: number, choice: Record<string, string>): PathNode[] =>
+    (childrenOf.get(id) || [])
+      .filter((rel) => !(id in choice) || groupKey(rel) === choice[id])
+      .sort(byOrderDesc)
+      .flatMap((rel) => [
+        { problem: convertSupabaseProblem(rel.child_problem), depth },
+        ...flatten(rel.child_problem.id, depth + 1, choice),
+      ]);
+
+  const routes: LearningPathRoute[] = [];
+  for (const choice of choices) {
+    const nodes = flatten(root.id, 1, choice);
+    const id = nodes.map((n) => n.problem.id).join(",");
+    if (!routes.some((r) => r.id === id)) routes.push({ id, nodes });
+  }
+  return { root, routes };
+}
+
+function HierarchyPanel({
+  openedProblem,
+  currentId,
+  onSelect,
+}: {
+  openedProblem: ProblemDisplay;
+  currentId: string;
+  onSelect: (problem: ProblemDisplay) => void;
 }) {
-  const currentProblem = path[path.length - 1];
-  const [solutionsMap, setSolutionsMap] = useState<Record<string, any[]>>({});
+  const [root, setRoot] = useState<ProblemDisplay>(openedProblem);
+  const [routes, setRoutes] = useState<LearningPathRoute[]>([]);
+  const [activeRoute, setActiveRoute] = useState("");
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<string>("");
 
+  // Built once per opened problem, so it does not change when the student clicks a step.
   useEffect(() => {
-    const loadHierarchy = async () => {
-      try {
-        setLoading(true);
-        // Get all children associated with the CURRENT focused problem
-        const childrenRaw: any[] = await problemHierarchiesAPI.getChildren(currentProblem.id);
-        
-        if (!childrenRaw || childrenRaw.length === 0) {
-          setSolutionsMap({});
-          return;
-        }
+    let cancelled = false;
+    setLoading(true);
+    loadRoutes(openedProblem)
+      .then((result) => {
+        if (cancelled) return;
+        setRoot(result.root);
+        setRoutes(result.routes);
+        const withOpened = result.routes.find((r) => r.nodes.some((n) => n.problem.id === openedProblem.id));
+        setActiveRoute((withOpened || result.routes[0]).id);
+      })
+      .catch((err) => console.error("Failed to fetch hierarchy:", err))
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openedProblem.id]);
 
-        // Group by parent_solution_id
-        const grouped: Record<string, any[]> = {};
-        childrenRaw.forEach(rel => {
-          const solId = rel.parent_solution_id || "default";
-          if (!grouped[solId]) grouped[solId] = [];
-          grouped[solId].push(rel);
-        });
+  // Follow the current step if it is not on the route being shown.
+  useEffect(() => {
+    const onRoute = (r?: LearningPathRoute) => r?.nodes.some((n) => n.problem.id === currentId);
+    if (currentId === root.id || onRoute(routes.find((r) => r.id === activeRoute))) return;
+    const route = routes.find(onRoute);
+    if (route) setActiveRoute(route.id);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentId, routes]);
 
-        // Sort each group by sequence order DESC (largest at top)
-        Object.keys(grouped).forEach(solId => {
-          grouped[solId].sort((a, b) => b.sequence_order - a.sequence_order);
-        });
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center py-12 gap-3">
+        <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
+        <span className="text-[10px] text-gray-400 font-bold uppercase">Loading Roadmap...</span>
+      </div>
+    );
+  }
 
-        setSolutionsMap(grouped);
-        const firstSolId = Object.keys(grouped)[0];
-        if (firstSolId) setActiveTab(firstSolId);
-      } catch (err) {
-        console.error("Failed to fetch hierarchy:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadHierarchy();
-  }, [currentProblem.id]);
-
-  const solutionIds = Object.keys(solutionsMap);
+  const nodes = routes.find((r) => r.id === activeRoute)?.nodes ?? [];
 
   return (
     <div className="flex flex-col h-full">
-      {/* Top Section: Persistent Title & Path Selector (Tabs) */}
-      <div className="space-y-4 mb-6">
-        {/* If the current focused problem has multiple solutions, show them at the very top of the panel content */}
-        {solutionIds.length > 1 && (
-          <div className="sticky top-0 z-20 bg-transparent">
-             <div className="text-[10px] font-extrabold text-blue-600 uppercase tracking-widest mb-1.5 px-0.5">Focus Strategy</div>
-             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="bg-white/50 backdrop-blur-sm border border-gray-100 flex-wrap h-auto min-h-10 p-1 mb-2 grid grid-cols-2 gap-1 shadow-sm rounded-xl">
-                  {solutionIds.map((solId, idx) => (
-                    <TabsTrigger 
-                      key={solId} 
-                      value={solId} 
-                      className="text-[10px] font-bold h-7 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-300 rounded-lg"
-                    >
-                      {solId === "default" ? "Primary Method" : `Solution ${idx + 1}`}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-             </Tabs>
-          </div>
-        )}
-      </div>
-
-      <div className="flex-1 space-y-1">
-        {/* Ancestors Path (Persistent) */}
-        {path.length > 1 && (
-          <div className="flex flex-col items-center space-y-1 w-full max-w-[320px] mx-auto opacity-70 hover:opacity-100 transition-opacity">
-            {path.slice(0, -1).map((p, idx) => (
-              <React.Fragment key={p.id}>
-                <div 
-                  className="w-full cursor-pointer hover:scale-[1.01] transition-transform"
-                  onClick={() => onBackTo(idx)}
+      {routes.length > 1 && (
+        <div className="sticky top-0 z-20 mb-6">
+          <div className="text-[10px] font-extrabold text-blue-600 uppercase tracking-widest mb-1.5 px-0.5">Choose a Path</div>
+          <Tabs value={activeRoute} onValueChange={setActiveRoute} className="w-full">
+            <TabsList className="bg-white/50 backdrop-blur-sm border border-gray-100 flex-wrap h-auto min-h-10 p-1 mb-2 grid grid-cols-2 gap-1 shadow-sm rounded-xl">
+              {routes.map((route, idx) => (
+                <TabsTrigger
+                  key={route.id}
+                  value={route.id}
+                  className="text-[10px] font-bold h-7 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-300 rounded-lg"
                 >
-                  <LearningPathItem 
-                    title={p.title} 
-                    isCompleted={true}
-                  />
-                </div>
-                <div className="flex flex-col items-center py-1">
-                   <ArrowUp className="h-4 w-4 text-gray-300" />
-                </div>
-              </React.Fragment>
-            ))}
-          </div>
-        )}
-
-        {/* Current Problem & Children */}
-        <PathDisplay 
-          problemId={currentProblem.id} 
-          problemTitle={currentProblem.title} 
-          steps={solutionIds.length > 0 ? solutionsMap[activeTab || solutionIds[0]] : []} 
-          onNavigate={onNavigate} 
-          isLoading={loading}
-        />
-      </div>
-    </div>
-  );
-}
-
-function PathDisplay({ 
-  problemId, 
-  problemTitle, 
-  steps, 
-  onNavigate,
-  isLoading
-}: { 
-  problemId: string; 
-  problemTitle: string; 
-  steps: any[]; 
-  onNavigate: (problem: ProblemDisplay) => void;
-  isLoading: boolean;
-}) {
-  return (
-    <div className="flex flex-col items-center space-y-1 w-full max-w-[320px] mx-auto pb-10">
-      {/* Current Problem Anchor */}
-      <LearningPathItem 
-        title={problemTitle} 
-        isCurrent={true}
-      />
-      
-      {isLoading ? (
-        <div className="flex flex-col items-center py-12 gap-3">
-          <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
-          <span className="text-[10px] text-gray-400 font-bold uppercase">Loading Roadmap...</span>
-        </div>
-      ) : steps?.length > 0 ? (
-        <>
-          {/* Children below sorted by sequence order (largest at top) */}
-          {steps.map((rel, idx) => {
-            const child = convertSupabaseProblem(rel.child_problem);
-            return (
-              <React.Fragment key={child.id}>
-                 <div className="flex flex-col items-center py-2">
-                    <ArrowUp className="h-5 w-5 text-blue-500 shadow-sm transition-colors animate-bounce-slow" />
-                  </div>
-                  <div 
-                    className="w-full cursor-pointer group"
-                    onClick={() => onNavigate(child)}
-                  >
-                    <LearningPathItem 
-                      title={child.title} 
-                      isCompleted={false}
-                    />
-                  </div>
-              </React.Fragment>
-            );
-          })}
-        </>
-      ) : (
-        <div className="text-center py-12 px-6 mt-4 bg-white/30 backdrop-blur-sm rounded-2xl border border-dashed border-gray-200 w-full">
-          <GitBranch className="h-10 w-10 text-gray-200 mx-auto mb-4" />
-          <p className="text-[11px] text-gray-400 font-medium italic leading-relaxed">
-            This problem is a foundational step.<br/>Master it to unlock more complex challenges!
-          </p>
+                  Path {idx + 1}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
         </div>
       )}
+
+      <div className="flex flex-col items-center space-y-1 w-full max-w-[320px] mx-auto pb-10">
+        <div className="w-full cursor-pointer" onClick={() => onSelect(root)}>
+          <LearningPathItem title={root.title} isCurrent={root.id === currentId} />
+        </div>
+
+        {nodes.length === 0 ? (
+          <div className="text-center py-12 px-6 mt-4 bg-white/30 backdrop-blur-sm rounded-2xl border border-dashed border-gray-200 w-full">
+            <GitBranch className="h-10 w-10 text-gray-200 mx-auto mb-4" />
+            <p className="text-[11px] text-gray-400 font-medium italic leading-relaxed">
+              This problem is a foundational step.<br/>Master it to unlock more complex challenges!
+            </p>
+          </div>
+        ) : (
+          nodes.map(({ problem, depth }) => (
+            <React.Fragment key={problem.id}>
+              <div className="flex flex-col items-center py-2">
+                <ArrowUp className="h-5 w-5 text-blue-500" />
+              </div>
+              <div
+                className="w-full cursor-pointer"
+                style={{ paddingLeft: `${(depth - 1) * 16}px` }}
+                onClick={() => onSelect(problem)}
+              >
+                <LearningPathItem title={problem.title} isCurrent={problem.id === currentId} />
+              </div>
+            </React.Fragment>
+          ))
+        )}
+      </div>
     </div>
   );
 }
@@ -355,8 +354,7 @@ function PathDisplay({
 // Component: ProblemDialog
 // -------------------------------------------------------
 export function ProblemDialog({ problem: initialProblem }: { problem: ProblemDisplay }) {
-  const [navigationPath, setNavigationPath] = useState<ProblemDisplay[]>([initialProblem]);
-  const currentProblem = navigationPath[navigationPath.length - 1];
+  const [currentProblem, setCurrentProblem] = useState<ProblemDisplay>(initialProblem);
 
   const [tab, setTab] = useState<"write" | "auto">("write");
   const [solutionDraft, setSolutionDraft] = useState("");
@@ -376,18 +374,9 @@ export function ProblemDialog({ problem: initialProblem }: { problem: ProblemDis
 
   const { likedIds, toggleLike } = useLikes();
 
-  // Navigation handlers
-  const handleNavigate = useCallback((problem: ProblemDisplay) => {
-    setNavigationPath(prev => [...prev, problem]);
-  }, []);
-
-  const handleBackTo = useCallback((index: number) => {
-    setNavigationPath(prev => prev.slice(0, index + 1));
-  }, []);
-
   // Reset local state when initialProblem changes (if the whole dialog is reopened with a different problem)
   useEffect(() => {
-    setNavigationPath([initialProblem]);
+    setCurrentProblem(initialProblem);
   }, [initialProblem.id]);
 
   const previewHeaderStatus = useMemo(() => {
@@ -753,10 +742,10 @@ export function ProblemDialog({ problem: initialProblem }: { problem: ProblemDis
             <p className="text-xs text-gray-500 font-medium">Master this topic step-by-step</p>
           </div>
           <div className="flex-1 overflow-y-auto p-6 custom-scrollbar bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:20px_20px]">
-            <HierarchyPanel 
-                path={navigationPath} 
-                onNavigate={handleNavigate} 
-                onBackTo={handleBackTo}
+            <HierarchyPanel
+                openedProblem={initialProblem}
+                currentId={currentProblem.id}
+                onSelect={setCurrentProblem}
               />
           </div>
           <div className="p-6 border-t border-gray-200 bg-white bg-opacity-90 backdrop-blur-sm">

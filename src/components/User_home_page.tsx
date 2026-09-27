@@ -587,11 +587,15 @@ function PersonalizedLearningPath({ prefs, queueIds, onToggleQueue, likedIds, on
     const fetchProblems = async () => {
       try {
         setIsLoading(true);
-        const all = await problemsAPI.getAll();
+        const [all, links] = await Promise.all([problemsAPI.getAll(), problemHierarchiesAPI.getAll()]);
+
+        // Only final (top-level) problems: steps that sit under another problem are reached
+        // through that problem's Learning Path, not listed here.
+        const stepIds = new Set((links as any[]).map((h) => h.child_problem_id));
 
         // Only show problems that have a known source
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const withSource = all.filter((p: any) => p.source && p.source.trim() !== '');
+        const withSource = all.filter((p: any) => p.source && p.source.trim() !== '' && !stepIds.has(p.id));
         const catLevels = prefs?.userCategoryLevels ?? [];
         const hasLevels = catLevels.length > 0;
 

@@ -44,3 +44,13 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .env.local
+
+# dev-server logs
+.next_log.txt
+.next_pid.txt
+
+# local Claude Code settings
+**/.claude/settings.local.json
+
+# OlympiadAI: source PDFs (~30 MB) stay local; python ignores are in olympiad/.gitignore
+/olympiad/data/raw/
