@@ -8,6 +8,7 @@ import bcrypt from "bcryptjs";
 import { SupabaseAdapter } from "@auth/supabase-adapter";
 import { supabase } from "./supabase";
 import { verifyTurnstileToken } from "./turnstile";
+import { authRateLimiter } from "./rate-limit";
 
 export const authOptions: NextAuthOptions = {
     adapter: SupabaseAdapter({
@@ -38,6 +39,12 @@ export const authOptions: NextAuthOptions = {
             async authorize(credentials) {
                 if (!credentials?.email || !credentials?.password) {
                     throw new Error("Invalid credentials");
+                }
+
+                // Rate Limiting: 이메일 기준 15분에 10회까지 허용
+                const rateLimitResult = authRateLimiter.check(credentials.email);
+                if (!rateLimitResult.success) {
+                    throw new Error("Too many login attempts. Please try again later.");
                 }
 
                 // 0. Verify Turnstile Token
@@ -95,7 +102,7 @@ export const authOptions: NextAuthOptions = {
     pages: {
         signIn: "/login",
     },
-    debug: true,
+    debug: process.env.NODE_ENV === "development",
     callbacks: {
         async session({ session, token }) {
             if (session?.user && token) {
@@ -152,10 +159,6 @@ export const authOptions: NextAuthOptions = {
                 }
 
                 // Fetch user role from public.user_roles on sign in
-                console.log("[AUTH DEBUG] New sign-in detected.");
-                console.log("[AUTH DEBUG] user.id (used to look up role):", user.id);
-                console.log("[AUTH DEBUG] user.email:", user.email);
-
                 try {
                     const { data, error } = await supabase
                         .from('user_roles')
@@ -163,21 +166,15 @@ export const authOptions: NextAuthOptions = {
                         .eq('user_id', user.id)
                         .maybeSingle();
 
-                    console.log("[AUTH DEBUG] user_roles query result - data:", data);
-                    console.log("[AUTH DEBUG] user_roles query result - error:", error);
-
                     if (data && !error) {
                         token.role = (data as { role?: string }).role;
                     } else {
-                        console.log("[AUTH DEBUG] No role found. Defaulting to 'user'.");
                         token.role = 'user'; // Default role
                     }
                 } catch (err) {
-                    console.error("[AUTH DEBUG] Error fetching user role:", err);
+                    console.error("Error fetching user role:", err);
                     token.role = 'user';
                 }
-
-                console.log("[AUTH DEBUG] Final token.role assigned:", token.role);
             }
             return token;
         },

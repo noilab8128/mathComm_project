@@ -90,8 +90,8 @@ export default function SettingsPage() {
             return;
         }
 
-        if (newPassword.length < 6) {
-            setMessage({ text: "New password must be at least 6 characters.", type: "error" });
+        if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/.test(newPassword)) {
+            setMessage({ text: "Password must be at least 8 characters with uppercase, lowercase, and a number.", type: "error" });
             return;
         }
 
