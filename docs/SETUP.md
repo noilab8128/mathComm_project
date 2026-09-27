@@ -82,6 +82,23 @@ npm run dev
 3. **Deploys → Trigger deploy → Clear cache and deploy site.**
 4. Before launch, replace any Turnstile test keys with production keys.
 
+## 7. Security update (2026-07-13)
+
+From the teammate's security update (Korean original at the end of
+`Archive/docs/COLLEAGUE_SETUP_GUIDE.md`):
+
+1. **New `NEXTAUTH_SECRET`.** The JWT secret was replaced with a strong random value. Get it through a private
+   channel (DM), put it in `.env.local`, and update it in Netlify too.
+2. **Password policy.** New sign-ups and password changes need **8+ characters with an uppercase letter, a
+   lowercase letter and a number**, checked on the server. Existing passwords keep working.
+3. **Rate limiting** (`src/lib/rate-limit.ts`, in memory). Login and sign-up: 10 tries per email/IP per
+   15 minutes. Over the limit you get an error (`429 Too Many Requests` on sign-up); restarting `npm run dev`
+   resets the counters. A limiter for community posts (5 per minute) is defined as `postRateLimiter` but no
+   route uses it yet (checked 2026-09-26).
+4. **Security headers** (`next.config.ts`): `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`,
+   `Referrer-Policy`, `Strict-Transport-Security`, `X-XSS-Protection`, `Permissions-Policy`.
+5. **NextAuth debug logs** only in development (`debug: process.env.NODE_ENV === "development"`).
+
 ## Notes
 
 - `.env.local` also contains `EMAIL_SERVER_*` and `EMAIL_FROM`. No code reads them at the moment
