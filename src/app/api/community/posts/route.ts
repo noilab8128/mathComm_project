@@ -37,7 +37,7 @@ export async function GET(request: Request) {
     const postIds = posts.map(p => p.id);
     const { data: likes } = await supabaseAdmin
       .from('community_likes')
-      .select('post_id')
+      .select('post_id, user_id')
       .in('post_id', postIds);
 
     const { data: comments } = await supabaseAdmin
@@ -46,13 +46,14 @@ export async function GET(request: Request) {
       .in('post_id', postIds);
 
     const session = await getServerSession(authOptions);
+    const userId = session?.user?.id;
 
     const enrichedPosts = posts.map(post => {
       const author = authorMap.get(post.author_id) || { name: 'Unknown', image: null };
       const postLikes = likes?.filter(l => l.post_id === post.id) || [];
       const postComments = comments?.filter(c => c.post_id === post.id) || [];
       
-      const isLiked = session?.user?.id ? postLikes.some(l => l.user_id === session.user.id) : false;
+      const isLiked = userId ? postLikes.some(l => l.user_id === userId) : false;
 
       return {
         ...post,

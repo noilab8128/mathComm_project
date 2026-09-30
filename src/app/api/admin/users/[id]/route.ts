@@ -3,14 +3,14 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
     const session = await getServerSession(authOptions);
     if (session?.user?.role !== 'admin') {
         return new NextResponse('Unauthorized', { status: 403 });
     }
 
     try {
-        const userId = params.id;
+        const { id: userId } = await params;
 
         // Fetch Global Stats
         const { data: userStats, error: statsError } = await supabaseAdmin

@@ -99,7 +99,7 @@ export function convertSupabaseProblem(sp: SupabaseProblem): ProblemDisplay {
     title: sp.title,
     level: sp.level || getDifficultyLabel(sp.difficulty),
     age: sp.age_range || "All Ages",
-    xp: sp.xp || sp.difficulty * 50,
+    xp: sp.difficulty * 50, // problems.xp was dropped; XP comes from difficulty
     difficulty: getDifficultyLabel(sp.difficulty),
     difficulty_score: sp.difficulty,
     tags: sp.tags || (sp.category_path ? sp.category_path.split(' > ') : []),

@@ -4,14 +4,14 @@ import { authOptions } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { calculateLevel, calculateTier } from '@/lib/progression';
 
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
     const session = await getServerSession(authOptions);
     if (session?.user?.role !== 'admin') {
         return new NextResponse('Unauthorized', { status: 403 });
     }
 
     try {
-        const userId = params.id;
+        const { id: userId } = await params;
         const { xp_change, rp_change, description } = await req.json();
 
         const xpChangeNum = parseInt(xp_change) || 0;

@@ -8,7 +8,7 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     
@@ -42,7 +42,8 @@ export async function GET(request: Request, { params }: { params: { id: string }
       .select('user_id')
       .eq('post_id', id);
       
-    const isLiked = session?.user?.id ? likes?.some(l => l.user_id === session.user.id) : false;
+    const userId = session?.user?.id;
+    const isLiked = userId ? likes?.some(l => l.user_id === userId) : false;
 
     return NextResponse.json({ 
       post: {
@@ -60,7 +61,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {

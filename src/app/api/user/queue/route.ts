@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { createClient } from "@supabase/supabase-js";
+import { calculateXP } from "@/lib/supabase";
 
 /**
  * GET /api/user/queue
@@ -29,7 +30,6 @@ export async function GET() {
                     id,
                     title,
                     difficulty,
-                    xp,
                     source,
                     level,
                     content,
@@ -45,10 +45,10 @@ export async function GET() {
             return NextResponse.json({ message: "Failed to fetch queue" }, { status: 500 });
         }
 
-        // Flatten the response
+        // Flatten the response. problems.xp was dropped; XP comes from difficulty as elsewhere.
         const formattedQueue = (data || []).map((item: any) => ({
             ...item.problem,
-            xp: item.problem.xp || 0
+            xp: calculateXP(item.problem.difficulty)
         }));
 
         return NextResponse.json(formattedQueue);
