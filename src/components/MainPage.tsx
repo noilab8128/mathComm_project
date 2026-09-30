@@ -11,7 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Trophy, BookOpen, Loader2 } from "lucide-react";
 import MathPreview from "@/components/MathPreview";
-import { problemsAPI, getDifficultyLabel, type Problem as SupabaseProblem } from "@/lib/supabase";
+import { problemsAPI, getDifficultyLabel, calculateXP, type Problem as SupabaseProblem } from "@/lib/supabase";
 
 // Convert Supabase Problem to display format
 interface ProblemDisplay {
@@ -35,7 +35,7 @@ function convertSupabaseProblem(sp: SupabaseProblem): ProblemDisplay {
     title: sp.title,
     level: sp.level || getDifficultyLabel(sp.difficulty),
     age: sp.age_range || "All Ages",
-    xp: sp.difficulty * 50, // problems.xp was dropped; XP comes from difficulty
+    xp: calculateXP(sp.difficulty), // problems.xp was dropped; XP comes from difficulty
     difficulty: getDifficultyLabel(sp.difficulty),
     tags: sp.tags || (sp.category_path ? sp.category_path.split(' > ') : []),
     unlocked: true,

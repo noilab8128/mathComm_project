@@ -9,7 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { BookOpen, Send, Lock, Unlock, Star, Loader2, Heart, GitBranch, ArrowUp, ArrowDown, ChevronRight, Sparkles, CheckCircle2, XCircle, AlertCircle, RefreshCcw } from "lucide-react";
 import MathPreview from "@/components/MathPreview";
-import { getDifficultyLabel, type Problem as SupabaseProblem, problemHierarchiesAPI } from "@/lib/supabase";
+import { getDifficultyLabel, calculateXP, type Problem as SupabaseProblem, problemHierarchiesAPI } from "@/lib/supabase";
 import { useLikes } from "@/hooks/useUserInteractions";
 
 // Custom scrollbar styles to ensure they are always visible
@@ -99,7 +99,7 @@ export function convertSupabaseProblem(sp: SupabaseProblem): ProblemDisplay {
     title: sp.title,
     level: sp.level || getDifficultyLabel(sp.difficulty),
     age: sp.age_range || "All Ages",
-    xp: sp.difficulty * 50, // problems.xp was dropped; XP comes from difficulty
+    xp: calculateXP(sp.difficulty), // problems.xp was dropped; XP comes from difficulty
     difficulty: getDifficultyLabel(sp.difficulty),
     difficulty_score: sp.difficulty,
     tags: sp.tags || (sp.category_path ? sp.category_path.split(' > ') : []),

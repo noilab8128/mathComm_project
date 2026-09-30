@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Crown, Network, Users, Brain, Home, LineChart } from "lucide-react";
 import UserHomePage from "@/components/User_home_page";
+import HomeDashboard from "@/components/home/HomeDashboard";
 import Problems from "@/components/Problems";
 import Stats from "@/components/Stats";
 import Community, { CommunityTab } from "@/components/Community";
@@ -24,6 +25,10 @@ import Footer from "@/components/footer";
 
 import SideNav from "@/components/SideNav";
 
+// Home page version. The redesign (components/home/) replaces User_home_page.
+// To roll back, set this to false. Either version can also be opened with ?home=classic or ?home=new.
+const USE_NEW_HOME = true;
+
 /**
  * Main MathQuest UI Component
  * Handles page routing and renders the appropriate component based on active page
@@ -33,6 +38,13 @@ export default function MathQuestUIMock() {
   // State to track the currently active page/section
   const [page, setPage] = useState("dashboard");
   const [communityTab, setCommunityTab] = useState<CommunityTab>("discussions");
+  const [useNewHome, setUseNewHome] = useState(USE_NEW_HOME);
+
+  React.useEffect(() => {
+    const home = new URLSearchParams(window.location.search).get("home");
+    if (home === "classic") setUseNewHome(false);
+    if (home === "new") setUseNewHome(true);
+  }, []);
 
   // Listen for navigation events from child components (like Dashboard)
   React.useEffect(() => {
@@ -61,7 +73,7 @@ export default function MathQuestUIMock() {
         {/* Main Content Area */}
         <main className="flex-1 overflow-auto">
           {/* Conditional Rendering based on active page */}
-          {page === "dashboard" && <UserHomePage />}
+          {page === "dashboard" && (useNewHome ? <HomeDashboard /> : <UserHomePage />)}
           {page === "skill-tree" && <SkillTree />}
           {page === "problems" && <Problems />}
           {page === "community" && <Community activeTab={communityTab} onTabChange={setCommunityTab} />}

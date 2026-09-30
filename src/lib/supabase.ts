@@ -1,6 +1,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { Database } from './database.types';
+import { calculateRewards } from './progression';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -338,9 +339,9 @@ export function getDifficultyLabel(difficulty: number): string {
   return 'Olympiad';
 }
 
-// Utility: Calculate XP from difficulty
+// Utility: XP awarded for a correct answer (problems.xp was dropped; XP comes from difficulty)
 export function calculateXP(difficulty: number): number {
-  return difficulty * 50;
+  return calculateRewards(difficulty, true).xpEarned;
 }
 
 // Utility: Convert category path to tags

@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useProblems } from "./hooks/useProblems";
-import { problemsAPI, problemHierarchiesAPI, getDifficultyLabel, calculateXP, categoryToTags, supabase } from "@/lib/supabase";
+import { problemsAPI, problemHierarchiesAPI, getDifficultyLabel, categoryToTags, supabase } from "@/lib/supabase";
 import { ProblemHeader } from "./components/ProblemHeader";
 import { ProblemStats } from "./components/ProblemStats";
 import { ProblemFilters } from "./components/ProblemFilters";
@@ -260,7 +260,6 @@ export default function ProblemManagementPage() {
           })) : [],
           difficulty: prob.difficulty || 5,
           category: prob.category || "",
-          xp: calculateXP(prob.difficulty || 5),
           diagramImageUrl: "",
           source: source || "PDF-Extracted",
           linkedProblems: [],
@@ -298,7 +297,6 @@ export default function ProblemManagementPage() {
       solutions: solutions,
       difficulty: difficulty,
       category: category,
-      xp: calculateXP(difficulty),
       diagramImageUrl: diagramImageUrl,
       source: source,
       // Preservation of analytics counts if editing
@@ -349,7 +347,6 @@ export default function ProblemManagementPage() {
               category_level2: selectedLevel2 ? parseInt(selectedLevel2) : undefined,
               category_level3: selectedLevel3 ? parseInt(selectedLevel3) : undefined,
               level: getDifficultyLabel(relatedProblem.difficulty),
-              xp: calculateXP(relatedProblem.difficulty),
               tags: categoryToTags(relatedProblem.category),
               is_generated: true,
               source: "AI-Generated",

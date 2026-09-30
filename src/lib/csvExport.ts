@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-nocheck
 /* eslint-disable */
-import { Problem } from './supabase';
+import { Problem, calculateXP } from './supabase';
 
 /**
  * Convert problems to CSV format
@@ -56,7 +56,7 @@ export function convertProblemsToCSV(problems: Problem[]): string {
       escapeCsvValue(problem.category_path || ''),
       escapeCsvValue(problem.level || ''),
       escapeCsvValue(problem.age_range || ''),
-      problem.xp || 0,
+      calculateXP(problem.difficulty),
       escapeCsvValue(problem.tags?.join('; ') || ''),
       escapeCsvValue(problem.diagram_image_url || ''),
       escapeCsvValue((problem as any).linked_problem_ids?.join('; ') || ''),
