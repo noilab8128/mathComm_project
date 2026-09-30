@@ -38,6 +38,7 @@ export const problemsAPI = {
     category?: string;
     level?: string;
     isGenerated?: boolean;
+    isReviewed?: boolean;
     search?: string;
     onlyRoots?: boolean;
     sortBy?: 'newest' | 'oldest' | 'difficulty_asc' | 'difficulty_desc';
@@ -82,6 +83,10 @@ export const problemsAPI = {
 
     if (filters?.isGenerated !== undefined) {
       query = query.eq('is_generated', filters.isGenerated);
+    }
+    
+    if (filters?.isReviewed !== undefined) {
+      query = query.eq('is_reviewed', filters.isReviewed);
     }
 
     if (filters?.search) {
@@ -180,18 +185,33 @@ export const problemsAPI = {
 
     if (error) throw error;
 
-    // 2. Replace Solutions (Delete all for this problem, insert new)
-    // This is simple strategy. For smarter updates, we'd need solution IDs.
-    // For now, full overwrite of solutions is safer for "edit" mode.
+    // 2. Replace Solutions (Upsert strategy to preserve hierarchy foreign keys)
     if (solutions) {
-      // Delete existing
-      await supabase.from('solutions').delete().eq('problem_id', id);
+      // Get existing ones to calculate what to delete
+      const { data: existingSolutions } = await supabase.from('solutions').select('id').eq('problem_id', id);
+      const existingIds = new Set((existingSolutions as any[])?.map(s => s.id) || []);
 
-      // Insert new
-      if (solutions.length > 0) {
-        const solutionsWithId = solutions.map(s => ({ ...s, problem_id: id }));
-        // @ts-expect-error - problem_id is added above
-        await supabase.from('solutions').insert(solutionsWithId);
+      const solutionsToUpsert: any[] = [];
+
+      for (const s of solutions) {
+        const solId = (s as any).id;
+        if (solId) {
+            existingIds.delete(solId);
+            solutionsToUpsert.push({ ...s, problem_id: id });
+        } else {
+            // New solution (no id provided, Supabase generates it via DEFAULT)
+            solutionsToUpsert.push({ ...s, problem_id: id });
+        }
+      }
+
+      // Delete the ones missing from the payload
+      if (existingIds.size > 0) {
+        await supabase.from('solutions').delete().in('id', Array.from(existingIds));
+      }
+
+      // Upsert new and remaining
+      if (solutionsToUpsert.length > 0) {
+        await supabase.from('solutions').upsert(solutionsToUpsert as any, { onConflict: 'id' });
       }
     }
 
@@ -207,6 +227,24 @@ export const problemsAPI = {
 
     if (error) throw error;
   },
+
+  // Get all unique source names
+  async getUniqueSources() {
+    const { data, error } = await supabase
+      .from('problems')
+      .select('source')
+      .not('source', 'is', null)
+      .not('source', 'eq', '');
+    
+    if (error) throw error;
+    if (!data) return [];
+
+    // Cast through unknown to escape Supabase's over-narrowed 'never' inference
+    const rows = data as unknown as { source: string | null }[];
+    // Return unique values (filter nulls and narrow type to string[])
+    const sources = rows.map(item => item.source).filter((s): s is string => s !== null);
+    return Array.from(new Set(sources)).sort();
+  }
 };
 
 // Hierarchy API
@@ -271,6 +309,23 @@ export const problemHierarchiesAPI = {
       .match({ parent_problem_id: parentProblemId, child_problem_id: childProblemId });
 
     if (error) throw error;
+  },
+
+  // Get all parents (ancestors) for a given child problem
+  async getParents(childProblemId: string) {
+    const { data, error } = await supabase
+      .from('problem_hierarchies')
+      .select('*, parent_problem:problems!parent_problem_id(*)')
+      .eq('child_problem_id', childProblemId)
+      .order('sequence_order', { ascending: true });
+
+    if (error) throw error;
+    return data;
+  },
+
+  // Get all children for a given parent problem (alias of getChain without solution filter)
+  async getChildren(parentProblemId: string) {
+    return problemHierarchiesAPI.getChain(parentProblemId);
   }
 }
 

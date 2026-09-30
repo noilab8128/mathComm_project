@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://olympiadai.local/schemas/thinking_graph_v1.schema.json",
+  "title": "ThinkingGraph",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "graph_version",
+    "solution_id",
+    "nodes",
+    "edges",
+    "entry_nodes",
+    "terminal_nodes"
+  ],
+  "properties": {
+    "graph_version": { "type": "string", "const": "1.0.0" },
+    "solution_id": { "type": "string", "minLength": 1 },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "node_id",
+          "node_type",
+          "statement",
+          "purpose",
+          "source_span",
+          "depends_on",
+          "importance"
+        ],
+        "properties": {
+          "node_id": { "type": "string", "minLength": 1 },
+          "node_type": {
+            "type": "string",
+            "enum": [
+              "given",
+              "goal",
+              "definition",
+              "reformulation",
+              "observation",
+              "case_split",
+              "construction",
+              "lemma",
+              "inference",
+              "calculation",
+              "contradiction",
+              "conclusion"
+            ]
+          },
+          "statement": { "type": "string", "minLength": 1 },
+          "purpose": { "type": "string", "minLength": 1 },
+          "source_span": { "type": "string", "minLength": 1 },
+          "depends_on": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 }
+          },
+          "importance": {
+            "type": "string",
+            "enum": ["supporting", "important", "critical"]
+          }
+        }
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["from", "to", "relation"],
+        "properties": {
+          "from": { "type": "string", "minLength": 1 },
+          "to": { "type": "string", "minLength": 1 },
+          "relation": {
+            "type": "string",
+            "enum": [
+              "supports",
+              "requires",
+              "derives",
+              "motivates",
+              "splits_into",
+              "resolves",
+              "contradicts",
+              "concludes"
+            ]
+          }
+        }
+      }
+    },
+    "entry_nodes": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "terminal_nodes": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    }
+  }
+}

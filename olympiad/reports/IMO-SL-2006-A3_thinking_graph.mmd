@@ -1,0 +1,68 @@
+flowchart TD
+  N1["N1 given: sequence and S"]
+  N2["N2 goal: characterize S"]
+  N3["N3 define φ,ψ"]
+  N4["N4 Vieta identities"]
+  N5["N5 Binet for c_n"]
+  N6["N6 (c_n,c_n-1) in S"]
+  N7["N7 assumed ⇒ bounded"]
+  N8["N8 bounded ⇒ αφ+β=0"]
+  N9["N9 choose α=ψ, β=1"]
+  N10["N10 c_nψ+c_n-1=ψ^n-1"]
+  N11["N11 ψa_J+b_J=Σψ^j-1"]
+  N12["N12 geometric bounds"]
+  N13["N13 forward: m=-1,M=φ"]
+  N14["N14 Lemma (converse)"]
+  N15["N15 minimal power expansion"]
+  N16["N16 no-consecutive-indices"]
+  N17["N17 case: repeated index"]
+  N18["N18 case j_r≥2"]
+  N19["N19 case j_r=0"]
+  N20["N20 case j_r=1"]
+  N21["N21 distinct ⇒ Lemma proved"]
+  N22["N22 irrational uniqueness"]
+  N23["N23 conclusion"]
+  N1 -->|requires| N2
+  N1 -->|derives| N3
+  N3 -->|derives| N4
+  N1 -->|requires| N5
+  N3 -->|derives| N5
+  N1 -->|requires| N6
+  N2 -->|requires| N7
+  N6 -->|requires| N7
+  N5 -->|requires| N8
+  N7 -->|requires| N8
+  N8 -->|motivates| N9
+  N4 -->|requires| N9
+  N5 -->|requires| N10
+  N9 -->|requires| N10
+  N1 -->|requires| N11
+  N10 -->|derives| N11
+  N3 -->|requires| N12
+  N4 -->|requires| N12
+  N11 -->|motivates| N12
+  N11 -->|requires| N13
+  N12 -->|requires| N13
+  N2 -->|motivates| N14
+  N13 -->|requires| N14
+  N14 -->|requires| N15
+  N15 -->|requires| N16
+  N4 -->|requires| N16
+  N15 -->|requires| N17
+  N17 -->|splits_into| N18
+  N4 -->|requires| N18
+  N17 -->|splits_into| N19
+  N16 -->|requires| N19
+  N4 -->|requires| N19
+  N14 -->|requires| N19
+  N17 -->|splits_into| N20
+  N16 -->|requires| N20
+  N4 -->|requires| N20
+  N14 -->|requires| N20
+  N18 -->|resolves| N21
+  N19 -->|resolves| N21
+  N20 -->|resolves| N21
+  N11 -->|requires| N22
+  N21 -->|requires| N22
+  N13 -->|concludes| N23
+  N22 -->|concludes| N23

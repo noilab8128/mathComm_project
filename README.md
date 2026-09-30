@@ -1,38 +1,63 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MathQuest
 
-## Getting Started
+A learning platform for high-school and university students who enjoy hard mathematics. Students solve
+challenge and Olympiad-style problems, get AI feedback on their written solutions, earn ranking points,
+climb tiers, and discuss problems with each other.
 
-First, run the development server:
+Built by NOI.LAB. Repository: `noilab8128/mathComm_project` (work on `develop`, release from `main`).
+
+## Quick start
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+cp .env.example .env.local   # then fill in the real keys (ask a teammate)
+npm run dev                  # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Full setup (OAuth callback URLs, Turnstile, Netlify variables): [docs/SETUP.md](docs/SETUP.md).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Stack
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Next.js 16 (App Router, Turbopack) · React 19 · TypeScript · Tailwind CSS 3 + shadcn/Radix UI ·
+Supabase (Postgres) · NextAuth 4 (Google, Facebook, email + password) · OpenAI `gpt-4o` ·
+Cloudflare Turnstile · Recharts · ReactFlow · Netlify.
 
-## Learn More
+## Repository map
 
-To learn more about Next.js, take a look at the following resources:
+| Path | What it is |
+|---|---|
+| `src/app/` | Pages and API routes (landing, `/dashboard`, `/admin`, `/api/*`) |
+| `src/components/` | UI components; `ui/` holds the shadcn primitives |
+| `src/lib/` | Supabase clients, auth options, progression (tiers/levels), helpers |
+| `src/hooks/` | Client hooks (`useUserInteractions`: queue, likes, starts) |
+| `supabase/sql/` | SQL scripts for the current database, run by hand in the Supabase SQL editor |
+| `supabase/migrations/` | Later one-off schema changes |
+| `ai_problem_generation_guide.md` | Prompt guide **read at runtime** by `/api/generate-related-problems` — do not move |
+| `docs/` | Project documentation (below) |
+| `olympiad/` | OlympiadAI research project: Olympiad "DNA" analysis and problem ladders (Python) |
+| `Archive/` | Old or superseded files, kept for reference — see [Archive/README.md](Archive/README.md) |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Documentation
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Doc | Read it when |
+|---|---|
+| [docs/SETUP.md](docs/SETUP.md) | Setting up a machine or deploying |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Changing code: auth, routing, Supabase clients, API routes, AI features |
+| [docs/DATABASE.md](docs/DATABASE.md) | Touching tables or SQL |
+| [docs/LEARNING_PATHS.md](docs/LEARNING_PATHS.md) | Working on problem hierarchies, learning paths or ladders |
+| [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | Something is broken |
+| [docs/PRD.md](docs/PRD.md) | Product goals and requirements |
+| [docs/GRADING_CRITERIA.md](docs/GRADING_CRITERIA.md) | Changing AI grading |
+| [docs/STYLE_GUIDE.md](docs/STYLE_GUIDE.md) | Building UI |
+| [docs/CATEGORIES.md](docs/CATEGORIES.md) | Looking up the 103 math categories |
+| [olympiad/README.md](olympiad/README.md) | Working on OlympiadAI |
+| [docs/WORKLOG_2026_09_26.md](docs/WORKLOG_2026_09_26.md) | Catching up on the 2026-09-26 changes (ladders, clean-up, open issues) |
 
-## Deploy on Vercel
+## Scripts
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-
-(빌드 테스트용 커밋)
+| Command | Does |
+|---|---|
+| `npm run dev` | Dev server with Turbopack |
+| `npm run build` | Production build |
+| `npm run start` | Serve the production build |
+| `npm run lint` | ESLint |

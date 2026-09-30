@@ -1,0 +1,336 @@
+# Olympiad Problem DNA Framework
+Version 1.0
+
+## Project Vision
+
+The ultimate goal of this project is **NOT** to imitate existing Olympiad problems.
+
+The goal is to discover the hidden "DNA" behind Olympiad problems and generate entirely new problems by recombining those DNA components.
+
+The inspiration comes from biology.
+
+Existing problems are treated as organisms.
+
+Their mathematical DNA is extracted, stored, analyzed, and later recombined to create new mathematical organisms.
+
+---
+
+# Overall Pipeline
+
+Existing Problems
+        │
+        ▼
+Official Solution(s)
+        │
+        ▼
+Thinking Graph Extraction
+        │
+        ▼
+DNA Extraction
+        │
+        ▼
+DNA Database
+        │
+        ▼
+DNA Selection / Recombination / Mutation
+        │
+        ▼
+Generated Problem
+        │
+        ▼
+Verification
+        │
+        ▼
+Human Review
+
+Generation should NEVER happen before DNA extraction.
+
+The DNA database is the core asset of the project.
+
+---
+
+# Why Official Solutions Matter
+
+The project does NOT primarily analyze problems.
+
+Instead, it analyzes **official solutions**.
+
+Reason:
+
+A problem may admit multiple fundamentally different official solutions.
+
+Example:
+
+Problem P
+
+    Solution A
+    Solution B
+    Solution C
+
+Each solution represents a different way of thinking.
+
+Therefore,
+
+ONE problem may generate MULTIPLE Thinking Graphs.
+
+These Thinking Graphs become multiple DNA candidates.
+
+---
+
+# Thinking Graph
+
+The Thinking Graph represents the logical reasoning process inside one solution.
+
+Nodes represent mathematical states.
+
+Edges represent logical transitions.
+
+Thinking Graphs should remain proof-specific.
+
+Different official solutions should have different Thinking Graphs whenever appropriate.
+
+---
+
+# Reasoning Actions
+
+Reasoning Actions are NOT a separate framework layer.
+
+Instead,
+
+Reasoning Actions are attributes (labels) of Thinking Graph edges.
+
+Example
+
+Statement A
+      |
+(Substitution)
+      |
+Statement B
+
+Reasoning Actions describe HOW reasoning moves from one node to another.
+
+Examples
+
+- Substitution
+- Contradiction
+- Construction
+- Case Split
+- Merge Cases
+- Factorization
+- Bounding
+- Extremal Choice
+- Symmetry
+- Direct Computation
+
+---
+
+# DNA Extraction
+
+The purpose of Thinking Graph analysis is NOT the graph itself.
+
+The graph is only an intermediate representation.
+
+Its purpose is extracting reusable mathematical DNA.
+
+DNA should be proof-independent whenever possible.
+
+---
+
+# Two Types of DNA
+
+## 1. Problem DNA
+
+One per problem.
+
+Contains structural information about the problem itself.
+
+Examples
+
+- Contest
+- Year
+- Area
+- Topic
+- Objects
+- Difficulty
+- Hidden Structure
+- Expected Mathematical Themes
+
+---
+
+## 2. Solution DNA
+
+One per official solution.
+
+Contains reasoning information.
+
+Examples
+
+- Thinking Graph
+- Strategy Layer
+- Mathematical Principles
+- Principle Dependency Graph
+- Reasoning Actions
+- Proof Style
+- Construction Style
+- Contradiction
+- Induction
+- Symmetry
+- Auxiliary Objects
+
+Different official solutions generate different Solution DNA.
+
+---
+
+# DNA Schema
+
+Every extracted DNA should follow a standardized schema.
+
+Example
+
+Problem Information
+
+- Contest
+- Year
+- Round
+- Problem ID
+
+Problem DNA
+
+- Area
+- Topic
+- Difficulty
+- Objects
+- Hidden Structure
+- Expected Insight
+
+Solution DNA
+
+- Thinking Graph
+- Strategy Layer
+- Mathematical Principles
+- Principle Dependency Graph
+- Reasoning Actions
+- Proof Skeleton
+- Auxiliary Objects
+- Construction Type
+- Proof Ending
+
+Graph Features
+
+- Graph Shape
+- Number of Branches
+- Merge Type
+- Graph Depth
+
+Proof Features
+
+- Direct
+- Contradiction
+- Construction
+- Extremal
+- Invariant
+- Monovariant
+- Functional
+- Recursive
+- Symmetric
+
+Node Classification
+
+Each Thinking Graph node should be classified.
+
+Possible roles:
+
+- Core Idea
+- Supporting Lemma
+- Routine Computation
+- Observation
+- Construction
+- Conclusion
+
+Edge Classification
+
+Each Thinking Graph edge should be classified.
+
+Possible roles:
+
+- Logical
+- Algebraic
+- Structural
+- Computational
+- Creative
+
+---
+
+# DNA Database
+
+The DNA Database stores ALL extracted DNA.
+
+This database becomes the knowledge base for future generation.
+
+Generator NEVER reads original problems directly.
+
+Generator reads DNA.
+
+---
+
+# DNA Recombination
+
+Generation should operate on DNA.
+
+NOT on existing problems.
+
+Possible operations
+
+- Selection
+- Combination
+- Mutation
+- Replacement
+- Expansion
+- Simplification
+
+Example
+
+Thinking Graph from Problem A
+
++
+
+Construction Style from Problem B
+
++
+
+Principle Dependency from Problem C
+
+↓
+
+New Mathematical Problem
+
+---
+
+# Role of Validation
+
+Validation is NOT the final goal.
+
+Validation only verifies whether DNA extraction is reliable.
+
+After sufficient validation,
+
+research effort should move toward DNA database construction.
+
+---
+
+# Long-Term Vision
+
+The project aims to construct a mathematical DNA database for Olympiad problems.
+
+Eventually,
+
+new Olympiad-quality problems should be generated by recombining DNA extracted from hundreds or thousands of existing problems.
+
+The generated problems should
+
+- be mathematically original,
+- avoid copyright issues,
+- preserve Olympiad-level creativity,
+- and remain explainable through their underlying DNA.
+
+The DNA database—not the language model—is the central intellectual contribution of this project.

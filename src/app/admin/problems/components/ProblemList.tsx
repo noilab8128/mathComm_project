@@ -52,6 +52,7 @@ interface ProblemListProps {
     clearSelection: () => void;
     sortBy: "newest" | "oldest" | "difficulty_asc" | "difficulty_desc";
     onSortChange: (sort: "newest" | "oldest" | "difficulty_asc" | "difficulty_desc") => void;
+    onApproveProblem?: (id: string) => void;
 }
 
 export function ProblemList({
@@ -88,7 +89,8 @@ export function ProblemList({
     selectAllProblems,
     clearSelection,
     sortBy,
-    onSortChange
+    onSortChange,
+    onApproveProblem
 }: ProblemListProps) {
 
     const getDifficultyColor = (diff: number) => {
@@ -164,6 +166,7 @@ export function ProblemList({
                                                     />
                                                 </TableHead>
                                                 <TableHead>Title</TableHead>
+                                                <TableHead>Source</TableHead>
                                                 <TableHead>Category</TableHead>
                                                 <TableHead
                                                     className="cursor-pointer hover:bg-gray-100 transition-colors"
@@ -259,11 +262,27 @@ export function ProblemList({
                                                                     </span>
 
                                                                     {problem.isGenerated && (
-                                                                        <Badge variant="secondary" className="text-xs bg-green-100 text-green-700">
-                                                                            AI
+                                                                        <Badge variant="secondary" className={`text-xs ${problem.isReviewed ? "bg-green-100 text-green-700" : "bg-orange-100 text-orange-700"}`}>
+                                                                            {problem.isReviewed ? "AI (Reviewed)" : "AI (Pending Review)"}
                                                                         </Badge>
                                                                     )}
                                                                 </div>
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                {problem.source ? (
+                                                                    <Badge 
+                                                                        variant="outline" 
+                                                                        className={`text-[10px] px-1.5 py-0 h-5 font-normal uppercase tracking-tight ${
+                                                                            problem.source.toLowerCase().includes('ai') 
+                                                                            ? "bg-purple-50 text-purple-600 border-purple-200" 
+                                                                            : "bg-gray-50 text-gray-500 border-gray-200"
+                                                                        }`}
+                                                                    >
+                                                                        {problem.source}
+                                                                    </Badge>
+                                                                ) : (
+                                                                    <span className="text-gray-300 text-xs">-</span>
+                                                                )}
                                                             </TableCell>
                                                             <TableCell>{problem.category}</TableCell>
                                                             <TableCell>
@@ -284,6 +303,19 @@ export function ProblemList({
                                                                 {new Date(problem.createdAt).toLocaleDateString()}
                                                             </TableCell>
                                                             <TableCell className="text-right">
+                                                                {problem.isGenerated && !problem.isReviewed && onApproveProblem && (
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="sm"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            onApproveProblem(problem.id);
+                                                                        }}
+                                                                        className="text-green-600 hover:text-green-800 hover:bg-green-50 mr-2"
+                                                                    >
+                                                                        Approve
+                                                                    </Button>
+                                                                )}
                                                                 <Button
                                                                     variant="ghost"
                                                                     size="sm"
@@ -307,7 +339,7 @@ export function ProblemList({
                                                             if (sortedGroups.length > 1) {
                                                                 rows.push(
                                                                     <TableRow key={`group-${problem.id}-${groupName}`} className="bg-gray-50/50">
-                                                                        <TableCell colSpan={7} className="py-1">
+                                                                        <TableCell colSpan={8} className="py-1">
                                                                             <div className="flex items-center gap-2 text-xs font-semibold text-blue-600/80 uppercase tracking-wider" style={{ paddingLeft: `${(depth + 1) * 24 + 20}px` }}>
                                                                                 <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
                                                                                 Stage: {groupName}

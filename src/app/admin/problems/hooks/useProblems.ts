@@ -16,6 +16,7 @@ export function useProblems() {
     // Filtering and sorting states
     const [filterCategory, setFilterCategory] = useState<string>("all");
     const [filterDifficulty, setFilterDifficulty] = useState<string>("all");
+    const [filterStatus, setFilterStatus] = useState<string>("all");
     const [sortBy, setSortBy] = useState<"newest" | "oldest" | "difficulty_asc" | "difficulty_desc">("newest");
     const [searchQuery, setSearchQuery] = useState("");
 
@@ -23,6 +24,7 @@ export function useProblems() {
     const [isDbConnected, setIsDbConnected] = useState(false);
     const [isLoadingFromDb, setIsLoadingFromDb] = useState(false);
     const [isSavingToDb, setIsSavingToDb] = useState(false);
+    const [uniqueSources, setUniqueSources] = useState<string[]>([]);
 
     const [toast, setToast] = useState<{ show: boolean; message: string; type: "success" | "error" }>({
         show: false,
@@ -76,6 +78,8 @@ export function useProblems() {
             const { data: roots, count } = await problemsAPI.getPaginated(currentPage, pageSize, {
                 category: filterCategory === 'all' ? undefined : filterCategory,
                 difficulty: difficultyFilter,
+                isGenerated: filterStatus === "pending-review" ? true : undefined,
+                isReviewed: filterStatus === "pending-review" ? false : undefined,
                 search: searchQuery,
                 onlyRoots: true, // This filter needs to be implemented correctly in supabase.ts or refined
                 sortBy: sortBy
@@ -130,8 +134,17 @@ export function useProblems() {
                     difficulty: sp.difficulty,
                     category: sp.category_path || (sp.category_level1 ? String(sp.category_level1) : ''),
                     diagramImageUrl: sp.diagram_image_url,
+                    source: sp.source,
+                    startsCount: sp.starts_count,
+                    completesCount: sp.completes_count,
+                    attemptsCount: sp.attempts_count,
+                    rating: sp.rating,
+                    likesCount: sp.likes_count,
+                    lastSolvedAt: sp.last_solved_at,
                     linkedProblems: sp.linked_problem_ids || [],
                     isGenerated: sp.is_generated,
+                    isReviewed: sp.is_reviewed,
+                    reviewerId: sp.reviewer_id,
                     parentProblemId: hierarchyLink?.parent_problem_id,
                     hierarchyInfo: hierarchyLink ? {
                         parentSolutionId: hierarchyLink.parent_solution_id,
@@ -144,6 +157,14 @@ export function useProblems() {
                 };
             }) as Problem[];
 
+            // 4. Load unique sources for suggestions
+            try {
+                const sources = await problemsAPI.getUniqueSources();
+                setUniqueSources(sources);
+            } catch (err) {
+                console.error('Failed to load unique sources:', err);
+            }
+
             setProblems(convertedProblems);
             setIsDbConnected(true);
         } catch (error: any) {
@@ -154,7 +175,7 @@ export function useProblems() {
         } finally {
             setIsLoadingFromDb(false);
         }
-    }, [currentPage, pageSize, filterCategory, filterDifficulty, searchQuery, sortBy, showToast]);
+    }, [currentPage, pageSize, filterCategory, filterDifficulty, filterStatus, searchQuery, sortBy, showToast]);
 
     // Reload when filters or page change
     useEffect(() => {
@@ -190,25 +211,35 @@ export function useProblems() {
                 category_level2: selectedLevel2 ? parseInt(selectedLevel2) : undefined,
                 category_level3: selectedLevel3 ? parseInt(selectedLevel3) : undefined,
                 level: getDifficultyLabel(problem.difficulty),
-                xp: calculateXP(problem.difficulty),
                 tags: problem.category ? problem.category.split(' > ').map(t => t.trim()) : [],
                 diagram_image_url: problem.diagramImageUrl || undefined,
-                // linked_problem_ids: problem.linkedProblems, // Removed in migration? No, I kept 'problems' table pretty clean.
-                // Checking migration (Step 43/45): "tags TEXT[]", "linked_problem_ids" is NOT in the new table definition!
-                // So removing it.
+                source: problem.source || undefined,
+                // starts_count, completes_count, etc. are usually not manually edited via editor
+                // but we include them if they exist in the object to prevent overwriting with 0 if needed
+                starts_count: problem.startsCount,
+                completes_count: problem.completesCount,
+                attempts_count: problem.attemptsCount,
+                rating: problem.rating,
+                likes_count: problem.likesCount,
+                last_solved_at: problem.lastSolvedAt,
                 is_generated: problem.isGenerated,
                 // parent_problem_id: problem.parentProblemId, // Removed from 'problems' table.
             };
 
             // Prepare solutions for separate table
-            const solutionsToSave = problem.solutions?.map((s, index) => ({
-                content: s.content,
-                sequence_order: s.sequenceOrder || index + 1
-            })) || [];
+            const solutionsToSave = problem.solutions?.map((s, index) => {
+                const isValidUUID = s.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s.id);
+                return {
+                    id: isValidUUID ? s.id : undefined,
+                    content: s.content,
+                    sequence_order: s.sequenceOrder || index + 1
+                };
+            }) || [];
 
             // If no solutions in array but legacy 'solution' exists (e.g. from UI input), add it
             if (solutionsToSave.length === 0 && problem.solution) {
                 solutionsToSave.push({
+                    id: undefined,
                     content: problem.solution,
                     sequence_order: 1
                 });
@@ -267,6 +298,20 @@ export function useProblems() {
         }
     };
 
+    const approveProblem = async (id: string) => {
+        try {
+            if (isDbConnected && !id.startsWith('temp-')) {
+                // @ts-expect-error - update accepts partial
+                await problemsAPI.update(id, { is_reviewed: true });
+                setProblems(prev => prev.map(p => p.id === id ? { ...p, isReviewed: true } : p));
+                showToast("✅ Problem approved successfully!", "success");
+            }
+        } catch (error: any) {
+            console.error('❌ Failed to approve problem:', error);
+            showToast(`❌ Failed to approve: ${error.message}`, "error");
+        }
+    };
+
     const handleExportCSV = () => {
         try {
             // @ts-expect-error - Mismatch between Problem interface and what CSV export expects
@@ -294,6 +339,8 @@ export function useProblems() {
         setFilterCategory,
         filterDifficulty,
         setFilterDifficulty,
+        filterStatus,
+        setFilterStatus,
         sortBy,
         setSortBy,
         searchQuery,
@@ -306,11 +353,13 @@ export function useProblems() {
         loadProblemsFromSupabase,
         saveProblemToSupabase,
         deleteProblem,
+        approveProblem,
         handleExportCSV,
         selectedProblemIds,
         toggleProblemSelection,
         selectAllProblems,
         clearSelection,
+        uniqueSources,
         totalPages: Math.ceil(totalCount / pageSize)
     };
 }

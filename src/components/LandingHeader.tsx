@@ -17,7 +17,7 @@ export default function LandingHeader() {
             <div className="flex items-center gap-4">
                 {/* Help Link */}
                 <Link
-                    href="/"
+                    href="/faq"
                     className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors mr-2"
                 >
                     <HelpCircle className="h-4 w-4" />

@@ -142,7 +142,7 @@ export function exportProblemsToCSV(problems: Problem[], filename?: string) {
     return;
   }
 
-  const defaultFilename = `mathcomm_problems_${new Date().toISOString().split('T')[0]}.csv`;
+  const defaultFilename = `mathquest_problems_${new Date().toISOString().split('T')[0]}.csv`;
   downloadCSV(csvContent, filename || defaultFilename);
 }
 
@@ -190,7 +190,7 @@ export function exportFilteredProblemsToCSV(
     );
   }
 
-  const filename = `mathcomm_problems_filtered_${new Date().toISOString().split('T')[0]}.csv`;
+  const filename = `mathquest_problems_filtered_${new Date().toISOString().split('T')[0]}.csv`;
   exportProblemsToCSV(filtered, filename);
 }
 

@@ -20,6 +20,18 @@ async function loadMathJax(): Promise<void> {
 
   if (!window.__mathJaxLoader) {
     window.__mathJaxLoader = new Promise<void>((resolve, reject) => {
+      // Configure MathJax before loading the script
+      (window as any).MathJax = {
+        tex: {
+          inlineMath: [['$', '$'], ['\\(', '\\)']],
+          displayMath: [['$$', '$$'], ['\\[', '\\]']],
+          processEscapes: true,
+        },
+        options: {
+          enableMenu: false,
+        },
+      };
+
       const script = document.createElement("script");
       script.async = true;
       script.src = MATHJAX_SCRIPT_SRC;

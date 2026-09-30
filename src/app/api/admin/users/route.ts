@@ -17,16 +17,28 @@ export async function GET() {
         const { data: rolesData, error: rolesError } = await supabaseAdmin.from('user_roles').select('*');
         if (rolesError) throw rolesError;
 
-        const roleMap = new Map(rolesData.map((r: any) => [r.user_id, r.role]));
+        const { data: statsData, error: statsError } = await supabaseAdmin.from('user_stats').select('*');
+        if (statsError) throw statsError;
 
-        const adminUsers = usersData.map((u: any) => ({
-            id: u.id,
-            name: u.name || 'Unknown',
-            email: u.email || '',
-            image: u.image || '',
-            role: roleMap.get(u.id) || 'user',
-            createdAt: u.created_at || new Date().toISOString()
-        })).sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        const roleMap = new Map(rolesData.map((r: any) => [r.user_id, r.role]));
+        const statsMap = new Map(statsData.map((s: any) => [s.user_id, s]));
+
+        const adminUsers = usersData.map((u: any) => {
+            const stats = statsMap.get(u.id) || {};
+            return {
+                id: u.id,
+                name: u.name || 'Unknown',
+                email: u.email || '',
+                image: u.image || '',
+                role: roleMap.get(u.id) || 'user',
+                createdAt: u.created_at || new Date().toISOString(),
+                level: stats.current_level || 1,
+                xp: stats.total_xp || 0,
+                rp: stats.ranking_points || 0,
+                tier: stats.tier || 'Bronze III',
+                problems_solved: stats.problems_solved || 0
+            };
+        }).sort((a: any, b: any) => b.xp - a.xp); // Sort by XP descending by default
 
         return NextResponse.json({ users: adminUsers });
     } catch (e: any) {

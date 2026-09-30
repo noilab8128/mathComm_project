@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useProblems } from "./hooks/useProblems";
-import { problemsAPI, problemHierarchiesAPI, getDifficultyLabel, calculateXP, categoryToTags } from "@/lib/supabase";
+import { problemsAPI, problemHierarchiesAPI, getDifficultyLabel, calculateXP, categoryToTags, supabase } from "@/lib/supabase";
 import { ProblemHeader } from "./components/ProblemHeader";
 import { ProblemStats } from "./components/ProblemStats";
 import { ProblemFilters } from "./components/ProblemFilters";
@@ -31,6 +31,8 @@ export default function ProblemManagementPage() {
     setFilterCategory,
     filterDifficulty,
     setFilterDifficulty,
+    filterStatus,
+    setFilterStatus,
     sortBy,
     setSortBy,
     searchQuery,
@@ -43,11 +45,13 @@ export default function ProblemManagementPage() {
     loadProblemsFromSupabase,
     saveProblemToSupabase,
     deleteProblem,
+    approveProblem,
     handleExportCSV,
     selectedProblemIds,
     toggleProblemSelection,
     selectAllProblems,
-    clearSelection
+    clearSelection,
+    uniqueSources
   } = useProblems();
 
   // --- UI State ---
@@ -75,6 +79,7 @@ export default function ProblemManagementPage() {
   const [selectedLevel2, setSelectedLevel2] = useState("");
   const [selectedLevel3, setSelectedLevel3] = useState("");
   const [diagramImageUrl, setDiagramImageUrl] = useState("");
+  const [source, setSource] = useState("");
   const [linkedProblems, setLinkedProblems] = useState<string[]>([]);
   const [inputMethod, setInputMethod] = useState<"manual" | "file">("manual");
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
@@ -141,6 +146,7 @@ export default function ProblemManagementPage() {
     setSelectedLevel2("");
     setSelectedLevel3("");
     setDiagramImageUrl("");
+    setSource("");
     setLinkedProblems([]);
     setUploadedFile(null);
     setUploadedFilePreview("");
@@ -173,6 +179,7 @@ export default function ProblemManagementPage() {
     setDifficulty(problem.difficulty);
     setCategory(problem.category || "");
     setDiagramImageUrl(problem.diagramImageUrl || "");
+    setSource(problem.source || "");
     setLinkedProblems(problem.linkedProblems || []);
     setUploadedFile(null);
     setUploadedFilePreview("");
@@ -255,6 +262,7 @@ export default function ProblemManagementPage() {
           category: prob.category || "",
           xp: calculateXP(prob.difficulty || 5),
           diagramImageUrl: "",
+          source: source || "PDF-Extracted",
           linkedProblems: [],
           isGenerated: false,
           createdAt: new Date().toISOString(),
@@ -292,6 +300,14 @@ export default function ProblemManagementPage() {
       category: category,
       xp: calculateXP(difficulty),
       diagramImageUrl: diagramImageUrl,
+      source: source,
+      // Preservation of analytics counts if editing
+      startsCount: selectedProblem?.startsCount,
+      completesCount: selectedProblem?.completesCount,
+      attemptsCount: selectedProblem?.attemptsCount,
+      rating: selectedProblem?.rating,
+      likesCount: selectedProblem?.likesCount,
+      lastSolvedAt: selectedProblem?.lastSolvedAt,
       linkedProblems: linkedProblems,
       isGenerated: selectedProblem?.isGenerated || false,
       parentProblemId: selectedProblem?.parentProblemId,
@@ -304,8 +320,18 @@ export default function ProblemManagementPage() {
       if (saved) {
         // Now save all staged related problems with hierarchy
         // We need to know which solution/stage they belong to
-        // For now, we assume simple linear generation or rely on 'concepts' (stages) mapping if available
-        // In the new 'relatedProblems' structure from API, we might expect stage info.
+        // Fetch the generated solutions of the parent to map solutionIndex to solution.id
+        let parentSolutions: any[] = [];
+        try {
+          const { data } = await supabase
+            .from('solutions')
+            .select('id, sequence_order')
+            .eq('problem_id', saved.id)
+            .order('sequence_order', { ascending: true });
+          if (data) parentSolutions = data;
+        } catch (err) {
+          console.error("Failed to fetch parent solutions for mapping.", err);
+        }
 
         const problemsToSave = relatedProblems.filter(p => addedProblemTitles.has(p.title));
 
@@ -326,6 +352,7 @@ export default function ProblemManagementPage() {
               xp: calculateXP(relatedProblem.difficulty),
               tags: categoryToTags(relatedProblem.category),
               is_generated: true,
+              source: "AI-Generated",
               // parent_problem_id: saved.id, // Removed from columns, use hierarchy table
             };
 
@@ -343,11 +370,26 @@ export default function ProblemManagementPage() {
               const stageName = concepts?.[0] || "Next Step";
               const currentDepth = saved.hierarchyInfo?.depth || 1;
 
+              // Find exact parent solution ID based on solutionIndex (1-based index mapped to sequence_order)
+              let exactParentSolutionId = null;
+              if (relatedProblem.solutionIndex && parentSolutions.length > 0) {
+                const matchedSolution = parentSolutions.find(s => s.sequence_order === relatedProblem.solutionIndex);
+                if (matchedSolution) {
+                  exactParentSolutionId = matchedSolution.id;
+                } else {
+                  // Fallback to first solution if index out of bounds
+                  exactParentSolutionId = parentSolutions[0].id;
+                }
+              } else if (parentSolutions.length > 0) {
+                // If AI missed returning solutionIndex, fallback securely
+                exactParentSolutionId = parentSolutions[0].id;
+              }
+
               // Create Hierarchy Link
               await problemHierarchiesAPI.create(
                 saved.id,
                 savedChild.id,
-                null, // parent_solution_id
+                exactParentSolutionId, // mapped parent_solution_id
                 stageName,
                 i + 1, // sequence_order
                 currentDepth + 1 // depth
@@ -670,13 +712,17 @@ export default function ProblemManagementPage() {
       const response = await fetch('/api/generate-solution', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: problemContent }),
+        body: JSON.stringify({ problemContent: problemContent, category: category }),
       });
 
       if (!response.ok) throw new Error('Generation failed');
 
       const data = await response.json();
-      setSolution(data.solution);
+      setSolutions(prev => [...prev, {
+        id: `ai-generated-${Date.now()}`,
+        title: `AI Method ${prev.length + 1}`,
+        content: data.solution
+      }]);
       showToast("Solution generated successfully!", "success");
     } catch (error) {
       console.error('Generation error:', error);
@@ -938,6 +984,8 @@ export default function ProblemManagementPage() {
           setFilterCategory={setFilterCategory}
           filterDifficulty={filterDifficulty}
           setFilterDifficulty={setFilterDifficulty}
+          filterStatus={filterStatus}
+          setFilterStatus={setFilterStatus}
           sortBy={sortBy}
           setSortBy={setSortBy}
           categories={CATEGORIES}
@@ -981,6 +1029,7 @@ export default function ProblemManagementPage() {
           clearSelection={clearSelection}
           sortBy={sortBy}
           onSortChange={setSortBy}
+          onApproveProblem={approveProblem}
         />
       </div>
 
@@ -1080,10 +1129,13 @@ export default function ProblemManagementPage() {
         setSolutionPageRange={setSolutionPageRange}
         questionIndices={questionIndices}
         setQuestionIndices={setQuestionIndices}
-        totalPdfPages={totalPdfPages}
-        selectedProblemIndices={selectedProblemIndices}
-        setSelectedProblemIndices={setSelectedProblemIndices}
-      />
+            totalPdfPages={totalPdfPages}
+            selectedProblemIndices={selectedProblemIndices}
+            setSelectedProblemIndices={setSelectedProblemIndices}
+            source={source}
+            setSource={setSource}
+            allSources={uniqueSources}
+        />
 
       <LinkManagerDialog
         isOpen={showLinkManagerDialog}

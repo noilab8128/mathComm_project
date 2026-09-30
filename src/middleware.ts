@@ -25,6 +25,26 @@ export default withAuth(
                 return NextResponse.redirect(url);
             }
         }
+
+        // Onboarding checks
+        const isOnboardingRoute = url.pathname.startsWith("/onboarding");
+        
+        if (isAuth) {
+            const isOnboarded = req.nextauth.token?.is_onboarded === true;
+            
+            // If authenticated but not onboarded, strictly force to /onboarding
+            // Escape hatch: Allow requests to /api/ (for saving data)
+            if (!isOnboarded && !isOnboardingRoute && !url.pathname.startsWith('/api/')) {
+                url.pathname = "/onboarding";
+                return NextResponse.redirect(url);
+            }
+
+            // If already onboarded and trying to access onboarding, redirect to dashboard
+            if (isOnboarded && isOnboardingRoute) {
+                url.pathname = "/dashboard";
+                return NextResponse.redirect(url);
+            }
+        }
     },
     {
         callbacks: {

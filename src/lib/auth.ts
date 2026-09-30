@@ -7,6 +7,8 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { SupabaseAdapter } from "@auth/supabase-adapter";
 import { supabase } from "./supabase";
+import { verifyTurnstileToken } from "./turnstile";
+import { authRateLimiter } from "./rate-limit";
 
 export const authOptions: NextAuthOptions = {
     adapter: SupabaseAdapter({
@@ -31,11 +33,24 @@ export const authOptions: NextAuthOptions = {
             name: "Credentials",
             credentials: {
                 email: { label: "Email", type: "email", placeholder: "test@example.com" },
-                password: { label: "Password", type: "password" }
+                password: { label: "Password", type: "password" },
+                turnstileToken: { label: "Turnstile Token", type: "text" }
             },
             async authorize(credentials) {
                 if (!credentials?.email || !credentials?.password) {
                     throw new Error("Invalid credentials");
+                }
+
+                // Rate Limiting: 이메일 기준 15분에 10회까지 허용
+                const rateLimitResult = authRateLimiter.check(credentials.email);
+                if (!rateLimitResult.success) {
+                    throw new Error("Too many login attempts. Please try again later.");
+                }
+
+                // 0. Verify Turnstile Token
+                const isVerified = await verifyTurnstileToken(credentials.turnstileToken || "");
+                if (!isVerified) {
+                    throw new Error("Security verification failed. Please try again.");
                 }
 
                 // Create a service role client to access next_auth schema
@@ -82,11 +97,12 @@ export const authOptions: NextAuthOptions = {
     ],
     session: {
         strategy: "jwt",
+        maxAge: 7 * 24 * 60 * 60, // 7 days
     },
     pages: {
         signIn: "/login",
     },
-    debug: true,
+    debug: process.env.NODE_ENV === "development",
     callbacks: {
         async session({ session, token }) {
             if (session?.user && token) {
@@ -96,6 +112,7 @@ export const authOptions: NextAuthOptions = {
                 session.user.gender = token.gender as string;
                 session.user.country = token.country as string;
                 session.user.language = token.language as string;
+                session.user.is_onboarded = token.is_onboarded as boolean;
             }
             return session;
         },
@@ -108,6 +125,7 @@ export const authOptions: NextAuthOptions = {
                 if (session.country !== undefined) token.country = session.country;
                 if (session.language !== undefined) token.language = session.language;
                 if (session.image !== undefined) token.picture = session.image; // NextAuth standard for image
+                if (session.is_onboarded !== undefined) token.is_onboarded = session.is_onboarded;
             }
 
             if (user) {
@@ -120,11 +138,11 @@ export const authOptions: NextAuthOptions = {
                 );
 
                 try {
-                    // Fetch full user profile from next_auth schema
+                    // Fetch full user profile from next_auth schema including onboarding status
                     const { data: profile } = await adminSupabase
                         .schema("next_auth")
                         .from('users')
-                        .select('nickname, gender, country, language')
+                        .select('nickname, gender, country, language, is_onboarded')
                         .eq('id', user.id)
                         .maybeSingle();
 
@@ -133,16 +151,14 @@ export const authOptions: NextAuthOptions = {
                         token.gender = profile.gender;
                         token.country = profile.country;
                         token.language = profile.language;
+                        token.is_onboarded = profile.is_onboarded || false;
                     }
                 } catch (err) {
                     console.error("Error fetching user profile:", err);
+                    token.is_onboarded = false;
                 }
 
                 // Fetch user role from public.user_roles on sign in
-                console.log("[AUTH DEBUG] New sign-in detected.");
-                console.log("[AUTH DEBUG] user.id (used to look up role):", user.id);
-                console.log("[AUTH DEBUG] user.email:", user.email);
-
                 try {
                     const { data, error } = await supabase
                         .from('user_roles')
@@ -150,21 +166,15 @@ export const authOptions: NextAuthOptions = {
                         .eq('user_id', user.id)
                         .maybeSingle();
 
-                    console.log("[AUTH DEBUG] user_roles query result - data:", data);
-                    console.log("[AUTH DEBUG] user_roles query result - error:", error);
-
                     if (data && !error) {
                         token.role = (data as { role?: string }).role;
                     } else {
-                        console.log("[AUTH DEBUG] No role found. Defaulting to 'user'.");
                         token.role = 'user'; // Default role
                     }
                 } catch (err) {
-                    console.error("[AUTH DEBUG] Error fetching user role:", err);
+                    console.error("Error fetching user role:", err);
                     token.role = 'user';
                 }
-
-                console.log("[AUTH DEBUG] Final token.role assigned:", token.role);
             }
             return token;
         },

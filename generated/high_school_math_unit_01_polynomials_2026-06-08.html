@@ -1,0 +1,696 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>고등학교 공통수학1 1단원 연습문제 - 다항식</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #15202b;
+      --muted: #5a6472;
+      --line: #d7dde5;
+      --paper: #ffffff;
+      --wash: #f5f7fa;
+      --blue: #2563eb;
+      --green: #17805c;
+      --red: #c2413b;
+      --amber: #a16207;
+      --teal: #0f766e;
+      --shadow: 0 10px 24px rgba(18, 32, 50, 0.08);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--wash);
+      line-height: 1.65;
+    }
+
+    main {
+      width: min(1120px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 28px 0 56px;
+    }
+
+    header {
+      border-bottom: 1px solid var(--line);
+      padding: 8px 0 22px;
+      margin-bottom: 24px;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: clamp(1.8rem, 3vw, 2.7rem);
+      line-height: 1.18;
+      letter-spacing: 0;
+    }
+
+    h2 {
+      margin: 34px 0 14px;
+      font-size: 1.35rem;
+      letter-spacing: 0;
+    }
+
+    h3 {
+      margin: 0 0 10px;
+      font-size: 1.05rem;
+      letter-spacing: 0;
+    }
+
+    p {
+      margin: 0 0 12px;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 32px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--paper);
+      padding: 4px 12px;
+      color: var(--muted);
+      font-size: 0.9rem;
+      white-space: nowrap;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 320px;
+      gap: 22px;
+      align-items: start;
+    }
+
+    .panel,
+    .problem,
+    .answer-key {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    .panel {
+      padding: 18px;
+      margin-bottom: 18px;
+    }
+
+    .side {
+      position: sticky;
+      top: 18px;
+    }
+
+    .diagram-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: 10px;
+    }
+
+    svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      min-width: 620px;
+    }
+
+    .small-svg {
+      min-width: 260px;
+    }
+
+    .stage {
+      margin-bottom: 26px;
+    }
+
+    .problem-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .problem {
+      padding: 16px;
+      min-height: 230px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .problem .topline {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .difficulty {
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 72px;
+      min-height: 28px;
+      border-radius: 999px;
+      color: #fff;
+      background: var(--blue);
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+
+    .difficulty.d2 { background: var(--green); }
+    .difficulty.d3 { background: var(--teal); }
+    .difficulty.d4 { background: var(--blue); }
+    .difficulty.d5 { background: var(--amber); }
+    .difficulty.d6,
+    .difficulty.d7,
+    .difficulty.d8 { background: var(--red); }
+
+    .concept {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .math {
+      display: inline-block;
+      max-width: 100%;
+      overflow-wrap: anywhere;
+      font-family: "Times New Roman", Times, serif;
+      font-size: 1.08em;
+      color: #0f172a;
+    }
+
+    .equation {
+      width: 100%;
+      margin: 6px 0;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+      background: #f8fafc;
+      text-align: center;
+      font-family: "Times New Roman", Times, serif;
+      font-size: 1.16rem;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+
+    details {
+      margin-top: auto;
+      border-top: 1px solid var(--line);
+      padding-top: 10px;
+    }
+
+    summary {
+      cursor: pointer;
+      font-weight: 700;
+      color: var(--blue);
+    }
+
+    .answer {
+      margin-top: 8px;
+      color: var(--ink);
+    }
+
+    .answer-key {
+      padding: 18px;
+      margin-top: 22px;
+    }
+
+    .answer-key ol {
+      margin: 0;
+      padding-left: 22px;
+      columns: 2;
+      column-gap: 32px;
+    }
+
+    .answer-key li {
+      break-inside: avoid;
+      margin: 0 0 8px;
+    }
+
+    .legend {
+      display: grid;
+      gap: 10px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .legend li {
+      display: grid;
+      grid-template-columns: 16px 1fr;
+      gap: 8px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      background: var(--blue);
+    }
+
+    .dot.green { background: var(--green); }
+    .dot.teal { background: var(--teal); }
+    .dot.amber { background: var(--amber); }
+    .dot.red { background: var(--red); }
+
+    @media (max-width: 900px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .side {
+        position: static;
+      }
+
+      .problem-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .answer-key ol {
+        columns: 1;
+      }
+    }
+
+    @media print {
+      body {
+        background: #fff;
+      }
+
+      main {
+        width: 100%;
+        padding: 0;
+      }
+
+      .layout {
+        display: block;
+      }
+
+      .side {
+        position: static;
+      }
+
+      .panel,
+      .problem,
+      .answer-key {
+        box-shadow: none;
+        break-inside: avoid;
+      }
+
+      details[open] {
+        display: block;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>고등학교 공통수학1 1단원 연습문제</h1>
+      <p>단원: <strong>I. 다항식</strong> · 하위 개념: 다항식의 연산, 항등식과 나머지정리, 인수분해</p>
+      <div class="meta" aria-label="문제 세트 정보">
+        <span class="pill">생성일 2026-06-08</span>
+        <span class="pill">본문 12문제</span>
+        <span class="pill">보너스 2문제</span>
+        <span class="pill">난이도 2-8</span>
+        <span class="pill">Algebra &gt; Elementary Algebra</span>
+      </div>
+    </header>
+
+    <section class="panel" aria-labelledby="flow-title">
+      <h2 id="flow-title">단원 흐름도</h2>
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 960 230" role="img" aria-labelledby="flow-svg-title flow-svg-desc">
+          <title id="flow-svg-title">다항식 단원의 학습 흐름도</title>
+          <desc id="flow-svg-desc">다항식의 연산에서 시작하여 나머지정리, 인수정리, 인수분해, 종합 적용으로 이어지는 흐름</desc>
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"></path>
+            </marker>
+          </defs>
+          <rect x="20" y="38" width="170" height="116" rx="8" fill="#eef6ff" stroke="#2563eb" stroke-width="2"></rect>
+          <text x="105" y="78" text-anchor="middle" font-size="20" font-weight="700" fill="#1e3a8a">1. 연산</text>
+          <text x="105" y="110" text-anchor="middle" font-size="15" fill="#334155">전개 · 정리</text>
+          <text x="105" y="134" text-anchor="middle" font-size="15" fill="#334155">나눗셈</text>
+
+          <line x1="190" y1="96" x2="250" y2="96" stroke="#64748b" stroke-width="3" marker-end="url(#arrow)"></line>
+
+          <rect x="250" y="38" width="170" height="116" rx="8" fill="#ecfdf5" stroke="#17805c" stroke-width="2"></rect>
+          <text x="335" y="78" text-anchor="middle" font-size="20" font-weight="700" fill="#166534">2. 나머지</text>
+          <text x="335" y="110" text-anchor="middle" font-size="15" fill="#334155">f(a) 계산</text>
+          <text x="335" y="134" text-anchor="middle" font-size="15" fill="#334155">항등식 활용</text>
+
+          <line x1="420" y1="96" x2="480" y2="96" stroke="#64748b" stroke-width="3" marker-end="url(#arrow)"></line>
+
+          <rect x="480" y="38" width="170" height="116" rx="8" fill="#fff7ed" stroke="#a16207" stroke-width="2"></rect>
+          <text x="565" y="78" text-anchor="middle" font-size="20" font-weight="700" fill="#92400e">3. 인수</text>
+          <text x="565" y="110" text-anchor="middle" font-size="15" fill="#334155">나머지 0</text>
+          <text x="565" y="134" text-anchor="middle" font-size="15" fill="#334155">인수 조건</text>
+
+          <line x1="650" y1="96" x2="710" y2="96" stroke="#64748b" stroke-width="3" marker-end="url(#arrow)"></line>
+
+          <rect x="710" y="38" width="220" height="116" rx="8" fill="#fef2f2" stroke="#c2413b" stroke-width="2"></rect>
+          <text x="820" y="78" text-anchor="middle" font-size="20" font-weight="700" fill="#991b1b">4. 종합 적용</text>
+          <text x="820" y="110" text-anchor="middle" font-size="15" fill="#334155">계수 결정</text>
+          <text x="820" y="134" text-anchor="middle" font-size="15" fill="#334155">완전 인수분해</text>
+
+          <path d="M105 154 C105 196 820 196 820 154" fill="none" stroke="#94a3b8" stroke-width="2" stroke-dasharray="8 8"></path>
+          <text x="462" y="210" text-anchor="middle" font-size="15" fill="#475569">연산 정확도가 뒤 단계의 조건 해석을 지탱한다</text>
+        </svg>
+      </div>
+    </section>
+
+    <div class="layout">
+      <article>
+        <section class="stage" aria-labelledby="stage-1">
+          <h2 id="stage-1">Stage 1. 다항식의 연산</h2>
+          <div class="problem-grid">
+            <section class="problem">
+              <div class="topline">
+                <h3>1. 다항식의 덧셈과 뺄셈</h3>
+                <span class="difficulty d2">난이도 2</span>
+              </div>
+              <p class="concept">개념: 동류항 정리</p>
+              <p>다음 식을 간단히 하여라.</p>
+              <div class="equation">(2x<sup>2</sup>-3x+1)+(x<sup>2</sup>+5x-4)-2(x<sup>2</sup>-x+3)</div>
+              <details>
+                <summary>정답 보기</summary>
+                <p class="answer"><span class="math">x<sup>2</sup>+4x-9</span></p>
+                <p>동류항을 정리하면 <span class="math">3x<sup>2</sup>+2x-3-2x<sup>2</sup>+2x-6</span>이다.</p>
+              </details>
+            </section>
+
+            <section class="problem">
+              <div class="topline">
+                <h3>2. 다항식의 곱셈</h3>
+                <span class="difficulty d3">난이도 3</span>
+              </div>
+              <p class="concept">개념: 전개</p>
+              <p>다음 식을 전개하여라.</p>
+              <div class="equation">(x-2)(x+3)(2x-1)</div>
+              <details>
+                <summary>정답 보기</summary>
+                <p class="answer"><span class="math">2x<sup>3</sup>+x<sup>2</sup>-13x+6</span></p>
+                <p><span class="math">(x-2)(x+3)=x<sup>2</sup>+x-6</span>을 먼저 전개한다.</p>
+              </details>
+            </section>
+
+            <section class="problem">
+              <div class="topline">
+                <h3>3. 다항식의 나눗셈</h3>
+                <span class="difficulty d3">난이도 3</span>
+              </div>
+              <p class="concept">개념: 조립제법, 몫과 나머지</p>
+              <p><span class="math">3x<sup>3</sup>-2x<sup>2</sup>+5x-7</span>을 <span class="math">x-2</span>로 나누었을 때의 몫과 나머지를 구하여라.</p>
+              <details>
+                <summary>정답 보기</summary>
+                <p class="answer">몫 <span class="math">3x<sup>2</sup>+4x+13</span>, 나머지 <span class="math">19</span></p>
+                <p>조립제법에서 계수 <span class="math">3,-2,5,-7</span>에 <span class="math">2</span>를 대입한다.</p>
+              </details>
+            </section>
+          </div>
+        </section>
+
+        <section class="stage" aria-labelledby="stage-2">
+          <h2 id="stage-2">Stage 2. 항등식과 나머지정리</h2>
+          <div class="problem-grid">
+            <section class="problem">
+              <div class="topline">
+                <h3>4. 나머지정리의 기본</h3>
+                <span class="difficulty d3">난이도 3</span>
+              </div>
+              <p class="concept">개념: <span class="math">x-a</span>로 나눌 때의 나머지</p>
+              <p><span class="math">f(x)=x<sup>3</sup>+ax<sup>2</sup>-4x+5</span>를 <span class="math">x-1</span>로 나누었을 때의 나머지가 <span class="math">3</span>이다. 상수 <span class="math">a</span>를 구하여라.</p>
+              <details>
+                <summary>정답 보기</summary>
+                <p class="answer"><span class="math">a=1</span></p>
+                <p>나머지정리에 의해 <span class="math">f(1)=a+2=3</span>이다.</p>
+              </details>
+            </section>
+
+            <section class="problem">
+              <div class="topline">
+                <h3>5. 항등식의 계수 비교</h3>
+                <span class="difficulty d4">난이도 4</span>
+              </div>
+              <p class="concept">개념: 계수 비교</p>
+              <p>다음 등식이 항등식일 때, 상수 <span class="math">a,b</span>를 구하여라.</p>
+              <div class="equation">x<sup>3</sup>+ax<sup>2</sup>+bx-6=(x-2)(x<sup>2</sup>+3x+3)</div>
+              <details>
+                <summary>정답 보기</summary>
+                <p class="answer"><span class="math">a=1, b=-3</span></p>
+                <p>오른쪽을 전개하면 <span class="math">x<sup>3</sup>+x<sup>2</sup>-3x-6</span>이다.</p>
+              </details>
+            </section>
+
+            <section class="problem">
+              <div class="topline">
+                <h3>6. 인수정리의 기본</h3>
+                <span class="difficulty d4">난이도 4</span>
+              </div>
+              <p class="concept">개념: 인수정리</p>
+              <p><span class="math">f(x)=2x<sup>3</sup>-3x<sup>2</sup>+kx+4</span>가 <span class="math">x+1</span>을 인수로 가질 때, 상수 <span class="math">k</span>를 구하여라.</p>
+              <details>
+                <summary>정답 보기</summary>
+                <p class="answer"><span class="math">k=-1</span></p>
+                <p><span class="math">x+1</span>이 인수이면 <span class="math">f(-1)=0</span>이고, <span class="math">f(-1)=-1-k</span>이다.</p>
+              </details>
+            </section>
+          </div>
+        </section>
+
+        <section class="stage" aria-labelledby="stage-3">
+          <h2 id="stage-3">Stage 3. 인수분해</h2>
+          <div class="problem-grid">
+            <section class="problem">
+              <div class="topline">
+                <h3>7. 이차식의 인수분해</h3>
+                <span class="difficulty d2">난이도 2</span>
+              </div>
+              <p class="concept">개념: 합과 곱을 이용한 인수분해</p>
+              <p>다음 식을 인수분해하여라.</p>
+              <div class="equation">x<sup>2</sup>+7x+12</div>
+              <details>
+                <summary>정답 보기</summary>
+                <p class="answer"><span class="math">(x+3)(x+4)</span></p>
+                <p>곱이 <span class="math">12</span>, 합이 <span class="math">7</span>인 두 수는 <span class="math">3,4</span>이다.</p>
+              </details>
+            </section>
+
+            <section class="problem">
+              <div class="topline">
+                <h3>8. 계수가 있는 이차식의 인수분해</h3>
+                <span class="difficulty d3">난이도 3</span>
+              </div>
+              <p class="concept">개념: 교차곱</p>
+              <p>다음 식을 인수분해하여라.</p>
+              <div class="equation">2x<sup>2</sup>-5x-3</div>
+              <details>
+                <summary>정답 보기</summary>
+                <p class="answer"><span class="math">(2x+1)(x-3)</span></p>
+                <p>교차곱을 확인하면 <span class="math">-6x+x=-5x</span>이다.</p>
+              </details>
+            </section>
+
+            <section class="problem">
+              <div class="topline">
+                <h3>9. 묶어서 인수분해</h3>
+                <span class="difficulty d4">난이도 4</span>
+              </div>
+              <p class="concept">개념: 공통인수, 차의 제곱</p>
+              <p>다음 식을 인수분해하여라.</p>
+              <div class="equation">x<sup>3</sup>-2x<sup>2</sup>-9x+18</div>
+              <details>
+                <summary>정답 보기</summary>
+                <p class="answer"><span class="math">(x-2)(x-3)(x+3)</span></p>
+                <p><span class="math">x<sup>2</sup>(x-2)-9(x-2)=(x-2)(x<sup>2</sup>-9)</span>이다.</p>
+              </details>
+            </section>
+          </div>
+        </section>
+
+        <section class="stage" aria-labelledby="stage-4">
+          <h2 id="stage-4">Stage 4. 종합 적용</h2>
+          <div class="problem-grid">
+            <section class="problem">
+              <div class="topline">
+                <h3>10. 삼차식의 완전 인수분해</h3>
+                <span class="difficulty d5">난이도 5</span>
+              </div>
+              <p class="concept">개념: 묶기, 이차식 인수분해</p>
+              <p>다음 식을 인수분해하여라.</p>
+              <div class="equation">x<sup>3</sup>+3x<sup>2</sup>-4x-12</div>
+              <details>
+                <summary>정답 보기</summary>
+                <p class="answer"><span class="math">(x+3)(x-2)(x+2)</span></p>
+                <p><span class="math">x<sup>2</sup>(x+3)-4(x+3)=(x+3)(x<sup>2</sup>-4)</span>이다.</p>
+              </details>
+            </section>
+
+            <section class="problem">
+              <div class="topline">
+                <h3>11. 두 조건을 만족하는 다항식</h3>
+                <span class="difficulty d6">난이도 6</span>
+              </div>
+              <p class="concept">개념: 인수정리, 연립방정식</p>
+              <p><span class="math">f(x)=x<sup>3</sup>+px<sup>2</sup>+qx+6</span>가 <span class="math">x-1</span>과 <span class="math">x+2</span>를 모두 인수로 가진다. 상수 <span class="math">p,q</span>를 구하여라.</p>
+              <details>
+                <summary>정답 보기</summary>
+                <p class="answer"><span class="math">p=-2, q=-5</span></p>
+                <p><span class="math">f(1)=0</span>, <span class="math">f(-2)=0</span>을 연립한다.</p>
+              </details>
+            </section>
+
+            <section class="problem">
+              <div class="topline">
+                <h3>12. 이차식으로 나눌 때의 나머지</h3>
+                <span class="difficulty d6">난이도 6</span>
+              </div>
+              <p class="concept">개념: 나머지정리의 확장</p>
+              <p>다항식 <span class="math">f(x)</span>를 <span class="math">x-2</span>로 나누었을 때의 나머지는 <span class="math">5</span>이고, <span class="math">x+1</span>로 나누었을 때의 나머지는 <span class="math">-4</span>이다. <span class="math">f(x)</span>를 <span class="math">(x-2)(x+1)</span>로 나누었을 때의 나머지를 구하여라.</p>
+              <details>
+                <summary>정답 보기</summary>
+                <p class="answer"><span class="math">3x-1</span></p>
+                <p>나머지를 <span class="math">R(x)=ax+b</span>라 두면 <span class="math">R(2)=5, R(-1)=-4</span>이다.</p>
+              </details>
+            </section>
+          </div>
+        </section>
+
+        <section class="stage" aria-labelledby="bonus">
+          <h2 id="bonus">Bonus</h2>
+          <div class="problem-grid">
+            <section class="problem">
+              <div class="topline">
+                <h3>13. 대칭형 다항식</h3>
+                <span class="difficulty d7">난이도 7</span>
+              </div>
+              <p class="concept">개념: 인수정리, 연립방정식</p>
+              <p><span class="math">P(x)=x<sup>4</sup>+ax<sup>3</sup>+bx<sup>2</sup>+ax+1</span>이 <span class="math">x<sup>2</sup>-1</span>로 나누어떨어질 때, 상수 <span class="math">a,b</span>를 구하여라.</p>
+              <details>
+                <summary>정답 보기</summary>
+                <p class="answer"><span class="math">a=0, b=-2</span></p>
+                <p><span class="math">P(1)=0</span>, <span class="math">P(-1)=0</span>을 동시에 만족한다.</p>
+              </details>
+            </section>
+
+            <section class="problem">
+              <div class="topline">
+                <h3>14. 세 점의 나머지 조건</h3>
+                <span class="difficulty d8">난이도 8</span>
+              </div>
+              <p class="concept">개념: 나머지정리, 계수 결정</p>
+              <p><span class="math">f(x)=x<sup>3</sup>+ax<sup>2</sup>+bx+c</span>를 <span class="math">x-1,x-2,x-3</span>으로 각각 나누었을 때의 나머지가 <span class="math">2,5,10</span>이다. <span class="math">a,b,c</span>를 구하여라.</p>
+              <details>
+                <summary>정답 보기</summary>
+                <p class="answer"><span class="math">a=-5, b=11, c=-5</span></p>
+                <p><span class="math">f(1)=2</span>, <span class="math">f(2)=5</span>, <span class="math">f(3)=10</span>을 연립한다.</p>
+              </details>
+            </section>
+          </div>
+        </section>
+
+        <section class="answer-key" aria-labelledby="answers">
+          <h2 id="answers">정답 빠른 확인</h2>
+          <ol>
+            <li><span class="math">x<sup>2</sup>+4x-9</span></li>
+            <li><span class="math">2x<sup>3</sup>+x<sup>2</sup>-13x+6</span></li>
+            <li>몫 <span class="math">3x<sup>2</sup>+4x+13</span>, 나머지 <span class="math">19</span></li>
+            <li><span class="math">a=1</span></li>
+            <li><span class="math">a=1, b=-3</span></li>
+            <li><span class="math">k=-1</span></li>
+            <li><span class="math">(x+3)(x+4)</span></li>
+            <li><span class="math">(2x+1)(x-3)</span></li>
+            <li><span class="math">(x-2)(x-3)(x+3)</span></li>
+            <li><span class="math">(x+3)(x-2)(x+2)</span></li>
+            <li><span class="math">p=-2, q=-5</span></li>
+            <li><span class="math">3x-1</span></li>
+            <li><span class="math">a=0, b=-2</span></li>
+            <li><span class="math">a=-5, b=11, c=-5</span></li>
+          </ol>
+        </section>
+      </article>
+
+      <aside class="side" aria-label="개념 도식">
+        <section class="panel">
+          <h2>난이도 범례</h2>
+          <ul class="legend">
+            <li><span class="dot green"></span><span>2: 기본 계산</span></li>
+            <li><span class="dot teal"></span><span>3: 절차 적용</span></li>
+            <li><span class="dot"></span><span>4: 조건 해석</span></li>
+            <li><span class="dot amber"></span><span>5: 복합 인수분해</span></li>
+            <li><span class="dot red"></span><span>6-8: 종합 적용</span></li>
+          </ul>
+        </section>
+
+        <section class="panel">
+          <h2>나머지정리 도식</h2>
+          <div class="diagram-wrap">
+            <svg class="small-svg" viewBox="0 0 320 250" role="img" aria-labelledby="rem-title rem-desc">
+              <title id="rem-title">나머지정리 핵심 도식</title>
+              <desc id="rem-desc">f(x)를 x-a로 나누면 x=a를 대입하여 나머지 r을 얻는다</desc>
+              <rect x="24" y="24" width="272" height="54" rx="8" fill="#eef6ff" stroke="#2563eb" stroke-width="2"></rect>
+              <text x="160" y="57" text-anchor="middle" font-size="18" font-family="Times New Roman" fill="#1e3a8a">f(x) = (x-a)Q(x)+r</text>
+              <path d="M160 84 L160 124" stroke="#64748b" stroke-width="3" marker-end="url(#small-arrow)"></path>
+              <defs>
+                <marker id="small-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                  <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"></path>
+                </marker>
+              </defs>
+              <rect x="58" y="126" width="204" height="42" rx="8" fill="#ecfdf5" stroke="#17805c" stroke-width="2"></rect>
+              <text x="160" y="153" text-anchor="middle" font-size="17" fill="#166534">x = a 대입</text>
+              <path d="M160 172 L160 212" stroke="#64748b" stroke-width="3" marker-end="url(#small-arrow)"></path>
+              <rect x="75" y="214" width="170" height="30" rx="8" fill="#fff7ed" stroke="#a16207" stroke-width="2"></rect>
+              <text x="160" y="235" text-anchor="middle" font-size="17" font-family="Times New Roman" fill="#92400e">f(a) = r</text>
+            </svg>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>인수분해 도식</h2>
+          <div class="diagram-wrap">
+            <svg class="small-svg" viewBox="0 0 320 300" role="img" aria-labelledby="factor-title factor-desc">
+              <title id="factor-title">인수분해 예시 도식</title>
+              <desc id="factor-desc">삼차식을 묶고 차의 제곱을 이용해 세 일차식의 곱으로 분해하는 과정</desc>
+              <rect x="18" y="20" width="284" height="42" rx="8" fill="#f8fafc" stroke="#94a3b8" stroke-width="2"></rect>
+              <text x="160" y="47" text-anchor="middle" font-size="16" font-family="Times New Roman" fill="#0f172a">x³ - 2x² - 9x + 18</text>
+              <path d="M160 65 L160 94" stroke="#64748b" stroke-width="3" marker-end="url(#factor-arrow)"></path>
+              <defs>
+                <marker id="factor-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                  <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"></path>
+                </marker>
+              </defs>
+              <rect x="22" y="96" width="276" height="52" rx="8" fill="#ecfdf5" stroke="#17805c" stroke-width="2"></rect>
+              <text x="160" y="119" text-anchor="middle" font-size="15" fill="#166534">두 항씩 묶기</text>
+              <text x="160" y="139" text-anchor="middle" font-size="15" font-family="Times New Roman" fill="#0f172a">x²(x-2)-9(x-2)</text>
+              <path d="M160 152 L160 181" stroke="#64748b" stroke-width="3" marker-end="url(#factor-arrow)"></path>
+              <rect x="34" y="184" width="252" height="42" rx="8" fill="#eef6ff" stroke="#2563eb" stroke-width="2"></rect>
+              <text x="160" y="211" text-anchor="middle" font-size="16" font-family="Times New Roman" fill="#1e3a8a">(x-2)(x²-9)</text>
+              <path d="M160 230 L160 259" stroke="#64748b" stroke-width="3" marker-end="url(#factor-arrow)"></path>
+              <rect x="34" y="262" width="252" height="30" rx="8" fill="#fef2f2" stroke="#c2413b" stroke-width="2"></rect>
+              <text x="160" y="283" text-anchor="middle" font-size="16" font-family="Times New Roman" fill="#991b1b">(x-2)(x-3)(x+3)</text>
+            </svg>
+          </div>
+        </section>
+      </aside>
+    </div>
+  </main>
+</body>
+</html>

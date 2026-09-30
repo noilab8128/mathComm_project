@@ -22,6 +22,8 @@ interface ProblemFiltersProps {
     setFilterCategory: (category: string) => void;
     filterDifficulty: string;
     setFilterDifficulty: (value: string) => void;
+    filterStatus: string;
+    setFilterStatus: (value: string) => void;
     sortBy: "newest" | "oldest" | "difficulty_asc" | "difficulty_desc";
     setSortBy: (sort: "newest" | "oldest" | "difficulty_asc" | "difficulty_desc") => void;
     categories: any;
@@ -37,6 +39,8 @@ export function ProblemFilters({
     setFilterCategory,
     filterDifficulty,
     setFilterDifficulty,
+    filterStatus,
+    setFilterStatus,
     sortBy,
     setSortBy,
     categories
@@ -120,6 +124,15 @@ export function ProblemFilters({
                     <option value="medium">Medium (4-6)</option>
                     <option value="hard">Hard (7-9)</option>
                     <option value="olympic">Olympic (10)</option>
+                </select>
+
+                <select
+                    value={filterStatus}
+                    onChange={(e) => setFilterStatus(e.target.value)}
+                    className="p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm"
+                >
+                    <option value="all">All Statuses</option>
+                    <option value="pending-review">Pending AI Review</option>
                 </select>
             </div>
         </>

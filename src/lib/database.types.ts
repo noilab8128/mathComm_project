@@ -41,7 +41,6 @@ export interface Database {
                     category_path: string | null
                     level: string | null
                     age_range: string | null
-                    xp: number
                     tags: string[] | null
                     diagram_image_url: string | null
                     is_generated: boolean
@@ -66,7 +65,6 @@ export interface Database {
                     category_path?: string | null
                     level?: string | null
                     age_range?: string | null
-                    xp?: number
                     tags?: string[] | null
                     diagram_image_url?: string | null
                     is_generated?: boolean
@@ -91,7 +89,6 @@ export interface Database {
                     category_path?: string | null
                     level?: string | null
                     age_range?: string | null
-                    xp?: number
                     tags?: string[] | null
                     diagram_image_url?: string | null
                     is_generated?: boolean
@@ -161,6 +158,63 @@ export interface Database {
                     stage_name?: string | null
                     sequence_order?: number
                     depth?: number
+                    created_at?: string
+                }
+            }
+            user_queue: {
+                Row: {
+                    user_id: string
+                    problem_id: string
+                    created_at: string
+                }
+                Insert: {
+                    user_id: string
+                    problem_id: string
+                    created_at?: string
+                }
+                Update: {
+                    user_id?: string
+                    problem_id?: string
+                    created_at?: string
+                }
+            }
+            user_category_levels: {
+                Row: {
+                    user_id: string
+                    category_id: number
+                    level_score: number
+                    is_inferred: boolean
+                    updated_at: string
+                }
+                Insert: {
+                    user_id: string
+                    category_id: number
+                    level_score: number
+                    is_inferred?: boolean
+                    updated_at?: string
+                }
+                Update: {
+                    user_id?: string
+                    category_id?: number
+                    level_score?: number
+                    is_inferred?: boolean
+                    updated_at?: string
+                }
+            }
+            user_likes: {
+                Row: {
+                    user_id: string
+                    problem_id: string
+                    created_at: string
+                }
+                Insert: {
+                    user_id: string
+                    problem_id: string
+                    created_at?: string
+                }
+                Update: {
+                    user_id?: string
+                    problem_id?: string
                     created_at?: string
                 }
             }

@@ -28,11 +28,22 @@ export interface Problem {
     // Metadata
     level?: string;
     ageRange?: string;
-    xp: number;
     tags?: string[];
     diagramImageUrl?: string;
+    source?: string;
+    isReviewed?: boolean;
+    reviewerId?: string;
+
+    // Analytics (New)
+    startsCount?: number;
+    completesCount?: number;
+    attemptsCount?: number;
+    rating?: number;
+    likesCount?: number;
+    lastSolvedAt?: string;
 
     // AI & Hierarchy
+
     isGenerated: boolean;
     aiConfidence?: number;
     concepts?: string[];
@@ -64,4 +75,5 @@ export interface RelatedProblem {
     stage?: string;
     concept?: string;
     explanation?: string;
+    solutionIndex?: number;
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, Suspense } from "react";
-import { signIn } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Crown, Loader2, CheckCircle2 } from "lucide-react";
@@ -18,11 +18,20 @@ function LoginContent() {
     const [isLoading, setIsLoading] = useState<"google" | "facebook" | "credentials" | false>(false);
     const [isRegistering, setIsRegistering] = useState(modeParam === "signup");
     const [registrationSuccess, setRegistrationSuccess] = useState(false);
+    const [errorMsg, setErrorMsg] = useState("");
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
     const turnstile = useTurnstile();
+
+    const { status } = useSession();
+
+    useEffect(() => {
+        if (status === "authenticated") {
+            router.push("/dashboard");
+        }
+    }, [status, router]);
 
     useEffect(() => {
         if (modeParam === "signup") {
@@ -35,12 +44,14 @@ function LoginContent() {
     const handleTabChange = (mode: "signin" | "signup") => {
         setIsRegistering(mode === "signup");
         setRegistrationSuccess(false);
+        setErrorMsg("");
         // Optional: Update URL to reflect state without hard reload
         router.replace(mode === "signup" ? "/login?mode=signup" : "/login", { scroll: false });
     };
 
     const handleOAuthLogin = async (provider: "google" | "facebook") => {
         try {
+            setErrorMsg("");
             setIsLoading(provider);
             await signIn(provider, { callbackUrl: "/dashboard" });
         } catch (error) {
@@ -51,19 +62,20 @@ function LoginContent() {
 
     const handleCredentialsSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setErrorMsg("");
 
         if (!turnstileToken) {
-            alert("Please verify that you are a human first.");
+            setErrorMsg("Please verify that you are a human first.");
             return;
         }
 
         if (!email || !password) {
-            alert("Please enter both email and password.");
+            setErrorMsg("Please enter both email and password.");
             return;
         }
 
-        if (isRegistering && password.length < 6) {
-            alert("Password must be at least 6 characters long.");
+        if (isRegistering && !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/.test(password)) {
+            setErrorMsg("Password must be at least 8 characters with uppercase, lowercase, and a number.");
             return;
         }
 
@@ -94,19 +106,21 @@ function LoginContent() {
                 redirect: false,
                 email,
                 password,
+                turnstileToken,
             });
 
             if (result?.error) {
-                alert(result.error);
+                setErrorMsg(result.error);
                 setIsLoading(false);
                 turnstile.reset();
             } else {
                 // Success, route to dashboard manually
-                window.location.href = "/dashboard";
+                router.push("/dashboard");
+                router.refresh();
             }
         } catch (error: unknown) {
             const err = error as Error;
-            alert(err.message || "An unexpected error occurred.");
+            setErrorMsg(err.message || "An unexpected error occurred.");
             setIsLoading(false);
             turnstile.reset();
         }
@@ -227,6 +241,12 @@ function LoginContent() {
                         </div>
                     </div>
 
+                    {errorMsg && (
+                        <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
+                            {errorMsg}
+                        </div>
+                    )}
+
                     {/* Email / Password Form */}
                     <form onSubmit={handleCredentialsSubmit} className="space-y-4">
                         <div className="space-y-3">
@@ -243,7 +263,7 @@ function LoginContent() {
                             <div>
                                 <input
                                     type="password"
-                                    placeholder={isRegistering ? "Create a password (min 6 chars)" : "Password"}
+                                    placeholder={isRegistering ? "Min 8 chars: uppercase, lowercase, number" : "Password"}
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     className="block w-full rounded-md border-0 py-2.5 px-3.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
