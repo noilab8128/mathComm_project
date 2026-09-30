@@ -54,3 +54,6 @@ next-env.d.ts
 
 # OlympiadAI: source PDFs (~30 MB) stay local; python ignores are in olympiad/.gitignore
 /olympiad/data/raw/
+
+# nested git repo (was committed as a submodule without .gitmodules, broke Netlify clone)
+/generated/deploy_unit_01_polynomials/
