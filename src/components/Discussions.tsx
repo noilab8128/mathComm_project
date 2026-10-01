@@ -131,14 +131,14 @@ export default function Discussions({
   );
 
   return (
-    <Card className="w-full border-gray-200 shadow-sm bg-white">
-      <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-gray-100 pb-4">
+    <Card className="w-full border-slate-200 shadow-sm bg-white">
+      <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-100 pb-4">
         <div>
-          <CardTitle className="flex items-center gap-2 text-xl text-gray-800">
+          <CardTitle className="flex items-center gap-2 text-xl text-slate-800">
             {title}
           </CardTitle>
           {description && (
-            <CardDescription className="mt-1 text-gray-500">
+            <CardDescription className="mt-1 text-slate-500">
               {description}
             </CardDescription>
           )}
@@ -152,7 +152,7 @@ export default function Discussions({
           />
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="shrink-0 bg-gray-900 text-white hover:bg-gray-800">
+              <Button className="shrink-0 bg-slate-900 text-white hover:bg-slate-800">
                 New Post
               </Button>
             </DialogTrigger>
@@ -165,7 +165,7 @@ export default function Discussions({
               </DialogHeader>
               <form onSubmit={handleCreatePost} className="space-y-4 mt-4">
                 <div className="space-y-2">
-                  <label htmlFor="title" className="text-sm font-medium text-gray-700">Title</label>
+                  <label htmlFor="title" className="text-sm font-medium text-slate-700">Title</label>
                   <Input 
                     id="title"
                     placeholder="Enter an engaging title" 
@@ -175,7 +175,7 @@ export default function Discussions({
                   />
                 </div>
                 <div className="space-y-2">
-                  <label htmlFor="content" className="text-sm font-medium text-gray-700">Content</label>
+                  <label htmlFor="content" className="text-sm font-medium text-slate-700">Content</label>
                   <Textarea 
                     id="content"
                     placeholder="Write your content here..." 
@@ -189,7 +189,7 @@ export default function Discussions({
                   <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={isSubmitting} className="bg-indigo-600 text-white hover:bg-indigo-700">
+                  <Button type="submit" disabled={isSubmitting} className="bg-slate-900 text-white hover:bg-slate-800">
                     {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                     Post
                   </Button>
@@ -202,41 +202,41 @@ export default function Discussions({
       <CardContent className="p-0">
         {isLoading ? (
           <div className="flex justify-center p-8">
-            <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+            <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
           </div>
         ) : filteredPosts.length === 0 ? (
-          <div className="text-center p-8 text-gray-500">
+          <div className="text-center p-8 text-slate-500">
             No posts found. Be the first to start a conversation!
           </div>
         ) : (
-          <div className="divide-y divide-gray-100">
+          <div className="divide-y divide-slate-100">
             {filteredPosts.map((post) => (
-              <Link key={post.id} href={`/dashboard/community/${post.id}`} className="block hover:bg-gray-50 transition-colors p-5">
+              <Link key={post.id} href={`/dashboard/community/${post.id}`} className="block hover:bg-slate-50 transition-colors p-5">
                 <div className="flex items-start gap-4">
-                  <Avatar className="w-10 h-10 border border-gray-200 shrink-0">
+                  <Avatar className="w-10 h-10 border border-slate-200 shrink-0">
                     <AvatarImage src={post.authorImage} />
-                    <AvatarFallback className="bg-gray-100 text-gray-600">
+                    <AvatarFallback className="bg-slate-100 text-slate-600">
                       {post.authorName?.charAt(0) || "U"}
                     </AvatarFallback>
                   </Avatar>
                   
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 mb-1">
-                      <h3 className="font-semibold text-lg text-gray-900 truncate">
+                      <h3 className="font-semibold text-lg text-slate-900 truncate">
                         {post.title}
                       </h3>
-                      <span className="text-xs text-gray-400 shrink-0">
+                      <span className="text-xs text-slate-400 shrink-0">
                         {timeAgo(post.created_at)}
                       </span>
                     </div>
                     
-                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                    <p className="text-sm text-slate-600 mb-3 line-clamp-2">
                       {post.content}
                     </p>
                     
-                    <div className="flex items-center gap-4 text-sm text-gray-500">
+                    <div className="flex items-center gap-4 text-sm text-slate-500">
                       <div className="flex items-center gap-1 font-medium">
-                        <span className="text-gray-700">{post.authorName}</span>
+                        <span className="text-slate-700">{post.authorName}</span>
                       </div>
                       <Separator orientation="vertical" className="h-3" />
                       <div className="flex items-center gap-1">

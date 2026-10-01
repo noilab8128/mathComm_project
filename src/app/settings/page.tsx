@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
+import Header from "@/components/header";
 
 export default function SettingsPage() {
     const { data: session, update } = useSession();
@@ -36,7 +38,7 @@ export default function SettingsPage() {
     if (!session) {
         return (
             <div className="flex justify-center items-center min-h-[50vh]">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
             </div>
         );
     }
@@ -160,8 +162,13 @@ export default function SettingsPage() {
     };
 
     return (
+        <div className="min-h-screen bg-slate-50">
+        <Header />
         <div className="max-w-4xl mx-auto px-4 py-8">
-            <h1 className="text-3xl font-bold mb-8 text-gray-800">Account Settings</h1>
+            <Link href="/dashboard" className="mb-4 inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900">
+                <span aria-hidden="true">&larr;</span> Dashboard
+            </Link>
+            <h1 className="mb-8 text-xl font-semibold tracking-tight text-slate-900">Account settings</h1>
 
             {message && (
                 <div className={`p-4 mb-6 rounded-md ${message.type === 'success' ? 'bg-green-50 text-green-800 border-green-200' : 'bg-red-50 text-red-800 border-red-200'} border`}>
@@ -172,31 +179,31 @@ export default function SettingsPage() {
             <div className="grid md:grid-cols-3 gap-8">
                 {/* Left Column: Profile Card */}
                 <div className="md:col-span-1">
-                    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 flex flex-col items-center text-center">
+                    <div className="bg-white p-6 rounded-lg border border-slate-200 flex flex-col items-center text-center">
                         <div className="relative w-32 h-32 mb-4">
                             {session.user?.image ? (
                                 <Image
                                     src={session.user.image}
                                     alt="Profile"
                                     fill
-                                    className="rounded-full object-cover border-4 border-indigo-50"
+                                    className="rounded-full object-cover border-4 border-slate-200"
                                 />
                             ) : (
-                                <div className="w-full h-full rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-4xl font-bold border-4 border-white shadow-sm">
+                                <div className="w-full h-full rounded-full bg-slate-100 text-slate-700 flex items-center justify-center font-serif text-4xl font-semibold border border-slate-200">
                                     {session.user?.email?.[0].toUpperCase()}
                                 </div>
                             )}
                         </div>
                         <h2 className="text-xl font-semibold mb-1">{nickname || session.user?.name || "User"}</h2>
-                        <p className="text-gray-500 text-sm">{session.user?.email}</p>
+                        <p className="text-slate-500 text-sm">{session.user?.email}</p>
 
-                        <div className="mt-6 w-full pt-6 border-t border-gray-100">
+                        <div className="mt-6 w-full pt-6 border-t border-slate-100">
                             <div className="flex justify-between text-sm mb-2">
-                                <span className="text-gray-500">Role</span>
-                                <span className="font-medium text-indigo-600 capitalize">{session.user?.role || 'User'}</span>
+                                <span className="text-slate-500">Role</span>
+                                <span className="font-medium text-slate-700 capitalize">{session.user?.role || 'User'}</span>
                             </div>
                             <div className="flex justify-between text-sm">
-                                <span className="text-gray-500">Status</span>
+                                <span className="text-slate-500">Status</span>
                                 <span className="font-medium text-green-600">Active</span>
                             </div>
                         </div>
@@ -206,38 +213,38 @@ export default function SettingsPage() {
                 {/* Right Column: Forms */}
                 <div className="md:col-span-2 space-y-8">
                     {/* Profile Information Form */}
-                    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-                        <h3 className="text-lg font-medium text-gray-900 mb-4 border-b pb-2">Profile Information</h3>
+                    <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-100">
+                        <h3 className="text-lg font-medium text-slate-900 mb-4 border-b pb-2">Profile Information</h3>
                         <form onSubmit={handleProfileUpdate} className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Email / ID</label>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Email / ID</label>
                                 <input
                                     type="email"
                                     value={session.user?.email || ""}
                                     disabled
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500 cursor-not-allowed"
+                                    className="w-full px-3 py-2 border border-slate-300 rounded-md bg-slate-50 text-slate-500 cursor-not-allowed"
                                 />
-                                <p className="text-xs text-gray-500 mt-1">Email cannot be changed.</p>
+                                <p className="text-xs text-slate-500 mt-1">Email cannot be changed.</p>
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Nickname</label>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Nickname</label>
                                 <input
                                     type="text"
                                     placeholder="MathGenius99"
                                     value={nickname}
                                     onChange={(e) => setNickname(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-400"
                                 />
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Gender (Optional)</label>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Gender (Optional)</label>
                                     <select
                                         value={gender}
                                         onChange={(e) => setGender(e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                        className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-400"
                                     >
                                         <option value="">Prefer not to say</option>
                                         <option value="male">Male</option>
@@ -246,11 +253,11 @@ export default function SettingsPage() {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Language</label>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Language</label>
                                     <select
                                         value={language}
                                         onChange={(e) => setLanguage(e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                        className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-400"
                                     >
                                         <option value="en">English</option>
                                         <option value="ko">Korean</option>
@@ -261,11 +268,11 @@ export default function SettingsPage() {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Country / Region (Optional)</label>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Country / Region (Optional)</label>
                                 <select
                                     value={country}
                                     onChange={(e) => setCountry(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-400"
                                 >
                                     <option value="">Select a country...</option>
                                     <option value="US">United States</option>
@@ -282,7 +289,7 @@ export default function SettingsPage() {
                                 <button
                                     type="submit"
                                     disabled={isLoading}
-                                    className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                                    className="px-4 py-2 bg-slate-900 text-white rounded-md hover:bg-slate-800 disabled:opacity-50 transition-colors"
                                 >
                                     {isLoading ? 'Saving...' : 'Save Profile Settings'}
                                 </button>
@@ -291,39 +298,39 @@ export default function SettingsPage() {
                     </div>
 
                     {/* Password Change Form */}
-                    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-                        <h3 className="text-lg font-medium text-gray-900 mb-4 border-b pb-2">Change Password</h3>
+                    <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-100">
+                        <h3 className="text-lg font-medium text-slate-900 mb-4 border-b pb-2">Change Password</h3>
                         <form onSubmit={handlePasswordUpdate} className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Current Password</label>
                                 <input
                                     type="password"
                                     value={currentPassword}
                                     onChange={(e) => setCurrentPassword(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-400"
                                     placeholder="••••••••"
                                     required
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">New Password</label>
                                 <input
                                     type="password"
                                     value={newPassword}
                                     onChange={(e) => setNewPassword(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-400"
                                     placeholder="minimum 6 characters"
                                     required
                                     minLength={6}
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Confirm New Password</label>
                                 <input
                                     type="password"
                                     value={confirmPassword}
                                     onChange={(e) => setConfirmPassword(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-400"
                                     placeholder="minimum 6 characters"
                                     required
                                     minLength={6}
@@ -333,7 +340,7 @@ export default function SettingsPage() {
                                 <button
                                     type="submit"
                                     disabled={isLoading}
-                                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 disabled:opacity-50 transition-colors"
+                                    className="px-4 py-2 border border-slate-300 text-slate-700 rounded-md hover:bg-slate-50 disabled:opacity-50 transition-colors"
                                 >
                                     {isLoading ? 'Updating...' : 'Update Password'}
                                 </button>
@@ -359,6 +366,7 @@ export default function SettingsPage() {
 
                 </div>
             </div>
+        </div>
         </div>
     );
 }

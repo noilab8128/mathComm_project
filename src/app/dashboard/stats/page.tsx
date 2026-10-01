@@ -81,7 +81,7 @@ export default function StatsPage() {
   }, [status, session?.user?.id]);
 
   return (
-    <div className="flex flex-col min-h-screen w-full bg-gradient-to-b from-slate-50 to-white text-slate-900">
+    <div className="flex flex-col min-h-screen w-full to-white text-slate-900">
       <Header />
       <div className="flex flex-1">
         <SideNav active="stats" isAdmin={session?.user?.role === 'admin'} />
@@ -91,37 +91,37 @@ export default function StatsPage() {
             {/* Header Area */}
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-2xl font-bold tracking-tight">Your Learning Statistics</h1>
+                <h1 className="text-xl font-semibold tracking-tight text-slate-900">Statistics</h1>
                 <p className="text-muted-foreground text-sm mt-1">Track your mathematical journey and skill progression.</p>
               </div>
             </div>
 
             {loading ? (
               <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
-                <Loader2 className="h-8 w-8 animate-spin text-indigo-500 mb-4" />
-                <p className="text-sm text-gray-500">Compiling your performance metrics...</p>
+                <Loader2 className="h-8 w-8 animate-spin text-slate-500 mb-4" />
+                <p className="text-sm text-slate-500">Compiling your performance metrics...</p>
               </div>
             ) : !data ? (
-              <div className="text-center py-20 bg-gray-50 rounded-xl border border-gray-100">
-                <p className="text-gray-500">Failed to load statistics.</p>
+              <div className="text-center py-20 bg-slate-50 rounded-lg border border-slate-100">
+                <p className="text-slate-500">Failed to load statistics.</p>
               </div>
             ) : (
               <>
                 {/* Hero Metrics */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                  <MetricCard title="Total XP" value={data.hero.totalXp.toLocaleString()} icon={<Zap className="h-4 w-4 text-amber-500" />} />
-                  <MetricCard title="Problems Solved" value={data.hero.solvedCount} icon={<CheckCircle className="h-4 w-4 text-emerald-500" />} />
-                  <MetricCard title="Current Streak" value={`${data.hero.currentStreak} Days`} icon={<Flame className="h-4 w-4 text-orange-500" />} />
-                  <MetricCard title="Accuracy" value={`${data.hero.accuracy.toFixed(1)}%`} icon={<Target className="h-4 w-4 text-indigo-500" />} />
+                  <MetricCard title="Total XP" value={data.hero.totalXp.toLocaleString()} icon={<Zap className="h-4 w-4 text-slate-400" />} />
+                  <MetricCard title="Problems Solved" value={data.hero.solvedCount} icon={<CheckCircle className="h-4 w-4 text-slate-400" />} />
+                  <MetricCard title="Current Streak" value={`${data.hero.currentStreak} Days`} icon={<Flame className="h-4 w-4 text-slate-400" />} />
+                  <MetricCard title="Accuracy" value={`${data.hero.accuracy.toFixed(1)}%`} icon={<Target className="h-4 w-4 text-slate-500" />} />
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   {/* Left Column (Radar + Difficulty) */}
                   <div className="space-y-6 lg:col-span-1">
-                    <Card className="shadow-sm border-gray-200">
+                    <Card className="shadow-sm border-slate-200">
                       <CardHeader className="pb-2">
                         <CardTitle className="text-base flex items-center gap-2">
-                          <CompassIcon className="h-4 w-4 text-indigo-500" />
+                          <CompassIcon className="h-4 w-4 text-slate-500" />
                           Skill Radar
                         </CardTitle>
                       </CardHeader>
@@ -131,10 +131,10 @@ export default function StatsPage() {
                         ) : (
                           <ResponsiveContainer width="100%" height="100%">
                             <RadarChart cx="50%" cy="50%" outerRadius="70%" data={data.mastery}>
-                              <PolarGrid stroke="#e5e7eb" />
-                              <PolarAngleAxis dataKey="topic" tick={{ fill: '#6b7280', fontSize: 11 }} />
-                              <PolarRadiusAxis angle={30} domain={[0, 10]} tick={{ fill: '#9ca3af', fontSize: 10 }} />
-                              <Radar name="Level" dataKey="score" stroke="#6366f1" fill="#818cf8" fillOpacity={0.4} />
+                              <PolarGrid stroke="#e2e8f0" />
+                              <PolarAngleAxis dataKey="topic" tick={{ fill: '#64748b', fontSize: 11 }} />
+                              <PolarRadiusAxis angle={30} domain={[0, 10]} tick={{ fill: '#94a3b8', fontSize: 10 }} />
+                              <Radar name="Level" dataKey="score" stroke="#1e293b" fill="#64748b" fillOpacity={0.4} />
                               <Tooltip />
                             </RadarChart>
                           </ResponsiveContainer>
@@ -142,10 +142,10 @@ export default function StatsPage() {
                       </CardContent>
                     </Card>
 
-                    <Card className="shadow-sm border-gray-200">
+                    <Card className="shadow-sm border-slate-200">
                       <CardHeader className="pb-2">
                         <CardTitle className="text-base flex items-center gap-2">
-                          <TrendingUp className="h-4 w-4 text-rose-500" />
+                          <TrendingUp className="h-4 w-4 text-slate-400" />
                           Difficulty Progress
                         </CardTitle>
                       </CardHeader>
@@ -155,8 +155,8 @@ export default function StatsPage() {
                           return (
                             <div key={tier.name} className="space-y-1">
                               <div className="flex items-center justify-between text-xs">
-                                <span className="font-medium text-gray-700">{tier.name}</span>
-                                <span className="text-gray-500">{tier.solved} / {tier.attempted}</span>
+                                <span className="font-medium text-slate-700">{tier.name}</span>
+                                <span className="text-slate-500">{tier.solved} / {tier.attempted}</span>
                               </div>
                               <Progress value={percentage} className="h-2" />
                             </div>
@@ -168,11 +168,11 @@ export default function StatsPage() {
 
                   {/* Right Column (History + Activity) */}
                   <div className="space-y-6 lg:col-span-2">
-                    <Card className="shadow-sm border-gray-200">
+                    <Card className="shadow-sm border-slate-200">
                       <CardHeader className="pb-2">
                         <div className="flex items-center justify-between">
                           <CardTitle className="text-base flex items-center gap-2">
-                            <TrendingUp className="h-4 w-4 text-indigo-500" />
+                            <TrendingUp className="h-4 w-4 text-slate-500" />
                             Growth History
                           </CardTitle>
                         </div>
@@ -199,8 +199,8 @@ export default function StatsPage() {
                                   }}
                                   className={`text-[10px] px-2 py-0.5 rounded-full border transition-colors ${
                                     isActive 
-                                      ? "bg-indigo-100 text-indigo-700 border-indigo-200 hover:bg-indigo-200" 
-                                      : "bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100"
+                                      ? "bg-slate-100 text-slate-900 border-slate-300 hover:bg-slate-200" 
+                                      : "bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100"
                                   }`}
                                 >
                                   {cat}
@@ -216,18 +216,18 @@ export default function StatsPage() {
                         ) : (
                           <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={data.history} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                              <XAxis dataKey="date" tick={{ fill: '#9ca3af', fontSize: 11 }} tickFormatter={(val) => val.split('-').slice(1).join('/')} />
-                              <YAxis domain={[0, 10]} tick={{ fill: '#9ca3af', fontSize: 11 }} />
+                              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                              <XAxis dataKey="date" tick={{ fill: '#94a3b8', fontSize: 11 }} tickFormatter={(val) => val.split('-').slice(1).join('/')} />
+                              <YAxis domain={[0, 10]} tick={{ fill: '#94a3b8', fontSize: 11 }} />
                               <Tooltip 
-                                contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                                labelStyle={{ fontWeight: 'bold', color: '#374151' }}
+                                contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                labelStyle={{ fontWeight: 'bold', color: '#334155' }}
                               />
                               <Legend wrapperStyle={{ fontSize: 12 }} />
                               
                               {/* Render only active and valid categories */}
                               {availableCategories.filter(k => activeCategories.includes(k)).map((key, i) => {
-                                const colors = ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#3b82f6', '#8b5cf6', '#14b8a6', '#f43f5e', '#84cc16', '#06b6d4'];
+                                const colors = ['#1e293b', '#be123c', '#0f766e', '#b45309', '#1d4ed8', '#6d28d9', '#0e7490', '#9f1239', '#4d7c0f', '#155e75'];
                                 return (
                                   <Line 
                                     key={key} 
@@ -246,10 +246,10 @@ export default function StatsPage() {
                       </CardContent>
                     </Card>
 
-                    <Card className="shadow-sm border-gray-200">
+                    <Card className="shadow-sm border-slate-200">
                       <CardHeader className="pb-2">
                         <CardTitle className="text-base flex items-center gap-2">
-                          <Calendar className="h-4 w-4 text-purple-500" />
+                          <Calendar className="h-4 w-4 text-slate-500" />
                           Activity Heatmap (Last 90 Days)
                         </CardTitle>
                       </CardHeader>
@@ -258,16 +258,16 @@ export default function StatsPage() {
                         {/* We use flex layout designed to break cleanly into a dense block */}
                         <div className="flex flex-wrap gap-1.5 justify-start max-h-[160px] overflow-y-auto pr-2 custom-scrollbar">
                           {data.activity.map((day, i) => {
-                            let bgClass = "bg-gray-100";
+                            let bgClass = "bg-slate-100";
                             let tooltext = "No activity";
                             
                             if (day.count > 0) {
-                              bgClass = "bg-indigo-200";
+                              bgClass = "bg-slate-200";
                               tooltext = `${day.count} activities`;
                             }
-                            if (day.count > 2) bgClass = "bg-indigo-400";
+                            if (day.count > 2) bgClass = "bg-slate-400";
                             if (day.count > 4) {
-                              bgClass = "bg-indigo-600";
+                              bgClass = "bg-slate-900";
                               tooltext = `${day.count} activities (On Fire!)`;
                             }
 
@@ -278,19 +278,19 @@ export default function StatsPage() {
                             return (
                               <div 
                                 key={i} 
-                                className={`w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-sm ${bgClass} transition-colors hover:ring-2 ring-offset-1 ring-indigo-300 cursor-pointer`}
+                                className={`w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-sm ${bgClass} transition-colors hover:ring-2 ring-offset-1 ring-slate-300 cursor-pointer`}
                                 title={`${monthStr}: ${tooltext}`}
                               />
                             );
                           })}
                         </div>
-                        <div className="mt-3 flex items-center justify-end gap-2 text-xs text-gray-500">
+                        <div className="mt-3 flex items-center justify-end gap-2 text-xs text-slate-500">
                           <span>Less</span>
                           <div className="flex gap-1">
-                            <div className="w-3 h-3 rounded-sm bg-gray-100"></div>
-                            <div className="w-3 h-3 rounded-sm bg-indigo-200"></div>
-                            <div className="w-3 h-3 rounded-sm bg-indigo-400"></div>
-                            <div className="w-3 h-3 rounded-sm bg-indigo-600"></div>
+                            <div className="w-3 h-3 rounded-sm bg-slate-100"></div>
+                            <div className="w-3 h-3 rounded-sm bg-slate-200"></div>
+                            <div className="w-3 h-3 rounded-sm bg-slate-400"></div>
+                            <div className="w-3 h-3 rounded-sm bg-slate-900"></div>
                           </div>
                           <span>More</span>
                         </div>
@@ -311,14 +311,14 @@ export default function StatsPage() {
 
 function MetricCard({ title, value, icon }: { title: string, value: string | number, icon: React.ReactNode }) {
   return (
-    <Card className="shadow-sm border-gray-200">
+    <Card className="shadow-sm border-slate-200">
       <CardContent className="p-4 flex flex-col justify-center">
         <div className="flex items-center justify-between">
-          <p className="text-sm font-medium text-gray-500">{title}</p>
-          <div className="p-2 bg-gray-50 rounded-lg">{icon}</div>
+          <p className="text-sm font-medium text-slate-500">{title}</p>
+          <div className="p-2 bg-slate-50 rounded-lg">{icon}</div>
         </div>
         <div className="mt-2">
-          <p className="text-3xl font-bold text-gray-900">{value}</p>
+          <p className="tnum text-2xl font-semibold text-slate-900">{value}</p>
         </div>
       </CardContent>
     </Card>
@@ -347,8 +347,8 @@ function CompassIcon(props: any) {
 
 function EmptyState({ message }: { message: string }) {
   return (
-    <div className="w-full h-full flex items-center justify-center bg-gray-50/50 rounded-lg border border-dashed border-gray-200">
-      <p className="text-sm text-gray-400">{message}</p>
+    <div className="w-full h-full flex items-center justify-center bg-slate-50/50 rounded-lg border border-dashed border-slate-200">
+      <p className="text-sm text-slate-400">{message}</p>
     </div>
   );
 }

@@ -3,7 +3,7 @@ import React from "react";
 import { useLearningSync } from "@/lib/learningSync";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Network } from "lucide-react";
+import { Network, Lock } from "lucide-react";
 
 // Simple skill-tree graph: nodes + edges (centered positions)
 const skillNodes = [
@@ -32,8 +32,6 @@ function SkillTreeCanvas({ onOpenNode }: { onOpenNode?: (id: string) => void }) 
       <CardHeader className="flex items-center justify-between pb-2">
         <CardTitle className="text-base">Number Theory – Tech Tree</CardTitle>
         <div className="flex items-center gap-2">
-          <Badge>Branching</Badge>
-          <Badge variant="secondary">Academic UI</Badge>
         </div>
       </CardHeader>
       <CardContent className="p-0">
@@ -44,12 +42,12 @@ function SkillTreeCanvas({ onOpenNode }: { onOpenNode?: (id: string) => void }) 
               const A = positions[a];
               const B = positions[b];
               return (
-                <line key={idx} x1={A.x} y1={A.y} x2={B.x} y2={B.y} stroke="#d1d5db" strokeWidth={2} markerEnd="url(#arrow)" />
+                <line key={idx} x1={A.x} y1={A.y} x2={B.x} y2={B.y} stroke="#cbd5e1" strokeWidth={2} markerEnd="url(#arrow)" />
               );
             })}
             <defs>
               <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                <path d="M 0 0 L 10 5 L 0 10 z" fill="#d1d5db" />
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#cbd5e1" />
               </marker>
             </defs>
           </svg>
@@ -62,13 +60,13 @@ function SkillTreeCanvas({ onOpenNode }: { onOpenNode?: (id: string) => void }) 
                 setSelectedNode(selectedNode === n.id ? null : n.id);
                 if (onOpenNode) onOpenNode(n.id);
               }}
-              className={`absolute -translate-x-1/2 -translate-y-1/2 rounded-2xl border px-3 py-2 shadow-sm backdrop-blur ${
+              className={`absolute -translate-x-1/2 -translate-y-1/2 rounded-lg border px-3 py-2 shadow-sm backdrop-blur ${
                 n.unlocked ? "bg-white" : "bg-muted/70"}
-              ${selectedNode === n.id ? "ring-2 ring-blue-500" : ""}`}
+              ${selectedNode === n.id ? "ring-2 ring-slate-400" : ""}`}
               style={{ left: n.x, top: n.y }}
             >
               <div className="flex items-center gap-2 text-sm">
-                {n.unlocked ? <span className="text-emerald-600">✓</span> : <span className="text-gray-400">🔒</span>}
+                {n.unlocked ? <span className="text-emerald-600">✓</span> : <Lock className="h-3.5 w-3.5 text-slate-400" />}
                 <span className="font-medium">{n.label}</span>
               </div>
               <div className="mt-1 text-[10px] text-muted-foreground">{n.level}</div>

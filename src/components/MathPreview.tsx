@@ -54,7 +54,7 @@ export function MathPreview({ html, className }: { html: string; className?: str
       if (!containerRef.current) return;
 
       if (!html) {
-        containerRef.current.innerHTML = "<em class=\"text-xs text-gray-500\">Nothing to preview yet.</em>";
+        containerRef.current.innerHTML = "<em class=\"text-xs text-slate-500\">Nothing to preview yet.</em>";
         return;
       }
 
@@ -82,7 +82,7 @@ export function MathPreview({ html, className }: { html: string; className?: str
   return (
     <div
       ref={containerRef}
-      className={`prose prose-sm max-w-none text-gray-800 ${className ?? ""}`.trim()}
+      className={`prose prose-sm max-w-none text-slate-800 ${className ?? ""}`.trim()}
     />
   );
 }

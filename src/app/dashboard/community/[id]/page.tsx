@@ -89,11 +89,11 @@ export default function PostDetailPage({ params }: { params: Promise<{ id: strin
   };
 
   if (isLoading) {
-    return <div className="flex justify-center items-center h-[50vh]"><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>;
+    return <div className="flex justify-center items-center h-[50vh]"><Loader2 className="h-8 w-8 animate-spin text-slate-400" /></div>;
   }
 
   if (!post) {
-    return <div className="text-center py-12 text-gray-500">Post not found.</div>;
+    return <div className="text-center py-12 text-slate-500">Post not found.</div>;
   }
 
   const isAuthor = session?.user?.id === post.author_id;
@@ -102,17 +102,17 @@ export default function PostDetailPage({ params }: { params: Promise<{ id: strin
     <div className="max-w-4xl mx-auto py-6 px-4 sm:px-6">
       <Button 
         variant="ghost" 
-        className="mb-6 text-gray-500 hover:text-gray-900 pl-0 hover:bg-transparent"
+        className="mb-6 text-slate-500 hover:text-slate-900 pl-0 hover:bg-transparent"
         onClick={() => router.back()}
       >
         <ArrowLeft className="h-4 w-4 mr-2" />
         Back to Community
       </Button>
 
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
         <div className="p-6 sm:p-8">
           <div className="flex items-center justify-between mb-6">
-            <Badge variant="secondary" className="bg-indigo-50 text-indigo-700 hover:bg-indigo-100 capitalize">
+            <Badge variant="secondary" className="bg-slate-50 text-slate-900 hover:bg-slate-100 capitalize">
               {post.category}
             </Badge>
             {isAuthor && (
@@ -122,26 +122,26 @@ export default function PostDetailPage({ params }: { params: Promise<{ id: strin
             )}
           </div>
 
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6 leading-tight">
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-6 leading-tight">
             {post.title}
           </h1>
 
           <div className="flex items-center gap-3 mb-8">
-            <Avatar className="w-10 h-10 border border-gray-200">
+            <Avatar className="w-10 h-10 border border-slate-200">
               <AvatarImage src={post.authorImage} />
-              <AvatarFallback className="bg-gray-100 text-gray-600">
+              <AvatarFallback className="bg-slate-100 text-slate-600">
                 {post.authorName?.charAt(0) || "U"}
               </AvatarFallback>
             </Avatar>
             <div>
-              <div className="font-medium text-gray-900">{post.authorName}</div>
-              <div className="text-sm text-gray-500">
+              <div className="font-medium text-slate-900">{post.authorName}</div>
+              <div className="text-sm text-slate-500">
                 {new Date(post.created_at).toLocaleString()}
               </div>
             </div>
           </div>
 
-          <div className="prose max-w-none text-gray-800 whitespace-pre-wrap leading-relaxed">
+          <div className="prose max-w-none text-slate-800 whitespace-pre-wrap leading-relaxed">
             {post.content}
           </div>
 
@@ -151,19 +151,19 @@ export default function PostDetailPage({ params }: { params: Promise<{ id: strin
             <button 
               onClick={handleLike}
               disabled={isLikeLoading}
-              className={`flex items-center gap-2 transition-colors ${post.isLiked ? 'text-red-500 font-medium' : 'text-gray-500 hover:text-gray-900'}`}
+              className={`flex items-center gap-2 transition-colors ${post.isLiked ? 'text-red-500 font-medium' : 'text-slate-500 hover:text-slate-900'}`}
             >
               <Heart className={`h-5 w-5 ${post.isLiked ? 'fill-current' : ''}`} />
               <span>{post.likesCount} {post.likesCount === 1 ? 'Like' : 'Likes'}</span>
             </button>
-            <div className="flex items-center gap-2 text-gray-500">
+            <div className="flex items-center gap-2 text-slate-500">
               <Eye className="h-5 w-5" />
               <span>{post.views} {post.views === 1 ? 'View' : 'Views'}</span>
             </div>
           </div>
         </div>
         
-        <div className="bg-gray-50/50 px-6 sm:px-8 py-6 border-t border-gray-100">
+        <div className="bg-slate-50/50 px-6 sm:px-8 py-6 border-t border-slate-100">
           <CommentSection postId={post.id} />
         </div>
       </div>
