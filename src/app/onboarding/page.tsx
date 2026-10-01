@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { 
     GraduationCap, BookOpen, Calculator, Users, Plus, X, 
-    ArrowRight, ArrowLeft, CheckCircle2, Star, Target, ChevronDown, ChevronUp, Loader2
+    ArrowRight, ArrowLeft, CheckCircle2, Target, ChevronDown, ChevronUp, Loader2
 } from "lucide-react";
 import { Category } from "@/lib/categories";
 
@@ -170,7 +170,7 @@ export default function OnboardingPage() {
         return (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div className="space-y-4">
-                    <h2 className="text-xl font-semibold text-slate-800">Q1. Which best describes you?</h2>
+                    <h2 className="text-base font-semibold text-slate-900">Which best describes you?</h2>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                         {ROLES.map(r => {
                             const Icon = r.icon;
@@ -179,13 +179,13 @@ export default function OnboardingPage() {
                                 <button
                                     key={r.id}
                                     onClick={() => setRole(r.id)}
-                                    className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all ${
+                                    className={`flex flex-col items-center justify-center rounded-md border p-4 transition-colors ${
                                         isSelected 
-                                        ? "border-blue-500 bg-blue-50/50 text-blue-700 shadow-sm" 
+                                        ? "border-slate-900 bg-slate-50 text-slate-900" 
                                         : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
                                     }`}
                                 >
-                                    <Icon className={`w-8 h-8 mb-2 ${isSelected ? "text-blue-600" : "text-slate-400"}`} />
+                                    <Icon className={`mb-2 h-6 w-6 ${isSelected ? "text-slate-900" : "text-slate-400"}`} />
                                     <span className="font-medium">{r.label}</span>
                                 </button>
                             );
@@ -195,7 +195,7 @@ export default function OnboardingPage() {
 
                 {role && (
                     <div className="space-y-4 animate-in fade-in duration-300">
-                        <h2 className="text-xl font-semibold text-slate-800">Q2. What are your main goals? <span className="text-sm font-normal text-slate-500 ml-2">(Select all that apply)</span></h2>
+                        <h2 className="text-base font-semibold text-slate-900">What are your goals? <span className="ml-1 text-sm font-normal text-slate-500">Select all that apply.</span></h2>
                         <div className="flex flex-wrap gap-2">
                             {goalList.map(goal => {
                                 const isSelected = goals.includes(goal);
@@ -203,7 +203,7 @@ export default function OnboardingPage() {
                                     <button
                                         key={goal}
                                         onClick={() => toggleGoal(goal)}
-                                        className={`px-4 py-2 rounded-full text-sm font-medium transition-colors border ${
+                                        className={`rounded-md border px-3 py-1.5 text-sm transition-colors ${
                                             isSelected 
                                             ? "bg-slate-800 text-white border-slate-800" 
                                             : "bg-white text-slate-600 border-slate-300 hover:border-slate-400"
@@ -218,18 +218,18 @@ export default function OnboardingPage() {
                         {/* Custom Goal Input */}
                         <div className="flex flex-wrap gap-2 mt-2">
                             {goals.filter(g => !goalList.includes(g)).map(custom => (
-                                <span key={custom} className="px-4 py-2 rounded-full text-sm font-medium bg-slate-800 text-white border border-slate-800 flex items-center gap-2">
+                                <span key={custom} className="flex items-center gap-2 rounded-md border border-slate-900 bg-slate-900 px-3 py-1.5 text-sm text-white">
                                     {custom}
                                     <button onClick={() => toggleGoal(custom)} className="hover:text-slate-300"><X className="w-3 h-3" /></button>
                                 </span>
                             ))}
                             <input
                                 type="text"
-                                placeholder="Type other goal & press Enter..."
+                                placeholder="Add another goal and press Enter"
                                 value={customGoal}
                                 onChange={e => setCustomGoal(e.target.value)}
                                 onKeyDown={addCustomGoal}
-                                className="px-4 py-2 rounded-full text-sm border border-slate-300 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 w-64"
+                                className="h-9 w-64 rounded-md border border-slate-300 px-3 text-sm focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200"
                             />
                         </div>
                     </div>
@@ -242,8 +242,8 @@ export default function OnboardingPage() {
         if (isLoadingCategories) {
             return (
                 <div className="flex flex-col items-center justify-center min-h-[300px] text-slate-500 gap-3">
-                    <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-                    <p>Loading Math Categories...</p>
+                    <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+                    <p className="text-sm">Loading topics…</p>
                 </div>
             );
         }
@@ -251,8 +251,8 @@ export default function OnboardingPage() {
         return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div>
-                <h2 className="text-xl font-semibold text-slate-800">Q3. Which areas of math interest you most?</h2>
-                <p className="text-slate-500 mt-1">Select up to 5 categories (broad or specific) to help us personalize your recommendations.</p>
+                <h2 className="text-base font-semibold text-slate-900">Which areas interest you most?</h2>
+                <p className="mt-1 text-sm text-slate-500">Choose up to five, broad or specific. We use them to recommend problems.</p>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[50vh] overflow-y-auto pr-2 pb-2">
@@ -262,8 +262,8 @@ export default function OnboardingPage() {
                     const subCategories = getLevel2Categories(parentCat.id);
                     
                     return (
-                        <div key={parentCat.id} className={`flex flex-col border rounded-xl p-4 transition-colors ${
-                            isParentSelected ? "bg-blue-50/50 border-blue-200 shadow-sm" : "bg-white border-slate-200 hover:border-slate-300"
+                        <div key={parentCat.id} className={`flex flex-col rounded-md border p-4 transition-colors ${
+                            isParentSelected ? "border-slate-900 bg-slate-50" : "border-slate-200 bg-white hover:border-slate-300"
                         }`}>
                             <div className="flex items-center justify-between">
                                 <button
@@ -271,11 +271,11 @@ export default function OnboardingPage() {
                                     disabled={isParentDisabled}
                                     onClick={() => handleToggleCategory(parentCat, true)}
                                     className={`flex-1 flex items-center gap-3 font-semibold transition-colors focus:outline-none text-left ${
-                                        isParentSelected ? "text-blue-800" : isParentDisabled ? "text-slate-400" : "text-slate-700 hover:text-blue-600"
+                                        isParentSelected ? "text-slate-900" : isParentDisabled ? "text-slate-400" : "text-slate-700 hover:text-slate-900"
                                     }`}
                                 >
-                                    <div className={`w-5 h-5 rounded-md border flex flex-shrink-0 items-center justify-center transition-colors ${
-                                        isParentSelected ? "bg-blue-600 border-blue-600 text-white" : "border-slate-300"
+                                    <div className={`flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-[3px] border transition-colors ${
+                                        isParentSelected ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300"
                                     }`}>
                                         {isParentSelected && <CheckCircle2 className="w-3.5 h-3.5" />}
                                     </div>
@@ -295,9 +295,9 @@ export default function OnboardingPage() {
                                                 type="button"
                                                 disabled={isSubDisabled}
                                                 onClick={() => handleToggleCategory(subCat, false, parentCat)}
-                                                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
+                                                className={`rounded border px-2 py-1 text-xs transition-colors ${
                                                     isSubSelected
-                                                    ? "bg-blue-600 border-blue-600 text-white shadow-sm"
+                                                    ? "border-slate-900 bg-slate-900 text-white"
                                                     : isSubDisabled
                                                         ? "opacity-50 cursor-not-allowed bg-slate-50 border-slate-200 text-slate-400"
                                                         : "bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50"
@@ -315,9 +315,9 @@ export default function OnboardingPage() {
             </div>
             
             <div className="flex justify-between items-center text-sm font-medium pt-2 border-t border-slate-100">
-                <span className="text-slate-500 hidden sm:inline-block">Selecting a sub-category deselects its broad parent, counting as ONE.</span>
-                <span className={categories.length === 5 ? "text-emerald-600 font-bold ml-auto" : "text-slate-500 ml-auto"}>
-                    {categories.length} / 5 Selected
+                <span className="hidden text-xs font-normal text-slate-500 sm:inline-block">Picking a specific area replaces its broad area.</span>
+                <span className={`tnum ml-auto ${categories.length === 5 ? "text-slate-900" : "text-slate-500"}`}>
+                    {categories.length} of 5 selected
                 </span>
             </div>
         </div>
@@ -327,11 +327,11 @@ export default function OnboardingPage() {
     const renderStep3 = () => (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div>
-                <h2 className="text-xl font-semibold text-slate-800">Q4. How would you rate your current skill level?</h2>
-                <p className="text-slate-500 mt-1">Don't worry, this just helps us find the right starting point for you.</p>
+                <h2 className="text-base font-semibold text-slate-900">How strong are you in each area?</h2>
+                <p className="mt-1 text-sm text-slate-500">A rough guess is fine. It sets your starting difficulty.</p>
             </div>
 
-            <div className="space-y-6 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+            <div className="space-y-6 rounded-md border border-slate-200 bg-white p-6">
                 {categories.length === 0 ? (
                     <div className="text-center py-8 text-slate-500">
                         Please go back and select at least one category.
@@ -341,8 +341,8 @@ export default function OnboardingPage() {
                         <div key={cat} className="space-y-3">
                             <div className="flex justify-between items-center">
                                 <span className="font-semibold text-slate-700">{cat}</span>
-                                <span className="text-sm font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-md">
-                                    Level {levels[cat] || 5}
+                                <span className="tnum rounded border border-slate-200 px-2 py-0.5 text-xs font-medium text-slate-700">
+                                    {levels[cat] || 5} / 10
                                 </span>
                             </div>
                             <div className="relative pt-2">
@@ -353,7 +353,7 @@ export default function OnboardingPage() {
                                     step="1"
                                     value={levels[cat] || 5}
                                     onChange={(e) => handleLevelChange(cat, parseInt(e.target.value))}
-                                    className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                                    className="h-1.5 w-full cursor-pointer appearance-none rounded bg-slate-200 accent-slate-900"
                                 />
                                 <div className="relative h-6 text-xs font-medium text-slate-400 mt-2">
                                     <span className="absolute left-0">1 (Beginner)</span>
@@ -376,18 +376,18 @@ export default function OnboardingPage() {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 selection:bg-blue-100 selection:text-blue-900">
-            <div className="bg-white max-w-2xl w-full rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
+        <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
+            <div className="w-full max-w-2xl overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
                 {/* Progress Bar */}
-                <div className="w-full bg-slate-100 h-1.5 flex">
-                    <div className="bg-blue-600 h-full transition-all duration-500 ease-out" style={{ width: `${(step / 3) * 100}%` }} />
+                <div className="flex h-1 w-full bg-slate-100">
+                    <div className="h-full bg-slate-900 transition-all duration-500 ease-out" style={{ width: `${(step / 3) * 100}%` }} />
                 </div>
 
                 <div className="p-8 md:p-10">
                     {/* Header */}
-                    <div className="text-center mb-10">
-                        <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Personalize Your Journey</h1>
-                        <p className="text-slate-500 mt-2 font-medium">Step {step} of 3</p>
+                    <div className="mb-8">
+                        <p className="tnum text-xs font-medium uppercase tracking-[0.08em] text-slate-500">Step {step} of 3</p>
+                        <h1 className="mt-2 font-serif text-3xl font-semibold tracking-tight text-slate-900">Set up your Math Quest</h1>
                     </div>
 
                     {/* Dynamic Content */}
@@ -401,7 +401,7 @@ export default function OnboardingPage() {
                     <div className="flex justify-between items-center pt-8 mt-8 border-t border-slate-100">
                         <button 
                             onClick={() => setStep(Math.max(1, step - 1))}
-                            className={`px-5 py-2.5 rounded-lg font-medium transition-colors flex items-center gap-2 ${
+                            className={`flex items-center gap-2 rounded-md px-4 py-2 text-sm transition-colors ${
                                 step === 1 ? "invisible" : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"
                             }`}
                         >
@@ -412,25 +412,24 @@ export default function OnboardingPage() {
                             <button 
                                 onClick={() => setStep(step + 1)}
                                 disabled={!canProceed()}
-                                className="bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 disabled:cursor-not-allowed text-white px-6 py-2.5 rounded-lg font-medium transition-all shadow-sm flex items-center gap-2"
+                                className="flex items-center gap-2 rounded-md bg-slate-900 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
                             >
-                                Next Step <ArrowRight className="w-4 h-4" />
+                                Continue <ArrowRight className="h-4 w-4" />
                             </button>
                         ) : (
                             <button 
                                 onClick={handleCompleteOnboarding}
                                 disabled={isSaving || !canProceed()}
-                                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2.5 rounded-xl font-medium transition-all shadow-md shadow-blue-500/20 disabled:opacity-70 flex items-center gap-2"
+                                className="flex items-center gap-2 rounded-md bg-slate-900 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-800 disabled:opacity-70"
                             >
                                 {isSaving ? (
                                     <>
                                         <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                        Preparing Magic...
+                                        Saving…
                                     </>
                                 ) : (
                                     <>
-                                        <Star className="w-4 h-4 fill-white text-white" />
-                                        Start Math Quest
+                                        Finish and start solving <ArrowRight className="h-4 w-4" />
                                     </>
                                 )}
                             </button>
