@@ -21,17 +21,17 @@ export default function AdminLoginPage() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-            <Card className="w-full max-w-md shadow-lg">
+        <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
+            <Card className="w-full max-w-md shadow-sm">
                 <CardHeader className="text-center space-y-4 pt-8">
-                    <div className="mx-auto bg-indigo-100 p-3 rounded-full w-fit">
-                        <Shield className="h-8 w-8 text-indigo-600" />
+                    <div className="mx-auto bg-slate-100 p-3 rounded-full w-fit">
+                        <Shield className="h-8 w-8 text-slate-700" />
                     </div>
                     <div className="space-y-2">
-                        <CardTitle className="text-2xl font-bold tracking-tight text-gray-900">
+                        <CardTitle className="text-2xl font-bold tracking-tight text-slate-900">
                             Admin Login
                         </CardTitle>
-                        <CardDescription className="text-gray-500">
+                        <CardDescription className="text-slate-500">
                             Sign in with your registered admin Google account
                         </CardDescription>
                     </div>
@@ -40,7 +40,7 @@ export default function AdminLoginPage() {
                     <Button
                         onClick={handleGoogleLogin}
                         disabled={isLoading}
-                        className="w-full h-11 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 hover:text-gray-900 relative"
+                        className="w-full h-11 bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 hover:text-slate-900 relative"
                     >
                         {isLoading ? (
                             <Loader2 className="h-4 w-4 animate-spin absolute" />
@@ -60,7 +60,7 @@ export default function AdminLoginPage() {
                     </Button>
 
                     <div className="text-center">
-                        <Link href="/login" className="text-xs text-gray-400 hover:text-gray-600">
+                        <Link href="/login" className="text-xs text-slate-400 hover:text-slate-600">
                             ← Back to regular login
                         </Link>
                     </div>

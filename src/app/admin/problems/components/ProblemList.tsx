@@ -101,12 +101,12 @@ export function ProblemList({
 
     return (
         <div className="w-full">
-            <Card className="bg-white rounded-lg shadow-sm border border-gray-200">
+            <Card className="bg-white rounded-lg shadow-sm border border-slate-200">
                 <CardContent className="p-0">
                     <ScrollArea className="h-[600px]">
                         <div className={viewMode === "learning-path" ? "p-6" : "space-y-2 p-4"}>
                             {problems.filter(p => !p.parentProblemId).length === 0 ? (
-                                <div className="text-center text-gray-500 py-8">
+                                <div className="text-center text-slate-500 py-8">
                                     <p className="text-sm">No problems found</p>
                                 </div>
                             ) : viewMode === "learning-path" ? (
@@ -121,8 +121,8 @@ export function ProblemList({
                                 /* Table View */
                                 <div>
                                     {selectedProblemIds.size > 0 && (
-                                        <div className="bg-blue-50 p-2 mb-2 rounded-md flex items-center justify-between border border-blue-100">
-                                            <span className="text-sm text-blue-700 font-medium px-2">
+                                        <div className="bg-slate-50 p-2 mb-2 rounded-md flex items-center justify-between border border-slate-200">
+                                            <span className="text-sm text-slate-900 font-medium px-2">
                                                 {selectedProblemIds.size} problems selected
                                             </span>
                                             <div className="flex gap-2">
@@ -162,14 +162,14 @@ export function ProblemList({
                                                             }
                                                         }}
                                                         checked={problems.length > 0 && problems.every(p => selectedProblemIds.has(p.id))}
-                                                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                                        className="rounded border-slate-300 text-slate-700 focus:ring-slate-400"
                                                     />
                                                 </TableHead>
                                                 <TableHead>Title</TableHead>
                                                 <TableHead>Source</TableHead>
                                                 <TableHead>Category</TableHead>
                                                 <TableHead
-                                                    className="cursor-pointer hover:bg-gray-100 transition-colors"
+                                                    className="cursor-pointer hover:bg-slate-100 transition-colors"
                                                     onClick={() => {
                                                         if (sortBy === 'difficulty_asc') onSortChange('difficulty_desc');
                                                         else onSortChange('difficulty_asc');
@@ -179,7 +179,7 @@ export function ProblemList({
                                                 </TableHead>
                                                 <TableHead>Linked</TableHead>
                                                 <TableHead
-                                                    className="cursor-pointer hover:bg-gray-100 transition-colors"
+                                                    className="cursor-pointer hover:bg-slate-100 transition-colors"
                                                     onClick={() => {
                                                         if (sortBy === 'newest') onSortChange('oldest');
                                                         else onSortChange('newest');
@@ -229,7 +229,7 @@ export function ProblemList({
                                                     const rows: React.ReactNode[] = [
                                                         <TableRow
                                                             key={problem.id}
-                                                            className={`cursor-pointer ${isSelected ? "bg-blue-50" : ""} hover:bg-gray-50`}
+                                                            className={`cursor-pointer ${isSelected ? "bg-slate-50" : ""} hover:bg-slate-50`}
                                                             onClick={() => onSelectProblem(problem)}
                                                         >
                                                             <TableCell onClick={(e) => e.stopPropagation()} className="w-[50px]">
@@ -237,7 +237,7 @@ export function ProblemList({
                                                                     type="checkbox"
                                                                     checked={isSelected}
                                                                     onChange={() => toggleProblemSelection(problem.id)}
-                                                                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                                                    className="rounded border-slate-300 text-slate-700 focus:ring-slate-400"
                                                                 />
                                                             </TableCell>
                                                             <TableCell className="font-medium">
@@ -248,16 +248,16 @@ export function ProblemList({
                                                                                 e.stopPropagation();
                                                                                 onToggleExpanded(problem.id);
                                                                             }}
-                                                                            className="p-1 hover:bg-gray-200 rounded text-gray-500 w-6 h-6 flex items-center justify-center transition-transform"
+                                                                            className="p-1 hover:bg-slate-200 rounded text-slate-500 w-6 h-6 flex items-center justify-center transition-transform"
                                                                         >
                                                                             {isExpanded ? '▼' : '▶'}
                                                                         </button>
                                                                     )}
                                                                     {!hasChildren && <div className="w-6" />} {/* Spacer */}
 
-                                                                    {depth > 0 && <span className="text-gray-400">↳</span>}
+                                                                    {depth > 0 && <span className="text-slate-400">↳</span>}
 
-                                                                    <span className={depth > 0 ? "text-gray-600" : "text-gray-900"}>
+                                                                    <span className={depth > 0 ? "text-slate-600" : "text-slate-900"}>
                                                                         {problem.title}
                                                                     </span>
 
@@ -274,14 +274,14 @@ export function ProblemList({
                                                                         variant="outline" 
                                                                         className={`text-[10px] px-1.5 py-0 h-5 font-normal uppercase tracking-tight ${
                                                                             problem.source.toLowerCase().includes('ai') 
-                                                                            ? "bg-purple-50 text-purple-600 border-purple-200" 
-                                                                            : "bg-gray-50 text-gray-500 border-gray-200"
+                                                                            ? "bg-slate-50 text-slate-700 border-slate-300" 
+                                                                            : "bg-slate-50 text-slate-500 border-slate-200"
                                                                         }`}
                                                                     >
                                                                         {problem.source}
                                                                     </Badge>
                                                                 ) : (
-                                                                    <span className="text-gray-300 text-xs">-</span>
+                                                                    <span className="text-slate-300 text-xs">-</span>
                                                                 )}
                                                             </TableCell>
                                                             <TableCell>{problem.category}</TableCell>
@@ -296,10 +296,10 @@ export function ProblemList({
                                                                         {allLinkedProblems.length}
                                                                     </Badge>
                                                                 ) : (
-                                                                    <span className="text-gray-400">-</span>
+                                                                    <span className="text-slate-400">-</span>
                                                                 )}
                                                             </TableCell>
-                                                            <TableCell className="text-gray-500 text-xs">
+                                                            <TableCell className="text-slate-500 text-xs">
                                                                 {new Date(problem.createdAt).toLocaleDateString()}
                                                             </TableCell>
                                                             <TableCell className="text-right">
@@ -338,10 +338,10 @@ export function ProblemList({
                                                             // If multiple groups, show separator/header
                                                             if (sortedGroups.length > 1) {
                                                                 rows.push(
-                                                                    <TableRow key={`group-${problem.id}-${groupName}`} className="bg-gray-50/50">
+                                                                    <TableRow key={`group-${problem.id}-${groupName}`} className="bg-slate-50/50">
                                                                         <TableCell colSpan={8} className="py-1">
-                                                                            <div className="flex items-center gap-2 text-xs font-semibold text-blue-600/80 uppercase tracking-wider" style={{ paddingLeft: `${(depth + 1) * 24 + 20}px` }}>
-                                                                                <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
+                                                                            <div className="flex items-center gap-2 text-xs font-semibold text-slate-700/80 uppercase tracking-wider" style={{ paddingLeft: `${(depth + 1) * 24 + 20}px` }}>
+                                                                                <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
                                                                                 Stage: {groupName}
                                                                             </div>
                                                                         </TableCell>
@@ -371,8 +371,8 @@ export function ProblemList({
                     </ScrollArea>
 
                     {/* Pagination Controls */}
-                    <div className="flex items-center justify-between p-4 border-t bg-gray-50">
-                        <div className="text-sm text-gray-500">
+                    <div className="flex items-center justify-between p-4 border-t bg-slate-50">
+                        <div className="text-sm text-slate-500">
                             Showing {totalCount === 0 ? 0 : ((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, totalCount)} of {totalCount} problems
                         </div>
                         <div className="flex gap-2">
@@ -385,7 +385,7 @@ export function ProblemList({
                                 Previous
                             </Button>
                             <div className="flex items-center gap-1">
-                                <span className="text-sm text-gray-600 px-2">
+                                <span className="text-sm text-slate-600 px-2">
                                     Page {currentPage} of {totalPages || 1}
                                 </span>
                             </div>

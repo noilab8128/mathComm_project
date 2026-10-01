@@ -43,8 +43,8 @@ function ProblemNode({ data }: { data: any }) {
     return (
         <div
             className={`px-4 py-3 rounded-lg border-2 bg-white shadow-md transition-all cursor-pointer min-w-[200px] max-w-[250px] ${isSelected
-                ? 'border-blue-500 shadow-lg ring-2 ring-blue-200'
-                : 'border-gray-300 hover:border-blue-400 hover:shadow-lg'
+                ? 'border-slate-400 shadow-sm ring-2 ring-slate-300'
+                : 'border-slate-300 hover:border-slate-400 hover:shadow-sm'
                 }`}
             onClick={() => data.onSelect(problem)}
         >
@@ -53,10 +53,10 @@ function ProblemNode({ data }: { data: any }) {
                     {problem.parentProblemId ? '🌱' : '🔒'}
                 </span>
                 <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-sm text-gray-800 truncate" title={problem.title}>
+                    <div className="font-semibold text-sm text-slate-800 truncate" title={problem.title}>
                         {problem.title}
                     </div>
-                    <div className="text-xs text-gray-500 mt-1">
+                    <div className="text-xs text-slate-500 mt-1">
                         {getDifficultyLabel(problem.difficulty)} • D{problem.difficulty}
                     </div>
                 </div>
@@ -71,7 +71,7 @@ function ProblemNode({ data }: { data: any }) {
                     </Badge>
                 )}
             </div>
-            <div className="text-xs text-gray-400 truncate mt-1" title={problem.category}>
+            <div className="text-xs text-slate-400 truncate mt-1" title={problem.category}>
                 {problem.category}
             </div>
         </div>
@@ -183,14 +183,14 @@ export function LearningPathView({
                             type: 'smoothstep',
                             animated: true,
                             label: '관련',
-                            labelStyle: { fill: '#3b82f6', fontSize: 10, fontWeight: 600 },
+                            labelStyle: { fill: '#1d4ed8', fontSize: 10, fontWeight: 600 },
                             labelBgStyle: { fill: '#dbeafe', fillOpacity: 0.9 },
                             labelBgPadding: [4, 4],
                             labelBgBorderRadius: 4,
-                            style: { stroke: '#3B82F6', strokeWidth: 3, strokeDasharray: '8,4' },
+                            style: { stroke: '#1d4ed8', strokeWidth: 3, strokeDasharray: '8,4' },
                             markerEnd: {
                                 type: MarkerType.ArrowClosed,
-                                color: '#3B82F6',
+                                color: '#1d4ed8',
                                 width: 20,
                                 height: 20,
                             },
@@ -232,7 +232,7 @@ export function LearningPathView({
     );
 
     return (
-        <div className="w-full h-[700px] bg-gray-50 rounded-lg border border-gray-200">
+        <div className="w-full h-[700px] bg-slate-50 rounded-lg border border-slate-200">
             <ReactFlow
                 nodes={nodes}
                 edges={edges}
@@ -258,23 +258,23 @@ export function LearningPathView({
                     position="top-left"
                     style={{
                         backgroundColor: 'white',
-                        border: '2px solid #e5e7eb',
+                        border: '2px solid #e2e8f0',
                         borderRadius: '8px',
                     }}
                 />
                 <Background color="#aaa" gap={16} />
-                <Panel position="top-right" className="bg-white p-2 rounded shadow-md border border-gray-200">
+                <Panel position="top-right" className="bg-white p-2 rounded shadow-md border border-slate-200">
                     <div className="flex flex-col gap-2">
-                        <div className="text-xs font-semibold text-gray-700 mb-1">Layout</div>
+                        <div className="text-xs font-semibold text-slate-700 mb-1">Layout</div>
                         <button
                             onClick={() => onLayout('TB')}
-                            className="px-3 py-1.5 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                            className="px-3 py-1.5 text-xs bg-slate-700 text-white rounded hover:bg-slate-900 transition-colors"
                         >
                             ⬇️ Vertical
                         </button>
                         <button
                             onClick={() => onLayout('LR')}
-                            className="px-3 py-1.5 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                            className="px-3 py-1.5 text-xs bg-slate-700 text-white rounded hover:bg-slate-900 transition-colors"
                         >
                             ➡️ Horizontal
                         </button>

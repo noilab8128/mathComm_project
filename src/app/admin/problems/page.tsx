@@ -1158,7 +1158,7 @@ export default function ProblemManagementPage() {
 
       {/* Global Toast */}
       {toast.show && (
-        <div className={`fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white transition-all transform translate-y-0 ${toast.type === "success" ? "bg-green-600" : "bg-red-600"
+        <div className={`fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-sm text-white transition-all transform translate-y-0 ${toast.type === "success" ? "bg-green-600" : "bg-red-600"
           }`}>
           {toast.message}
         </div>

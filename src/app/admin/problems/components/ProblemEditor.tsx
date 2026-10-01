@@ -259,10 +259,10 @@ export function ProblemEditor({
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="!max-w-[98vw] !max-h-[98vh] w-full h-full p-0 overflow-hidden bg-white shadow-2xl">
+            <DialogContent className="!max-w-[98vw] !max-h-[98vh] w-full h-full p-0 overflow-hidden bg-white shadow-sm">
                 <div className="flex flex-col h-full max-h-[98vh]">
                     <DialogHeader className="p-6 border-b flex-shrink-0">
-                        <DialogTitle className="text-2xl font-semibold text-gray-800">
+                        <DialogTitle className="text-2xl font-semibold text-slate-800">
                             {isEditing ? "Edit Problem" : "New Problem"}
                         </DialogTitle>
                     </DialogHeader>
@@ -270,18 +270,18 @@ export function ProblemEditor({
                     <div className="flex-1 overflow-hidden flex min-h-0">
                         {/* Bulk Sidebar */}
                         {isBulkMode && pendingProblems.length > 0 && (
-                            <div className="w-64 border-r bg-gray-50 flex flex-col flex-shrink-0">
+                            <div className="w-64 border-r bg-slate-50 flex flex-col flex-shrink-0">
                                 <div className="p-4 border-b bg-white">
-                                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Problems in PDF</h3>
-                                    <p className="text-[10px] text-gray-500 mt-1">{pendingProblems.length} problems detected</p>
+                                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Problems in PDF</h3>
+                                    <p className="text-[10px] text-slate-500 mt-1">{pendingProblems.length} problems detected</p>
                                 </div>
                                 <div className="flex-1 overflow-y-auto p-2 space-y-2">
                                     {pendingProblems.map((prob, idx) => (
                                         <div
                                             key={idx}
                                             className={`relative p-3 rounded-lg border transition-all cursor-pointer ${currentBulkIndex === idx
-                                                ? "bg-indigo-600 border-indigo-600 shadow-md text-white"
-                                                : "bg-white border-gray-200 text-gray-700 hover:border-indigo-300"
+                                                ? "bg-slate-900 border-slate-900 shadow-md text-white"
+                                                : "bg-white border-slate-200 text-slate-700 hover:border-slate-300"
                                                 }`}
                                             onClick={() => onBulkIndexChange?.(idx)}
                                         >
@@ -300,8 +300,8 @@ export function ProblemEditor({
                                                     }}
                                                 >
                                                     <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${selectedProblemIndices.has(idx)
-                                                        ? (currentBulkIndex === idx ? 'bg-white text-indigo-600 border-white' : 'bg-indigo-600 text-white border-indigo-600')
-                                                        : (currentBulkIndex === idx ? 'bg-indigo-700/50 border-white' : 'bg-white border-gray-300')
+                                                        ? (currentBulkIndex === idx ? 'bg-white text-slate-700 border-white' : 'bg-slate-900 text-white border-slate-900')
+                                                        : (currentBulkIndex === idx ? 'bg-slate-800/50 border-white' : 'bg-white border-slate-300')
                                                         }`}>
                                                         {selectedProblemIndices.has(idx) && (
                                                             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
@@ -310,10 +310,10 @@ export function ProblemEditor({
                                                 </div>
                                                 <div className="flex-1 min-w-0">
                                                     <div className="flex items-center gap-2 mb-1">
-                                                        <Badge className={`${currentBulkIndex === idx ? "bg-white/20 text-white" : "bg-gray-100 text-gray-500"} border-none text-[10px] font-bold px-1`}>
+                                                        <Badge className={`${currentBulkIndex === idx ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"} border-none text-[10px] font-bold px-1`}>
                                                             #{idx + 1}
                                                         </Badge>
-                                                        <span className={`text-[10px] font-bold uppercase tracking-tight truncate ${currentBulkIndex === idx ? "text-white/70" : "text-gray-400"}`}>
+                                                        <span className={`text-[10px] font-bold uppercase tracking-tight truncate ${currentBulkIndex === idx ? "text-white/70" : "text-slate-400"}`}>
                                                             {prob.solutions && prob.solutions.length > 1 ? `${prob.solutions.length} Solutions` : (prob.category?.split(' > ').pop() || "No Category")}
                                                         </span>
                                                     </div>
@@ -330,12 +330,12 @@ export function ProblemEditor({
                             <div className="w-full space-y-4">
                                 {/* Input Method Tabs */}
                                 <Tabs value={inputMethod} onValueChange={(v) => setInputMethod(v as "manual" | "file")}>
-                                    <TabsList className="grid w-full grid-cols-2 bg-gray-100 p-1 rounded-lg">
+                                    <TabsList className="grid w-full grid-cols-2 bg-slate-100 p-1 rounded-lg">
                                         <TabsTrigger
                                             value="file"
                                             className={`text-sm font-medium rounded-md transition-all ${inputMethod === "file"
-                                                ? "bg-blue-600 text-white shadow-sm"
-                                                : "bg-transparent text-gray-600 hover:text-gray-800"
+                                                ? "bg-slate-900 text-white shadow-sm"
+                                                : "bg-transparent text-slate-600 hover:text-slate-800"
                                                 }`}
                                         >
                                             Upload File (AI)
@@ -343,8 +343,8 @@ export function ProblemEditor({
                                         <TabsTrigger
                                             value="manual"
                                             className={`text-sm font-medium rounded-md transition-all ${inputMethod === "manual"
-                                                ? "bg-blue-600 text-white shadow-sm"
-                                                : "bg-transparent text-gray-600 hover:text-gray-800"
+                                                ? "bg-slate-900 text-white shadow-sm"
+                                                : "bg-transparent text-slate-600 hover:text-slate-800"
                                                 }`}
                                         >
                                             Manual Input
@@ -354,7 +354,7 @@ export function ProblemEditor({
                                     {/* File Upload Tab */}
                                     <TabsContent value="file" className="space-y-4 mt-4">
                                         <div>
-                                            <label className="text-sm font-medium text-gray-800">
+                                            <label className="text-sm font-medium text-slate-800">
                                                 Upload Problem File (Image or PDF)
                                             </label>
                                             <div className="flex items-center gap-2 mt-1">
@@ -368,71 +368,71 @@ export function ProblemEditor({
                                                 <Button
                                                     onClick={() => problemFileInputRef.current?.click()}
                                                     variant="outline"
-                                                    className="text-sm text-gray-700 border-gray-300 hover:bg-gray-50"
+                                                    className="text-sm text-slate-700 border-slate-300 hover:bg-slate-50"
                                                     disabled={isAnalyzing}
                                                 >
                                                     Choose File
                                                 </Button>
                                                 {uploadedFile && (
-                                                    <span className="text-xs text-gray-600">{uploadedFile.name}</span>
+                                                    <span className="text-xs text-slate-600">{uploadedFile.name}</span>
                                                 )}
                                             </div>
-                                            <p className="text-xs text-gray-500 mt-1">
+                                            <p className="text-xs text-slate-500 mt-1">
                                                 AI will extract problem content, formulas, diagrams, and solution from the file
                                             </p>
                                         </div>
 
                                         {uploadedFilePreview && (
-                                            <div className="p-4 border border-gray-200 rounded-md bg-gray-50 mb-4">
-                                                <h3 className="text-sm font-medium text-gray-800 mb-2">
+                                            <div className="p-4 border border-slate-200 rounded-md bg-slate-50 mb-4">
+                                                <h3 className="text-sm font-medium text-slate-800 mb-2">
                                                     Uploaded File Preview {totalPdfPages > 0 && `(Total ${totalPdfPages} pages)`}
                                                 </h3>
                                                 <img
                                                     src={uploadedFilePreview}
                                                     alt="Uploaded file"
-                                                    className="max-w-full h-auto rounded-md shadow-sm border border-gray-200"
+                                                    className="max-w-full h-auto rounded-md shadow-sm border border-slate-200"
                                                 />
                                             </div>
                                         )}
 
                                         {/* Targeted Extraction Settings (PDF Bulk Only) */}
                                         {isBulkMode && uploadedFile?.type === 'application/pdf' && (
-                                            <div className="p-4 border border-indigo-200 rounded-lg bg-indigo-50/30 space-y-4 mb-4">
+                                            <div className="p-4 border border-slate-300 rounded-lg bg-slate-50/30 space-y-4 mb-4">
                                                 <div className="flex items-center gap-2 mb-1">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-indigo-600"><path d="M12 3c7.2 0 9 1.8 9 9s-1.8 9-9 9-9-1.8-9-9 1.8-9 9-9Z" /><path d="M9.17 14.83 14.83 9.17" /><path d="m9.17 9.17 5.66 5.66" /></svg>
-                                                    <h3 className="text-sm font-bold text-indigo-900">Targeted Extraction Settings</h3>
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-slate-700"><path d="M12 3c7.2 0 9 1.8 9 9s-1.8 9-9 9-9-1.8-9-9 1.8-9 9-9Z" /><path d="M9.17 14.83 14.83 9.17" /><path d="m9.17 9.17 5.66 5.66" /></svg>
+                                                    <h3 className="text-sm font-bold text-slate-900">Targeted Extraction Settings</h3>
                                                 </div>
 
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                     <div className="space-y-1.5">
-                                                        <label className="text-[11px] font-bold text-indigo-700 uppercase tracking-wider">Problem Page Range</label>
+                                                        <label className="text-[11px] font-bold text-slate-900 uppercase tracking-wider">Problem Page Range</label>
                                                         <Input
                                                             placeholder="e.g., 1-3, 5"
                                                             value={problemPageRange}
                                                             onChange={(e) => setProblemPageRange?.(e.target.value)}
-                                                            className="bg-white border-indigo-200 text-sm h-9 focus:ring-indigo-500"
+                                                            className="bg-white border-slate-300 text-sm h-9 focus:ring-slate-400"
                                                         />
                                                     </div>
                                                     <div className="space-y-1.5">
-                                                        <label className="text-[11px] font-bold text-indigo-700 uppercase tracking-wider">Solution Page Range</label>
+                                                        <label className="text-[11px] font-bold text-slate-900 uppercase tracking-wider">Solution Page Range</label>
                                                         <Input
                                                             placeholder="e.g., 120-125"
                                                             value={solutionPageRange}
                                                             onChange={(e) => setSolutionPageRange?.(e.target.value)}
-                                                            className="bg-white border-indigo-200 text-sm h-9 focus:ring-indigo-500"
+                                                            className="bg-white border-slate-300 text-sm h-9 focus:ring-slate-400"
                                                         />
                                                     </div>
                                                 </div>
 
                                                 <div className="space-y-1.5">
-                                                    <label className="text-[11px] font-bold text-indigo-700 uppercase tracking-wider">Specific Question Numbers</label>
+                                                    <label className="text-[11px] font-bold text-slate-900 uppercase tracking-wider">Specific Question Numbers</label>
                                                     <Input
                                                         placeholder="e.g., 1, 3, 5-8 (Optional)"
                                                         value={questionIndices}
                                                         onChange={(e) => setQuestionIndices?.(e.target.value)}
-                                                        className="bg-white border-indigo-200 text-sm h-9 focus:ring-indigo-500"
+                                                        className="bg-white border-slate-300 text-sm h-9 focus:ring-slate-400"
                                                     />
-                                                    <p className="text-[10px] text-indigo-600/70 italic">
+                                                    <p className="text-[10px] text-slate-700/70 italic">
                                                         Leaving this empty will extract all visible problems on the selected pages.
                                                     </p>
                                                 </div>
@@ -444,7 +444,7 @@ export function ProblemEditor({
                                         <Button
                                             onClick={onAIAnalyze}
                                             disabled={!uploadedFile || isAnalyzing}
-                                            className="w-full bg-blue-600 text-white font-medium py-3 px-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed shadow-md transition-all flex items-center justify-center gap-3"
+                                            className="w-full bg-slate-900 text-white font-medium py-3 px-4 rounded-lg hover:bg-slate-800 disabled:bg-slate-300 disabled:cursor-not-allowed shadow-md transition-all flex items-center justify-center gap-3"
                                         >
                                             {isAnalyzing ? (
                                                 <>
@@ -460,15 +460,15 @@ export function ProblemEditor({
                                         </Button>
 
                                         {isAnalyzing && (
-                                            <div className="mt-4 p-4 bg-indigo-50 border border-indigo-100 rounded-xl flex items-start gap-4">
+                                            <div className="mt-4 p-4 bg-slate-50 border border-slate-200 rounded-lg flex items-start gap-4">
                                                 <div className="mt-1">
-                                                    <div className="w-5 h-5 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+                                                    <div className="w-5 h-5 border-2 border-slate-300 border-t-slate-900 rounded-full animate-spin" />
                                                 </div>
                                                 <div className="space-y-1">
-                                                    <p className="text-sm font-semibold text-indigo-900">
+                                                    <p className="text-sm font-semibold text-slate-900">
                                                         {isBulkMode ? "Bulk Problem Extraction in Progress" : "Problem Extraction in Progress"}
                                                     </p>
-                                                    <p className="text-xs text-indigo-700/80 leading-relaxed">
+                                                    <p className="text-xs text-slate-900/80 leading-relaxed">
                                                         {isBulkMode
                                                             ? "AI is identifying multiple problems and mapping their solutions from the PDF..."
                                                             : "AI is identifying formulas, converting text to LaTeX, and detecting potential diagrams..."}
@@ -479,11 +479,11 @@ export function ProblemEditor({
 
                                         {/* Extracted Diagrams Section */}
                                         {extractedDiagrams.length > 0 && (
-                                            <div className="p-4 border border-blue-200 rounded-md bg-blue-50">
-                                                <h3 className="text-sm font-medium text-gray-800 mb-2">
+                                            <div className="p-4 border border-slate-300 rounded-md bg-slate-50">
+                                                <h3 className="text-sm font-medium text-slate-800 mb-2">
                                                     Extracted Diagrams/Graphs ({extractedDiagrams.length})
                                                 </h3>
-                                                <p className="text-xs text-gray-600 mb-3">
+                                                <p className="text-xs text-slate-600 mb-3">
                                                     AI detected these diagrams. Click to select one for the problem.
                                                 </p>
                                                 <div className="grid grid-cols-2 gap-3">
@@ -493,9 +493,9 @@ export function ProblemEditor({
                                                             className="relative"
                                                         >
                                                             <div
-                                                                className={`p-2 border-2 rounded-md cursor-pointer hover:border-blue-400 transition-all ${diagramImageUrl === diagramUrl
-                                                                    ? 'border-blue-600 bg-blue-50'
-                                                                    : 'border-gray-300 bg-white'
+                                                                className={`p-2 border-2 rounded-md cursor-pointer hover:border-slate-400 transition-all ${diagramImageUrl === diagramUrl
+                                                                    ? 'border-slate-900 bg-slate-50'
+                                                                    : 'border-slate-300 bg-white'
                                                                     }`}
                                                                 onClick={() => onSelectExtractedDiagram(diagramUrl)}
                                                             >
@@ -507,9 +507,9 @@ export function ProblemEditor({
                                                             </div>
                                                             <div className="flex items-center justify-between mt-2">
                                                                 {diagramImageUrl === diagramUrl ? (
-                                                                    <span className="text-xs text-blue-600 font-medium">✓ Selected</span>
+                                                                    <span className="text-xs text-slate-700 font-medium">✓ Selected</span>
                                                                 ) : (
-                                                                    <span className="text-xs text-gray-500">Diagram {index + 1}</span>
+                                                                    <span className="text-xs text-slate-500">Diagram {index + 1}</span>
                                                                 )}
                                                                 <button
                                                                     onClick={(e) => {
@@ -530,13 +530,13 @@ export function ProblemEditor({
 
                                     {/* Manual Input Tab */}
                                     <TabsContent value="manual" className="space-y-4 mt-4">
-                                        <p className="text-xs text-gray-500">Manually enter problem details using KaTeX/MathJax syntax</p>
+                                        <p className="text-xs text-slate-500">Manually enter problem details using KaTeX/MathJax syntax</p>
                                     </TabsContent>
                                 </Tabs>
 
                                 {/* Title */}
                                 <div>
-                                    <label htmlFor="problemTitle" className="text-sm font-medium text-gray-800">
+                                    <label htmlFor="problemTitle" className="text-sm font-medium text-slate-800">
                                         Problem Title *
                                     </label>
                                     <Input
@@ -544,14 +544,14 @@ export function ProblemEditor({
                                         value={problemTitle}
                                         onChange={(e) => setProblemTitle(e.target.value)}
                                         placeholder="Enter the problem title"
-                                        className="mt-1 p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                                        className="mt-1 p-2 border border-slate-300 rounded-md focus:ring-slate-400 focus:border-slate-400"
                                     />
                                 </div>
 
                                 {/* Category & Difficulty */}
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="text-sm font-medium text-gray-800">
+                                        <label className="text-sm font-medium text-slate-800">
                                             Category (Hierarchical)
                                         </label>
                                         <div className="space-y-2 mt-1">
@@ -563,7 +563,7 @@ export function ProblemEditor({
                                                     const l1 = CATEGORIES.level1.find(c => c.id === e.target.value);
                                                     setCategory(l1?.name || "");
                                                 }}
-                                                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm"
+                                                className="w-full p-2 border border-slate-300 rounded-md focus:ring-slate-400 focus:border-slate-400 text-sm"
                                             >
                                                 <option value="">Select Level 1</option>
                                                 {CATEGORIES.level1.map(cat => (
@@ -581,7 +581,7 @@ export function ProblemEditor({
                                                         const l1 = CATEGORIES.level1.find(c => c.id === selectedLevel1);
                                                         setCategory(l2 ? `${l1?.name} > ${l2.name}` : l1?.name || "");
                                                     }}
-                                                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm"
+                                                    className="w-full p-2 border border-slate-300 rounded-md focus:ring-slate-400 focus:border-slate-400 text-sm"
                                                 >
                                                     <option value="">Select Level 2 (Optional)</option>
                                                     {CATEGORIES.level2[selectedLevel1 as keyof typeof CATEGORIES.level2]?.map((cat: any) => (
@@ -601,7 +601,7 @@ export function ProblemEditor({
                                                         const l1 = CATEGORIES.level1.find(c => c.id === selectedLevel1);
                                                         setCategory(l3 ? `${l1?.name} > ${l2?.name} > ${l3.name}` : `${l1?.name} > ${l2?.name}`);
                                                     }}
-                                                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm"
+                                                    className="w-full p-2 border border-slate-300 rounded-md focus:ring-slate-400 focus:border-slate-400 text-sm"
                                                 >
                                                     <option value="">Select Level 3 (Optional)</option>
                                                     {CATEGORIES.level3[selectedLevel2 as keyof typeof CATEGORIES.level3]?.map((cat: any) => (
@@ -611,7 +611,7 @@ export function ProblemEditor({
                                             )}
 
                                             {category && (
-                                                <div className="text-xs text-gray-600 bg-blue-50 p-2 rounded border border-blue-200">
+                                                <div className="text-xs text-slate-600 bg-slate-50 p-2 rounded border border-slate-300">
                                                     Selected: <span className="font-medium">{category}</span>
                                                 </div>
                                             )}
@@ -621,7 +621,7 @@ export function ProblemEditor({
                                     {/* Source & Difficulty */}
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="relative" ref={dropdownRef}>
-                                            <label htmlFor="source" className="text-sm font-medium text-gray-800 flex items-center gap-1.5">
+                                            <label htmlFor="source" className="text-sm font-medium text-slate-800 flex items-center gap-1.5">
                                                 Problem Source
                                             </label>
                                             <div className="relative mt-1">
@@ -635,12 +635,12 @@ export function ProblemEditor({
                                                     }}
                                                     onFocus={() => setIsDropdownOpen(true)}
                                                     placeholder="Type to search or add new..."
-                                                    className="p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 pr-8"
+                                                    className="p-2 border border-slate-300 rounded-md focus:ring-slate-400 focus:border-slate-400 pr-8"
                                                 />
                                                 {inputValue && (
                                                     <button 
                                                         onClick={() => handleSelectSource("")}
-                                                        className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                                        className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                                                     >
                                                         <X className="w-4 h-4" />
                                                     </button>
@@ -649,7 +649,7 @@ export function ProblemEditor({
 
                                             {/* Autocomplete Dropdown */}
                                             {isDropdownOpen && (inputValue.trim() || filteredSources.length > 0) && (
-                                                <div className="absolute z-50 mt-1 w-full bg-slate-900 text-slate-100 rounded-lg shadow-xl border border-slate-700 overflow-hidden py-1 animate-in fade-in zoom-in-95 duration-100">
+                                                <div className="absolute z-50 mt-1 w-full bg-slate-900 text-slate-100 rounded-lg shadow-sm border border-slate-700 overflow-hidden py-1 animate-in fade-in zoom-in-95 duration-100">
                                                     {filteredSources.length > 0 && (
                                                         <div className="max-h-48 overflow-y-auto">
                                                             {filteredSources.map((s) => (
@@ -677,7 +677,7 @@ export function ProblemEditor({
                                             )}
                                         </div>
                                         <div>
-                                            <label htmlFor="difficulty" className="text-sm font-medium text-gray-800">
+                                            <label htmlFor="difficulty" className="text-sm font-medium text-slate-800">
                                                 Difficulty (1-10)
                                             </label>
                                             <div className="flex items-center gap-2 mt-1">
@@ -688,12 +688,12 @@ export function ProblemEditor({
                                                     max="10"
                                                     value={difficulty}
                                                     onChange={(e) => setDifficulty(parseInt(e.target.value) || 1)}
-                                                    className="p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                                                    className="p-2 border border-slate-300 rounded-md focus:ring-slate-400 focus:border-slate-400"
                                                 />
                                                 <Button
                                                     onClick={onAIDifficulty}
                                                     variant="outline"
-                                                    className="text-xs text-gray-700 border-gray-300 hover:bg-gray-50"
+                                                    className="text-xs text-slate-700 border-slate-300 hover:bg-slate-50"
                                                     disabled={isAnalyzing}
                                                 >
                                                     AI
@@ -705,11 +705,11 @@ export function ProblemEditor({
 
                                 {/* Problem Content */}
                                 <div>
-                                    <h3 className="text-sm font-medium text-gray-800 mb-1">Preview</h3>
-                                    <div className="p-4 border border-gray-200 rounded-md bg-gray-50 min-h-[100px] mb-2">
+                                    <h3 className="text-sm font-medium text-slate-800 mb-1">Preview</h3>
+                                    <div className="p-4 border border-slate-200 rounded-md bg-slate-50 min-h-[100px] mb-2">
                                         {diagramImageUrl && (
                                             <div className="mb-4">
-                                                <p className="text-xs text-gray-600 mb-2">Diagram:</p>
+                                                <p className="text-xs text-slate-600 mb-2">Diagram:</p>
                                                 <img
                                                     src={diagramImageUrl}
                                                     alt="Diagram"
@@ -720,7 +720,7 @@ export function ProblemEditor({
                                         <MathPreview html={problemContent} />
                                     </div>
 
-                                    <label htmlFor="problemContent" className="text-sm font-medium text-gray-800">
+                                    <label htmlFor="problemContent" className="text-sm font-medium text-slate-800">
                                         Problem Content (KaTeX/MathJax) *
                                     </label>
                                     <textarea
@@ -728,13 +728,13 @@ export function ProblemEditor({
                                         value={problemContent}
                                         onChange={(e) => setProblemContent(e.target.value)}
                                         placeholder="Enter the problem content using KaTeX/MathJax syntax. e.g., \( E = mc^2 \) or \[ \int_0^1 x^2 dx \]"
-                                        className="w-full h-32 p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 mt-1 text-sm"
+                                        className="w-full h-32 p-2 border border-slate-300 rounded-md focus:ring-slate-400 focus:border-slate-400 mt-1 text-sm"
                                     />
                                 </div>
 
                                 {/* Diagram/Graph Image Upload */}
                                 <div>
-                                    <label className="text-sm font-medium text-gray-800">
+                                    <label className="text-sm font-medium text-slate-800">
                                         Diagram/Graph Image (Optional)
                                     </label>
                                     {inputMethod === "file" && extractedDiagrams.length > 0 ? (
@@ -746,13 +746,13 @@ export function ProblemEditor({
                                                         onClick={() => setDiagramImageUrl("")}
                                                         variant="outline"
                                                         size="sm"
-                                                        className="text-xs text-gray-700 border-gray-300 hover:bg-gray-50"
+                                                        className="text-xs text-slate-700 border-slate-300 hover:bg-slate-50"
                                                     >
                                                         Clear
                                                     </Button>
                                                 </div>
                                             ) : (
-                                                <p className="text-xs text-gray-500">
+                                                <p className="text-xs text-slate-500">
                                                     Select a diagram from the extracted diagrams above, or upload manually below
                                                 </p>
                                             )}
@@ -769,7 +769,7 @@ export function ProblemEditor({
                                         <Button
                                             onClick={() => diagramFileInputRef.current?.click()}
                                             variant="outline"
-                                            className="text-sm text-gray-700 border-gray-300 hover:bg-gray-50"
+                                            className="text-sm text-slate-700 border-slate-300 hover:bg-slate-50"
                                         >
                                             {diagramImageUrl && inputMethod === "file" && extractedDiagrams.length > 0
                                                 ? "Upload Different Diagram"
@@ -780,7 +780,7 @@ export function ProblemEditor({
                                         )}
                                     </div>
                                     {inputMethod === "manual" && (
-                                        <p className="text-xs text-gray-500 mt-1">
+                                        <p className="text-xs text-slate-500 mt-1">
                                             Upload separate diagrams or graphs that accompany the problem
                                         </p>
                                     )}
@@ -791,13 +791,13 @@ export function ProblemEditor({
                                 {/* Solution Section */}
                                 <div className="space-y-4 pt-4 border-t">
                                     <div className="flex items-center justify-between">
-                                        <label className="text-lg font-semibold text-gray-800">Solutions</label>
+                                        <label className="text-lg font-semibold text-slate-800">Solutions</label>
                                         <div className="flex gap-2">
                                             <Button
                                                 onClick={onAIGenerateSolution}
                                                 variant="outline"
                                                 size="sm"
-                                                className="text-xs text-gray-700 border-gray-300 hover:bg-gray-50"
+                                                className="text-xs text-slate-700 border-slate-300 hover:bg-slate-50"
                                                 disabled={isAnalyzing || !problemContent}
                                             >
                                                 Generate with AI
@@ -806,7 +806,7 @@ export function ProblemEditor({
                                                 onClick={() => setSolutions([...solutions, { id: `manual-${Date.now()}`, title: `Method ${solutions.length + 1}`, content: "" }])}
                                                 variant="outline"
                                                 size="sm"
-                                                className="text-xs text-gray-700 border-gray-300 hover:bg-gray-50"
+                                                className="text-xs text-slate-700 border-slate-300 hover:bg-slate-50"
                                             >
                                                 Add Solution
                                             </Button>
@@ -814,11 +814,11 @@ export function ProblemEditor({
                                     </div>
 
                                     {/* Solution Image Upload Area */}
-                                    <div className="mt-2 p-4 border border-dashed border-gray-300 rounded-lg bg-gray-50/50">
+                                    <div className="mt-2 p-4 border border-dashed border-slate-300 rounded-lg bg-slate-50/50">
                                         <div className="flex items-center justify-between gap-4 mb-4">
                                             <div className="flex-1">
-                                                <p className="text-[11px] font-bold text-indigo-600 mb-1 uppercase tracking-wider">Extract Solutions from Images (AI)</p>
-                                                <p className="text-xs text-gray-500 mb-3">Upload one or more images (e.g., long solutions, multiple methods).</p>
+                                                <p className="text-[11px] font-bold text-slate-700 mb-1 uppercase tracking-wider">Extract Solutions from Images (AI)</p>
+                                                <p className="text-xs text-slate-500 mb-3">Upload one or more images (e.g., long solutions, multiple methods).</p>
                                                 <div className="flex items-center gap-2">
                                                     <Input
                                                         type="file"
@@ -832,15 +832,15 @@ export function ProblemEditor({
                                                         onClick={() => solutionFileInputRef.current?.click()}
                                                         variant="outline"
                                                         size="sm"
-                                                        className="text-xs h-8 text-gray-700 bg-white border-gray-300 hover:bg-gray-100"
+                                                        className="text-xs h-8 text-slate-700 bg-white border-slate-300 hover:bg-slate-100"
                                                         disabled={isAnalyzing}
                                                     >
                                                         Choose Solution Image(s)
                                                     </Button>
                                                     {(uploadedSolutionFiles?.length || 0) > 0 ? (
-                                                        <span className="text-[10px] text-indigo-600 font-medium">{uploadedSolutionFiles?.length} file(s) selected</span>
+                                                        <span className="text-[10px] text-slate-700 font-medium">{uploadedSolutionFiles?.length} file(s) selected</span>
                                                     ) : uploadedSolutionFile ? (
-                                                        <span className="text-[10px] text-gray-500 truncate max-w-[150px]">{uploadedSolutionFile.name}</span>
+                                                        <span className="text-[10px] text-slate-500 truncate max-w-[150px]">{uploadedSolutionFile.name}</span>
                                                     ) : null}
                                                 </div>
                                             </div>
@@ -848,7 +848,7 @@ export function ProblemEditor({
                                                 onClick={onAISolutionAnalyze}
                                                 disabled={(!uploadedSolutionFile && (!uploadedSolutionFiles || uploadedSolutionFiles.length === 0)) || isAnalyzingSolution}
                                                 size="sm"
-                                                className="h-10 px-4 bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 disabled:bg-indigo-300 shadow-sm flex items-center gap-2"
+                                                className="h-10 px-4 bg-slate-900 text-white text-xs font-semibold hover:bg-slate-800 disabled:bg-slate-300 shadow-sm flex items-center gap-2"
                                             >
                                                 {isAnalyzingSolution ? (
                                                     <>
@@ -860,16 +860,16 @@ export function ProblemEditor({
                                         </div>
 
                                         {isAnalyzingSolution && (
-                                            <div className="mt-4 p-3 bg-indigo-50 border border-indigo-100 rounded-lg flex items-center gap-3 animate-pulse">
-                                                <div className="w-4 h-4 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
-                                                <p className="text-xs font-medium text-indigo-700">AI is identifying and formatting each solution method...</p>
+                                            <div className="mt-4 p-3 bg-slate-50 border border-slate-200 rounded-lg flex items-center gap-3 animate-pulse">
+                                                <div className="w-4 h-4 border-2 border-slate-300 border-t-slate-900 rounded-full animate-spin" />
+                                                <p className="text-xs font-medium text-slate-900">AI is identifying and formatting each solution method...</p>
                                             </div>
                                         )}
 
                                         {/* Image Previews */}
                                         <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300">
                                             {(uploadedSolutionFilesPreviews || (uploadedSolutionFilePreview ? [uploadedSolutionFilePreview] : [])).map((url, idx) => (
-                                                <div key={idx} className="relative flex-shrink-0 h-24 w-32 bg-black/5 rounded-md border border-gray-200 overflow-hidden shadow-sm">
+                                                <div key={idx} className="relative flex-shrink-0 h-24 w-32 bg-black/5 rounded-md border border-slate-200 overflow-hidden shadow-sm">
                                                     <img
                                                         src={url}
                                                         alt={`Solution preview ${idx + 1}`}
@@ -884,10 +884,10 @@ export function ProblemEditor({
                                     {/* Solutions List */}
                                     <div className="space-y-6 mt-4">
                                         {solutions.map((sol, idx) => (
-                                            <div key={sol.id || idx} className="p-5 border border-gray-200 rounded-xl bg-white shadow-sm space-y-4 transition-all hover:border-indigo-200">
+                                            <div key={sol.id || idx} className="p-5 border border-slate-200 rounded-lg bg-white shadow-sm space-y-4 transition-all hover:border-slate-300">
                                                 <div className="flex items-center justify-between">
                                                     <div className="flex items-center gap-3 flex-1">
-                                                        <Badge className="bg-gray-100 text-gray-600 border-none font-bold">#{idx + 1}</Badge>
+                                                        <Badge className="bg-slate-100 text-slate-600 border-none font-bold">#{idx + 1}</Badge>
                                                         <Input
                                                             value={sol.title}
                                                             onChange={(e) => {
@@ -895,14 +895,14 @@ export function ProblemEditor({
                                                                 newSols[idx].title = e.target.value;
                                                                 setSolutions(newSols);
                                                             }}
-                                                            className="font-semibold text-sm border-none bg-gray-50 focus:bg-white transition-colors h-8"
+                                                            className="font-semibold text-sm border-none bg-slate-50 focus:bg-white transition-colors h-8"
                                                             placeholder="Solution Title (e.g., Method 1: Algebraic approach)"
                                                         />
                                                     </div>
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
-                                                        className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 px-2"
+                                                        className="text-slate-400 hover:text-red-700 hover:bg-red-50 h-8 px-2"
                                                         onClick={() => setSolutions(solutions.filter((_, i) => i !== idx))}
                                                     >
                                                         Delete
@@ -911,7 +911,7 @@ export function ProblemEditor({
 
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                                     <div className="space-y-2">
-                                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Content (LaTeX/KaTeX)</label>
+                                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Content (LaTeX/KaTeX)</label>
                                                         <textarea
                                                             value={sol.content}
                                                             onChange={(e) => {
@@ -921,16 +921,16 @@ export function ProblemEditor({
                                                                 if (idx === 0) setSolution(e.target.value); // Sync with old state
                                                             }}
                                                             placeholder="Enter solution content here..."
-                                                            className="w-full h-48 p-4 text-sm border border-gray-100 rounded-lg bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-300 outline-none transition-all resize-none"
+                                                            className="w-full h-48 p-4 text-sm border border-slate-100 rounded-lg bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-slate-400/10 focus:border-slate-300 outline-none transition-all resize-none"
                                                         />
                                                     </div>
                                                     <div className="space-y-2 flex flex-col h-full">
-                                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Live Preview</label>
-                                                        <div className="flex-1 p-4 border border-gray-50 rounded-lg bg-gray-50/30 overflow-y-auto max-h-48 min-h-[12rem]">
+                                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Live Preview</label>
+                                                        <div className="flex-1 p-4 border border-slate-50 rounded-lg bg-slate-50/30 overflow-y-auto max-h-48 min-h-[12rem]">
                                                             {sol.content ? (
                                                                 <MathPreview html={sol.content} />
                                                             ) : (
-                                                                <div className="flex items-center justify-center h-full text-gray-300 italic text-xs">Preview will appear here...</div>
+                                                                <div className="flex items-center justify-center h-full text-slate-300 italic text-xs">Preview will appear here...</div>
                                                             )}
                                                         </div>
                                                     </div>
@@ -939,9 +939,9 @@ export function ProblemEditor({
                                         ))}
 
                                         {solutions.length === 0 && (
-                                            <div className="text-center py-12 border-2 border-dashed border-gray-100 rounded-2xl bg-gray-50/20">
-                                                <p className="text-gray-400 text-sm">No detailed solutions added yet.</p>
-                                                <p className="text-gray-300 text-xs mt-1">Use the buttons above to generate with AI or add manually.</p>
+                                            <div className="text-center py-12 border-2 border-dashed border-slate-100 rounded-lg bg-slate-50/20">
+                                                <p className="text-slate-400 text-sm">No detailed solutions added yet.</p>
+                                                <p className="text-slate-300 text-xs mt-1">Use the buttons above to generate with AI or add manually.</p>
                                             </div>
                                         )}
                                     </div>
@@ -950,7 +950,7 @@ export function ProblemEditor({
                                 {/* Related Problems Generation */}
                                 <div>
                                     <div className="flex items-center justify-between mb-2">
-                                        <label className="text-sm font-medium text-gray-800">
+                                        <label className="text-sm font-medium text-slate-800">
                                             Related Problems (AI Generated)
                                         </label>
                                         <div className="flex gap-2">
@@ -968,12 +968,12 @@ export function ProblemEditor({
                                                 onClick={onGenerateRelated}
                                                 variant="outline"
                                                 size="sm"
-                                                className="text-xs text-gray-700 border-gray-300 hover:bg-gray-50 flex items-center gap-2"
+                                                className="text-xs text-slate-700 border-slate-300 hover:bg-slate-50 flex items-center gap-2"
                                                 disabled={isBulkMode || isGeneratingRelated || !problemContent}
                                             >
                                                 {isGeneratingRelated ? (
                                                     <>
-                                                        <div className="w-3 h-3 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+                                                        <div className="w-3 h-3 border-2 border-slate-300 border-t-slate-900 rounded-full animate-spin" />
                                                         Generating...
                                                     </>
                                                 ) : (
@@ -990,11 +990,11 @@ export function ProblemEditor({
                                             </p>
                                         </div>
                                     ) : (
-                                        <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-lg">
-                                            <p className="text-xs text-indigo-700">
-                                                💡 Click "Generate Related Problems with AI" to automatically create foundational problems linked to this one.
+                                        <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                                            <p className="text-xs text-slate-900">
+                                                Tip: click "Generate Related Problems with AI" to automatically create foundational problems linked to this one.
                                                 {linkedProblems.length > 0 && (
-                                                    <span className="font-medium text-indigo-700"> Currently {linkedProblems.length} problem(s) linked.</span>
+                                                    <span className="font-medium text-slate-900"> Currently {linkedProblems.length} problem(s) linked.</span>
                                                 )}
                                             </p>
                                         </div>
@@ -1003,33 +1003,33 @@ export function ProblemEditor({
 
                                 {/* AI Generation Progress Indicator */}
                                 {isGeneratingRelated && (
-                                    <div className="mt-4 p-6 border border-indigo-100 rounded-xl bg-indigo-50/50 animate-in fade-in duration-500">
+                                    <div className="mt-4 p-6 border border-slate-200 rounded-lg bg-slate-50/50 animate-in fade-in duration-500">
                                         <div className="flex flex-col items-center text-center">
                                             <div className="mb-4 relative">
-                                                <div className="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+                                                <div className="w-12 h-12 border-4 border-slate-300 border-t-slate-900 rounded-full animate-spin"></div>
                                                 <div className="absolute inset-0 flex items-center justify-center">
-                                                    <span className="text-[10px] font-bold text-indigo-600">{Math.floor(progress)}%</span>
+                                                    <span className="text-[10px] font-bold text-slate-700">{Math.floor(progress)}%</span>
                                                 </div>
                                             </div>
 
-                                            <h4 className="text-sm font-semibold text-indigo-900 mb-1">
+                                            <h4 className="text-sm font-semibold text-slate-900 mb-1">
                                                 {GENERATION_STEPS[stepIndex]}
                                             </h4>
-                                            <p className="text-xs text-indigo-700/70 mb-4 max-w-xs">
+                                            <p className="text-xs text-slate-900/70 mb-4 max-w-xs">
                                                 AI is carefully analyzing the problem based on the generation guide to create quality learning steps.
                                             </p>
 
-                                            <div className="w-full max-w-md bg-indigo-100 rounded-full h-1.5 overflow-hidden">
+                                            <div className="w-full max-w-md bg-slate-100 rounded-full h-1.5 overflow-hidden">
                                                 <div
-                                                    className="bg-indigo-600 h-full transition-all duration-500 ease-out"
+                                                    className="bg-slate-900 h-full transition-all duration-500 ease-out"
                                                     style={{ width: `${progress}%` }}
                                                 ></div>
                                             </div>
 
                                             <div className="mt-3 flex gap-2">
-                                                <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce"></span>
-                                                <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce [animation-delay:0.2s]"></span>
-                                                <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+                                                <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce"></span>
+                                                <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:0.2s]"></span>
+                                                <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:0.4s]"></span>
                                             </div>
                                         </div>
                                     </div>
@@ -1037,13 +1037,13 @@ export function ProblemEditor({
 
                                 {/* AI-Generated Related Problems */}
                                 {showRelatedProblems && relatedProblems.length > 0 && (
-                                    <div className="p-4 border border-green-200 rounded-md bg-gradient-to-br from-green-50 to-blue-50">
+                                    <div className="p-4 border border-green-200 rounded-md bg-green-50">
                                         <div className="flex items-center justify-between mb-3">
                                             <div>
-                                                <h3 className="text-base font-semibold text-gray-800">
+                                                <h3 className="text-base font-semibold text-slate-800">
                                                     AI-Generated Related Problems ({relatedProblems.length})
                                                 </h3>
-                                                <p className="text-xs text-gray-600 mt-1">
+                                                <p className="text-xs text-slate-600 mt-1">
                                                     Foundational problems organized by concept
                                                 </p>
                                             </div>
@@ -1052,7 +1052,7 @@ export function ProblemEditor({
                                                     onClick={onGenerateRelated}
                                                     variant="outline"
                                                     size="sm"
-                                                    className="text-xs text-blue-600 border-blue-300 hover:bg-blue-50"
+                                                    className="text-xs text-slate-700 border-slate-300 hover:bg-slate-50"
                                                     disabled={isAnalyzing}
                                                 >
                                                     Generate More
@@ -1061,7 +1061,7 @@ export function ProblemEditor({
                                                     onClick={() => setShowRelatedProblems(!showRelatedProblems)}
                                                     variant="outline"
                                                     size="sm"
-                                                    className="text-xs text-gray-700 border-gray-300 hover:bg-gray-50"
+                                                    className="text-xs text-slate-700 border-slate-300 hover:bg-slate-50"
                                                 >
                                                     Collapse
                                                 </Button>
@@ -1069,11 +1069,11 @@ export function ProblemEditor({
                                         </div>
 
                                         {/* Stages Overview */}
-                                        <div className="mb-4 p-3 bg-white border border-blue-200 rounded-md">
-                                            <h4 className="text-xs font-medium text-gray-700 mb-2">Problem Solving Stages:</h4>
+                                        <div className="mb-4 p-3 bg-white border border-slate-300 rounded-md">
+                                            <h4 className="text-xs font-medium text-slate-700 mb-2">Problem Solving Stages:</h4>
                                             <div className="flex flex-wrap gap-2">
                                                 {concepts.map((stage, idx) => (
-                                                    <Badge key={idx} className="text-xs bg-blue-100 text-blue-800 border-blue-200">
+                                                    <Badge key={idx} className="text-xs bg-slate-100 text-slate-900 border-slate-300">
                                                         {stage}
                                                     </Badge>
                                                 ))}
@@ -1087,14 +1087,14 @@ export function ProblemEditor({
                                                 if (stageProblems.length === 0) return null;
 
                                                 return (
-                                                    <div key={stage} className="p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
+                                                    <div key={stage} className="p-6 bg-white border border-slate-200 rounded-lg shadow-sm">
                                                         <div className="flex items-center gap-3 mb-4">
-                                                            <div className="flex items-center justify-center w-8 h-8 bg-blue-600 text-white rounded-full font-semibold text-sm">
+                                                            <div className="flex items-center justify-center w-8 h-8 bg-slate-900 text-white rounded-full font-semibold text-sm">
                                                                 {stageIdx + 1}
                                                             </div>
                                                             <div className="flex-1">
-                                                                <h4 className="text-base font-semibold text-gray-800">{stage}</h4>
-                                                                <span className="text-xs text-gray-500">
+                                                                <h4 className="text-base font-semibold text-slate-800">{stage}</h4>
+                                                                <span className="text-xs text-slate-500">
                                                                     {stageProblems.length} problem{stageProblems.length > 1 ? 's' : ''}
                                                                 </span>
                                                             </div>
@@ -1104,25 +1104,25 @@ export function ProblemEditor({
                                                             {stageProblems.map((relProb, idx) => (
                                                                 <div
                                                                     key={idx}
-                                                                    className="p-4 border border-gray-200 rounded-md hover:border-blue-400 transition-all bg-gray-50 hover:shadow-sm"
+                                                                    className="p-4 border border-slate-200 rounded-md hover:border-slate-400 transition-all bg-slate-50 hover:shadow-sm"
                                                                 >
                                                                     <div className="flex items-start justify-between mb-2">
                                                                         <div className="flex-1">
-                                                                            <h5 className="text-sm font-medium text-gray-800 mb-2">
+                                                                            <h5 className="text-sm font-medium text-slate-800 mb-2">
                                                                                 {relProb.title}
                                                                             </h5>
                                                                             <div className="flex items-center gap-2">
-                                                                                <Badge className="text-xs bg-gray-100 text-gray-700 border-gray-200">
+                                                                                <Badge className="text-xs bg-slate-100 text-slate-700 border-slate-200">
                                                                                     Difficulty {relProb.difficulty}/10
                                                                                 </Badge>
-                                                                                <Badge className="text-xs bg-purple-100 text-purple-800 border-purple-200">
+                                                                                <Badge className="text-xs bg-slate-100 text-slate-900 border-slate-300">
                                                                                     {relProb.concept}
                                                                                 </Badge>
                                                                             </div>
                                                                         </div>
                                                                     </div>
 
-                                                                    <p className="text-xs text-gray-600 mb-2 line-clamp-2">
+                                                                    <p className="text-xs text-slate-600 mb-2 line-clamp-2">
                                                                         {relProb.explanation}
                                                                     </p>
 
@@ -1147,32 +1147,32 @@ export function ProblemEditor({
                                                                                 <div className="space-y-4">
                                                                                     <div>
                                                                                         <div className="flex items-center gap-2 mb-2">
-                                                                                            <Badge className="text-xs bg-blue-100 text-blue-800 border-blue-200">
+                                                                                            <Badge className="text-xs bg-slate-100 text-slate-900 border-slate-300">
                                                                                                 {relProb.stage}
                                                                                             </Badge>
-                                                                                            <Badge className="text-xs bg-purple-100 text-purple-800 border-purple-200">
+                                                                                            <Badge className="text-xs bg-slate-100 text-slate-900 border-slate-300">
                                                                                                 {relProb.concept}
                                                                                             </Badge>
-                                                                                            <Badge className="text-xs bg-gray-100 text-gray-700 border-gray-200">
+                                                                                            <Badge className="text-xs bg-slate-100 text-slate-700 border-slate-200">
                                                                                                 Difficulty {relProb.difficulty}/10
                                                                                             </Badge>
-                                                                                            <Badge className="text-xs bg-gray-100 text-gray-700 border-gray-200">
+                                                                                            <Badge className="text-xs bg-slate-100 text-slate-700 border-slate-200">
                                                                                                 {relProb.category}
                                                                                             </Badge>
                                                                                         </div>
-                                                                                        <p className="text-sm text-gray-600 italic">{relProb.explanation}</p>
+                                                                                        <p className="text-sm text-slate-600 italic">{relProb.explanation}</p>
                                                                                     </div>
 
                                                                                     <div>
-                                                                                        <h4 className="text-sm font-semibold text-gray-800 mb-2">Problem</h4>
-                                                                                        <div className="p-4 border border-gray-200 rounded-md bg-gray-50">
+                                                                                        <h4 className="text-sm font-semibold text-slate-800 mb-2">Problem</h4>
+                                                                                        <div className="p-4 border border-slate-200 rounded-md bg-slate-50">
                                                                                             <MathPreview html={relProb.content} />
                                                                                         </div>
                                                                                     </div>
 
                                                                                     <div>
-                                                                                        <h4 className="text-sm font-semibold text-gray-800 mb-2">Solution</h4>
-                                                                                        <div className="p-4 border border-gray-200 rounded-md bg-blue-50">
+                                                                                        <h4 className="text-sm font-semibold text-slate-800 mb-2">Solution</h4>
+                                                                                        <div className="p-4 border border-slate-200 rounded-md bg-slate-50">
                                                                                             <MathPreview html={relProb.solution} />
                                                                                         </div>
                                                                                     </div>
@@ -1217,8 +1217,8 @@ export function ProblemEditor({
                                         </div>
 
                                         {/* Bulk Actions */}
-                                        <div className="mt-4 p-3 bg-white border border-gray-200 rounded-md">
-                                            <p className="text-xs text-gray-600 mb-2">
+                                        <div className="mt-4 p-3 bg-white border border-slate-200 rounded-md">
+                                            <p className="text-xs text-slate-600 mb-2">
                                                 Bulk Actions: {addedProblemTitles.size} of {relatedProblems.length} problems added
                                             </p>
                                             <div className="flex gap-2">
@@ -1231,7 +1231,7 @@ export function ProblemEditor({
                                                     }}
                                                     size="sm"
                                                     disabled={addedProblemTitles.size === relatedProblems.length}
-                                                    className="bg-green-600 text-white font-medium text-xs hover:bg-green-700 disabled:bg-gray-300"
+                                                    className="bg-green-600 text-white font-medium text-xs hover:bg-green-700 disabled:bg-slate-300"
                                                 >
                                                     Add All Remaining ({relatedProblems.length - addedProblemTitles.size})
                                                 </Button>
@@ -1239,7 +1239,7 @@ export function ProblemEditor({
                                                     onClick={onClearRelated}
                                                     variant="outline"
                                                     size="sm"
-                                                    className="text-xs text-gray-700 border-gray-300 hover:bg-gray-50"
+                                                    className="text-xs text-slate-700 border-slate-300 hover:bg-slate-50"
                                                 >
                                                     Deselect All
                                                 </Button>
@@ -1250,7 +1250,7 @@ export function ProblemEditor({
 
                                 {/* Action Buttons */}
                                 <div className="flex justify-between items-center pt-4">
-                                    <div className="text-xs text-gray-500">
+                                    <div className="text-xs text-slate-500">
                                         {isEditing ? (
                                             <span>✏️ Editing: <strong>{selectedProblem?.title}</strong></span>
                                         ) : (
@@ -1261,13 +1261,13 @@ export function ProblemEditor({
                                         <Button
                                             onClick={onCancel}
                                             variant="outline"
-                                            className="text-gray-700 border-gray-300 hover:bg-gray-50"
+                                            className="text-slate-700 border-slate-300 hover:bg-slate-50"
                                         >
                                             Cancel
                                         </Button>
                                         <Button
                                             onClick={onSave}
-                                            className="bg-blue-600 text-white font-medium py-2 px-6 rounded-lg hover:bg-blue-700 shadow-md transition-all active:scale-95"
+                                            className="bg-slate-900 text-white font-medium py-2 px-6 rounded-lg hover:bg-slate-800 shadow-md transition-all active:scale-95"
                                         >
                                             {isBulkMode
                                                 ? `📝 Save Selected (${selectedProblemIndices.size})`

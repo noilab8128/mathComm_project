@@ -167,20 +167,20 @@ export default function UsersManagementPage() {
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-lg border border-slate-200 shadow-sm">
                 <div>
-                    <h2 className="text-xl font-bold text-gray-900">User Management</h2>
-                    <p className="text-sm text-gray-500 mt-1">Manage user accounts and administrative roles.</p>
+                    <h2 className="text-xl font-bold text-slate-900">User Management</h2>
+                    <p className="text-sm text-slate-500 mt-1">Manage user accounts and administrative roles.</p>
                 </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-gray-50/50">
+            <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+                <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/50">
                     <div className="relative w-full max-w-sm">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                         <Input
                             placeholder="Search users by name or email..."
-                            className="pl-9 bg-white border-gray-300"
+                            className="pl-9 bg-white border-slate-300"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
@@ -190,7 +190,7 @@ export default function UsersManagementPage() {
                 <div className="overflow-x-auto">
                     <Table>
                         <TableHeader>
-                            <TableRow className="bg-gray-50">
+                            <TableRow className="bg-slate-50">
                                 <TableHead>User</TableHead>
                                 <TableHead>Role</TableHead>
                                 <TableHead>Progression</TableHead>
@@ -202,13 +202,13 @@ export default function UsersManagementPage() {
                             {isLoading ? (
                                 <TableRow>
                                     <TableCell colSpan={4} className="h-32 text-center">
-                                        <Loader2 className="h-6 w-6 animate-spin mx-auto text-indigo-600 mb-2" />
-                                        <p className="text-sm text-gray-500">Loading users...</p>
+                                        <Loader2 className="h-6 w-6 animate-spin mx-auto text-slate-700 mb-2" />
+                                        <p className="text-sm text-slate-500">Loading users...</p>
                                     </TableCell>
                                 </TableRow>
                             ) : filteredUsers.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={4} className="h-32 text-center text-gray-500">
+                                    <TableCell colSpan={4} className="h-32 text-center text-slate-500">
                                         No users found matching &quot;{searchQuery}&quot;
                                     </TableCell>
                                 </TableRow>
@@ -221,16 +221,16 @@ export default function UsersManagementPage() {
                                                 <img
                                                     src={user.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`}
                                                     alt=""
-                                                    className="w-10 h-10 rounded-full bg-gray-100"
+                                                    className="w-10 h-10 rounded-full bg-slate-100"
                                                 />
                                                 <div>
-                                                    <div className="font-medium text-gray-900">{user.name}</div>
-                                                    <div className="text-sm text-gray-500">{user.email}</div>
+                                                    <div className="font-medium text-slate-900">{user.name}</div>
+                                                    <div className="text-sm text-slate-500">{user.email}</div>
                                                 </div>
                                             </div>
                                         </TableCell>
                                         <TableCell>
-                                            <Badge variant={user.role === 'admin' ? "default" : "secondary"} className={user.role === 'admin' ? 'bg-indigo-100 text-indigo-700 hover:bg-indigo-100' : 'bg-gray-100 text-gray-600'}>
+                                            <Badge variant={user.role === 'admin' ? "default" : "secondary"} className={user.role === 'admin' ? 'bg-slate-100 text-slate-900 hover:bg-slate-100' : 'bg-slate-100 text-slate-600'}>
                                                 {user.role === 'admin' ? (
                                                     <Shield className="w-3 h-3 mr-1" />
                                                 ) : null}
@@ -240,15 +240,15 @@ export default function UsersManagementPage() {
                                         <TableCell>
                                             <div className="flex flex-col">
                                                 <div className="flex items-center gap-2">
-                                                    <Badge className="bg-blue-600">{user.tier}</Badge>
+                                                    <Badge className="bg-slate-900">{user.tier}</Badge>
                                                     <span className="text-sm font-semibold">Lv.{user.level}</span>
                                                 </div>
-                                                <div className="text-xs text-gray-500 mt-1">
+                                                <div className="text-xs text-slate-500 mt-1">
                                                     {user.xp.toLocaleString()} XP • {user.rp?.toLocaleString() || 0} RP • {user.problems_solved} Solved
                                                 </div>
                                             </div>
                                         </TableCell>
-                                        <TableCell className="text-gray-500 text-sm">
+                                        <TableCell className="text-slate-500 text-sm">
                                             {new Date(user.createdAt).toLocaleDateString()}
                                         </TableCell>
                                         <TableCell className="text-right">
@@ -258,7 +258,7 @@ export default function UsersManagementPage() {
                                                         <MoreHorizontal className="h-4 w-4" />
                                                     </Button>
                                                 </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end" className="bg-white shadow-lg border border-gray-200">
+                                                <DropdownMenuContent align="end" className="bg-white shadow-sm border border-slate-200">
                                                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                                     <DropdownMenuSeparator />
                                                     <DropdownMenuItem
@@ -298,11 +298,11 @@ export default function UsersManagementPage() {
                     />
                     
                     {/* Sheet */}
-                    <div className="fixed inset-y-0 right-0 w-full max-w-md bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out flex flex-col">
-                        <div className="p-6 border-b flex justify-between items-center bg-gray-50">
+                    <div className="fixed inset-y-0 right-0 w-full max-w-md bg-white shadow-sm z-50 transform transition-transform duration-300 ease-in-out flex flex-col">
+                        <div className="p-6 border-b flex justify-between items-center bg-slate-50">
                             <div>
                                 <h3 className="font-bold text-lg">{selectedUser.name}</h3>
-                                <p className="text-sm text-gray-500">{selectedUser.email}</p>
+                                <p className="text-sm text-slate-500">{selectedUser.email}</p>
                             </div>
                             <Button variant="ghost" size="sm" onClick={() => setSelectedUser(null)}>✕</Button>
                         </div>
@@ -310,45 +310,45 @@ export default function UsersManagementPage() {
                         <div className="flex-1 overflow-y-auto p-6 space-y-8">
                             {/* Overview */}
                             <div>
-                                <h4 className="text-sm font-semibold text-gray-900 mb-3 uppercase tracking-wider">Global Progression</h4>
+                                <h4 className="text-sm font-semibold text-slate-900 mb-3 uppercase tracking-wider">Global Progression</h4>
                                 <div className="grid grid-cols-2 gap-4">
-                                    <div className="bg-blue-50 p-3 rounded-lg border border-blue-100">
-                                        <div className="text-xs text-blue-600 font-medium">Level</div>
+                                    <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                                        <div className="text-xs text-slate-700 font-medium">Level</div>
                                         <div className="text-lg font-bold">{selectedUser.level}</div>
                                     </div>
-                                    <div className="bg-indigo-50 p-3 rounded-lg border border-indigo-100">
-                                        <div className="text-xs text-indigo-600 font-medium">Tier</div>
+                                    <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                                        <div className="text-xs text-slate-700 font-medium">Tier</div>
                                         <div className="text-lg font-bold">{selectedUser.tier}</div>
                                     </div>
-                                    <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
-                                        <div className="text-xs text-gray-500 font-medium">Total XP</div>
+                                    <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                                        <div className="text-xs text-slate-500 font-medium">Total XP</div>
                                         <div className="text-lg font-bold">{selectedUser.xp.toLocaleString()}</div>
                                     </div>
-                                    <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
-                                        <div className="text-xs text-gray-500 font-medium">Total RP</div>
+                                    <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                                        <div className="text-xs text-slate-500 font-medium">Total RP</div>
                                         <div className="text-lg font-bold">{selectedUser.rp?.toLocaleString() || 0}</div>
                                     </div>
                                 </div>
                             </div>
 
                             {/* Manual Points Adjustment */}
-                            <div className="bg-yellow-50/50 p-4 rounded-xl border border-yellow-200">
+                            <div className="bg-yellow-50/50 p-4 rounded-lg border border-yellow-200">
                                 <h4 className="text-sm font-semibold text-yellow-800 mb-3 flex items-center gap-2">
                                     Adjust Points (Admin)
                                 </h4>
                                 <div className="space-y-3">
                                     <div className="flex gap-3">
                                         <div className="flex-1">
-                                            <label className="text-xs text-gray-600 mb-1 block">XP Change (+/-)</label>
+                                            <label className="text-xs text-slate-600 mb-1 block">XP Change (+/-)</label>
                                             <Input type="number" placeholder="e.g. 500" value={xpAdjust} onChange={e => setXpAdjust(e.target.value)} className="bg-white" />
                                         </div>
                                         <div className="flex-1">
-                                            <label className="text-xs text-gray-600 mb-1 block">RP Change (+/-)</label>
+                                            <label className="text-xs text-slate-600 mb-1 block">RP Change (+/-)</label>
                                             <Input type="number" placeholder="e.g. 50" value={rpAdjust} onChange={e => setRpAdjust(e.target.value)} className="bg-white" />
                                         </div>
                                     </div>
                                     <div>
-                                        <label className="text-xs text-gray-600 mb-1 block">Reason (Logged)</label>
+                                        <label className="text-xs text-slate-600 mb-1 block">Reason (Logged)</label>
                                         <Input placeholder="e.g. Event winner bonus" value={adjustReason} onChange={e => setAdjustReason(e.target.value)} className="bg-white" />
                                     </div>
                                     <Button onClick={handleAdjustPoints} className="w-full bg-yellow-600 hover:bg-yellow-700 text-white">Apply Adjustment</Button>
@@ -356,21 +356,21 @@ export default function UsersManagementPage() {
                             </div>
 
                             {isDetailsLoading ? (
-                                <div className="flex justify-center py-8"><Loader2 className="animate-spin text-indigo-500" /></div>
+                                <div className="flex justify-center py-8"><Loader2 className="animate-spin text-slate-500" /></div>
                             ) : userDetails ? (
                                 <>
                                     {/* Category Stats */}
                                     <div>
-                                        <h4 className="text-sm font-semibold text-gray-900 mb-3 uppercase tracking-wider">Domain Mastery</h4>
+                                        <h4 className="text-sm font-semibold text-slate-900 mb-3 uppercase tracking-wider">Domain Mastery</h4>
                                         {userDetails.categoryStats.length === 0 ? (
-                                            <p className="text-sm text-gray-500 italic">No category data yet.</p>
+                                            <p className="text-sm text-slate-500 italic">No category data yet.</p>
                                         ) : (
                                             <div className="space-y-2">
                                                 {userDetails.categoryStats.map((cat, i) => (
-                                                    <div key={i} className="flex justify-between items-center bg-gray-50 p-2 rounded border border-gray-100">
+                                                    <div key={i} className="flex justify-between items-center bg-slate-50 p-2 rounded border border-slate-100">
                                                         <span className="text-sm font-medium">{cat.category_name}</span>
                                                         <div className="flex items-center gap-2">
-                                                            <span className="text-xs text-gray-500">{cat.ranking_points} RP</span>
+                                                            <span className="text-xs text-slate-500">{cat.ranking_points} RP</span>
                                                             <Badge variant="outline" className="text-xs">{cat.tier}</Badge>
                                                         </div>
                                                     </div>
@@ -381,19 +381,19 @@ export default function UsersManagementPage() {
 
                                     {/* Activity Logs */}
                                     <div>
-                                        <h4 className="text-sm font-semibold text-gray-900 mb-3 uppercase tracking-wider">Recent Activity</h4>
+                                        <h4 className="text-sm font-semibold text-slate-900 mb-3 uppercase tracking-wider">Recent Activity</h4>
                                         {userDetails.logs.length === 0 ? (
-                                            <p className="text-sm text-gray-500 italic">No activity logs.</p>
+                                            <p className="text-sm text-slate-500 italic">No activity logs.</p>
                                         ) : (
-                                            <div className="space-y-3 relative before:absolute before:inset-y-0 before:left-2 before:w-px before:bg-gray-200 ml-2">
+                                            <div className="space-y-3 relative before:absolute before:inset-y-0 before:left-2 before:w-px before:bg-slate-200 ml-2">
                                                 {userDetails.logs.map((log) => (
                                                     <div key={log.id} className="relative pl-6">
-                                                        <div className="absolute left-1 top-1.5 w-2 h-2 rounded-full bg-indigo-500 ring-4 ring-white" />
-                                                        <div className="text-xs text-gray-500 mb-0.5">{new Date(log.created_at).toLocaleString()}</div>
-                                                        <div className="text-sm font-medium text-gray-900">
+                                                        <div className="absolute left-1 top-1.5 w-2 h-2 rounded-full bg-slate-700 ring-4 ring-white" />
+                                                        <div className="text-xs text-slate-500 mb-0.5">{new Date(log.created_at).toLocaleString()}</div>
+                                                        <div className="text-sm font-medium text-slate-900">
                                                             {log.action_type === 'PROBLEM_SOLVED' ? `Solved: ${log.problem_title}` : log.description}
                                                         </div>
-                                                        <div className="text-xs text-indigo-600 font-medium mt-0.5">
+                                                        <div className="text-xs text-slate-700 font-medium mt-0.5">
                                                             {log.xp_change > 0 ? `+${log.xp_change} XP` : log.xp_change < 0 ? `${log.xp_change} XP` : ''} 
                                                             {log.rp_change !== 0 ? ` • ${log.rp_change > 0 ? '+' : ''}${log.rp_change} RP` : ''}
                                                         </div>

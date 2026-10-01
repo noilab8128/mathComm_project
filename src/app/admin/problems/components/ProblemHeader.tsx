@@ -27,8 +27,8 @@ export function ProblemHeader({
         <>
             <header className="flex items-start justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-800">Problem Content Management</h1>
-                    <p className="text-sm text-gray-500">Create, edit, and manage math problems</p>
+                    <h1 className="text-2xl font-bold text-slate-800">Problem Content Management</h1>
+                    <p className="text-sm text-slate-500">Create, edit, and manage math problems</p>
                     {/* DB Connection Status */}
                     <div className="mt-2 flex items-center gap-2">
                         {isLoadingFromDb ? (
@@ -73,7 +73,7 @@ export function ProblemHeader({
                     </Button>
                     <Button
                         onClick={onNewProblem}
-                        className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
+                        className="bg-slate-900 hover:bg-slate-800 text-white gap-2"
                         size="sm"
                     >
                         <span className="text-lg leading-none">+</span>

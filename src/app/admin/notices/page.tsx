@@ -84,10 +84,10 @@ export default function NoticesManagementPage() {
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-lg border border-slate-200 shadow-sm">
                 <div>
-                    <h2 className="text-xl font-bold text-gray-900">Notices & Announcements</h2>
-                    <p className="text-sm text-gray-500 mt-1">Manage platform-wide announcements.</p>
+                    <h2 className="text-xl font-bold text-slate-900">Notices & Announcements</h2>
+                    <p className="text-sm text-slate-500 mt-1">Manage platform-wide announcements.</p>
                 </div>
 
                 <Dialog open={isEditorOpen} onOpenChange={(open) => {
@@ -95,7 +95,7 @@ export default function NoticesManagementPage() {
                     if (!open) resetEditor();
                 }}>
                     <DialogTrigger asChild>
-                        <Button className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm">
+                        <Button className="bg-slate-900 hover:bg-slate-800 text-white shadow-sm">
                             <Plus className="w-4 h-4 mr-2" />
                             New Notice
                         </Button>
@@ -118,7 +118,7 @@ export default function NoticesManagementPage() {
                                 <textarea
                                     value={content}
                                     onChange={(e) => setContent(e.target.value)}
-                                    className="w-full min-h-[300px] p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y font-mono text-sm"
+                                    className="w-full min-h-[300px] p-3 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-400 resize-y font-mono text-sm"
                                     placeholder="# Big Announcement\n\nWrite your content here..."
                                 />
                             </div>
@@ -128,7 +128,7 @@ export default function NoticesManagementPage() {
                                     id="publish-toggle"
                                     checked={isPublished}
                                     onChange={(e) => setIsPublished(e.target.checked)}
-                                    className="rounded text-indigo-600 focus:ring-indigo-500"
+                                    className="rounded text-slate-700 focus:ring-slate-400"
                                 />
                                 <label htmlFor="publish-toggle" className="text-sm font-medium cursor-pointer">
                                     Publish immediately
@@ -137,19 +137,19 @@ export default function NoticesManagementPage() {
                         </div>
                         <DialogFooter>
                             <Button variant="outline" onClick={() => setIsEditorOpen(false)}>Cancel</Button>
-                            <Button onClick={handleSaveNotice} className="bg-indigo-600 hover:bg-indigo-700">Save Notice</Button>
+                            <Button onClick={handleSaveNotice} className="bg-slate-900 hover:bg-slate-800">Save Notice</Button>
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                <div className="p-4 border-b border-gray-200 bg-gray-50/50">
+            <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+                <div className="p-4 border-b border-slate-200 bg-slate-50/50">
                     <div className="relative w-full max-w-sm">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                         <Input
                             placeholder="Search notices..."
-                            className="pl-9 bg-white border-gray-300"
+                            className="pl-9 bg-white border-slate-300"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
@@ -159,7 +159,7 @@ export default function NoticesManagementPage() {
                 <div className="overflow-x-auto">
                     <Table>
                         <TableHeader>
-                            <TableRow className="bg-gray-50">
+                            <TableRow className="bg-slate-50">
                                 <TableHead>Title</TableHead>
                                 <TableHead>Status</TableHead>
                                 <TableHead>Date Created</TableHead>
@@ -170,24 +170,24 @@ export default function NoticesManagementPage() {
                             {isLoading ? (
                                 <TableRow>
                                     <TableCell colSpan={4} className="h-32 text-center">
-                                        <Loader2 className="h-6 w-6 animate-spin mx-auto text-indigo-600 mb-2" />
-                                        <p className="text-sm text-gray-500">Loading notices...</p>
+                                        <Loader2 className="h-6 w-6 animate-spin mx-auto text-slate-700 mb-2" />
+                                        <p className="text-sm text-slate-500">Loading notices...</p>
                                     </TableCell>
                                 </TableRow>
                             ) : filteredNotices.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={4} className="h-32 text-center text-gray-500">
+                                    <TableCell colSpan={4} className="h-32 text-center text-slate-500">
                                         No notices found.
                                     </TableCell>
                                 </TableRow>
                             ) : (
                                 filteredNotices.map((notice) => (
                                     <TableRow key={notice.id}>
-                                        <TableCell className="font-medium text-gray-900">
+                                        <TableCell className="font-medium text-slate-900">
                                             {notice.title}
                                         </TableCell>
                                         <TableCell>
-                                            <Badge variant="outline" className={notice.is_published ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-100 text-gray-600 border-gray-200'}>
+                                            <Badge variant="outline" className={notice.is_published ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-600 border-slate-200'}>
                                                 {notice.is_published ? (
                                                     <><Eye className="w-3 h-3 mr-1" /> Published</>
                                                 ) : (
@@ -195,12 +195,12 @@ export default function NoticesManagementPage() {
                                                 )}
                                             </Badge>
                                         </TableCell>
-                                        <TableCell className="text-gray-500 text-sm">
+                                        <TableCell className="text-slate-500 text-sm">
                                             {new Date(notice.created_at).toLocaleDateString()}
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex items-center justify-end gap-2">
-                                                <Button variant="ghost" size="sm" onClick={() => handleEdit(notice)} className="text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700">
+                                                <Button variant="ghost" size="sm" onClick={() => handleEdit(notice)} className="text-slate-700 hover:bg-slate-50 hover:text-slate-900">
                                                     <Edit className="h-4 w-4" />
                                                 </Button>
                                                 <Button variant="ghost" size="sm" onClick={() => handleDelete(notice.id)} className="text-red-600 hover:bg-red-50 hover:text-red-700">

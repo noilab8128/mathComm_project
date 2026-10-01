@@ -49,32 +49,32 @@ export function ProblemFilters({
         <>
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                    <CardTitle className="text-xl font-semibold text-gray-800">
+                    <CardTitle className="text-xl font-semibold text-slate-800">
                         Problem List
-                        <span className="ml-2 text-sm font-normal text-gray-500">
+                        <span className="ml-2 text-sm font-normal text-slate-500">
                             ({totalCount})
                         </span>
                     </CardTitle>
 
                     {/* View Mode Switcher */}
-                    <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
+                    <div className="flex gap-1 bg-slate-100 p-1 rounded-lg">
                         <button
                             onClick={() => setViewMode("list")}
                             className={`px-3 py-1 text-xs font-medium rounded transition-all ${viewMode === "list"
-                                ? "bg-blue-600 text-white shadow-sm"
-                                : "text-gray-600 hover:text-gray-800"
+                                ? "bg-slate-900 text-white shadow-sm"
+                                : "text-slate-600 hover:text-slate-800"
                                 }`}
                         >
-                            📋 List
+                            List
                         </button>
                         <button
                             onClick={() => setViewMode("learning-path")}
                             className={`px-3 py-1 text-xs font-medium rounded transition-all ${viewMode === "learning-path"
-                                ? "bg-blue-600 text-white shadow-sm"
-                                : "text-gray-600 hover:text-gray-800"
+                                ? "bg-slate-900 text-white shadow-sm"
+                                : "text-slate-600 hover:text-slate-800"
                                 }`}
                         >
-                            🌳 Learning Path
+                            Learning path
                         </button>
                     </div>
                 </div>
@@ -83,7 +83,7 @@ export function ProblemFilters({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search by title, category, or ID..."
-                className="mt-2 p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                className="mt-2 p-2 border border-slate-300 rounded-md focus:ring-slate-400 focus:border-slate-400"
             />
 
             {/* Filters and Sort Controls */}
@@ -91,7 +91,7 @@ export function ProblemFilters({
                 <select
                     value={filterCategory}
                     onChange={(e) => setFilterCategory(e.target.value)}
-                    className="p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    className="p-2 border border-slate-300 rounded-md focus:ring-slate-400 focus:border-slate-400 text-sm"
                 >
                     <option value="all">All Categories</option>
                     <option value="algebra">Algebra</option>
@@ -117,7 +117,7 @@ export function ProblemFilters({
                 <select
                     value={filterDifficulty}
                     onChange={(e) => setFilterDifficulty(e.target.value)}
-                    className="p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    className="p-2 border border-slate-300 rounded-md focus:ring-slate-400 focus:border-slate-400 text-sm"
                 >
                     <option value="all">All Difficulties</option>
                     <option value="easy">Easy (1-3)</option>
@@ -129,7 +129,7 @@ export function ProblemFilters({
                 <select
                     value={filterStatus}
                     onChange={(e) => setFilterStatus(e.target.value)}
-                    className="p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    className="p-2 border border-slate-300 rounded-md focus:ring-slate-400 focus:border-slate-400 text-sm"
                 >
                     <option value="all">All Statuses</option>
                     <option value="pending-review">Pending AI Review</option>
