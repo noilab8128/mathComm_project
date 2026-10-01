@@ -2,21 +2,21 @@
 
 import React from "react";
 import Link from "next/link";
-import { Mail, MessageCircle, Heart, FileText, Shield } from "lucide-react";
+
 
 const Footer = () => {
     return (
-        <footer className="w-full bg-gradient-to-b from-gray-50 to-gray-100 border-t border-gray-200 mt-auto">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <footer className="mt-auto w-full border-t border-slate-200 bg-white">
+            <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+                <div className="grid grid-cols-2 gap-6 lg:grid-cols-4">
                     {/* About Section */}
                     <div>
-                        <h3 className="text-gray-900 font-bold text-lg mb-4">About</h3>
-                        <ul className="space-y-3">
+                        <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">About</h3>
+                        <ul className="space-y-2">
                             <li>
                                 <Link
                                     href="/about"
-                                    className="text-gray-600 hover:text-indigo-600 transition-colors text-sm flex items-center gap-2"
+                                    className="flex items-center gap-2 text-sm text-slate-600 transition-colors hover:text-slate-900"
                                 >
                                     About Math Quest
                                 </Link>
@@ -24,7 +24,7 @@ const Footer = () => {
                             <li>
                                 <Link
                                     href="/team"
-                                    className="text-gray-600 hover:text-indigo-600 transition-colors text-sm flex items-center gap-2"
+                                    className="flex items-center gap-2 text-sm text-slate-600 transition-colors hover:text-slate-900"
                                 >
                                     Our Team
                                 </Link>
@@ -32,7 +32,7 @@ const Footer = () => {
                             <li>
                                 <Link
                                     href="/partners"
-                                    className="text-gray-600 hover:text-indigo-600 transition-colors text-sm flex items-center gap-2"
+                                    className="flex items-center gap-2 text-sm text-slate-600 transition-colors hover:text-slate-900"
                                 >
                                     Partners
                                 </Link>
@@ -40,7 +40,7 @@ const Footer = () => {
                             <li>
                                 <Link
                                     href="/careers"
-                                    className="text-gray-600 hover:text-indigo-600 transition-colors text-sm flex items-center gap-2"
+                                    className="flex items-center gap-2 text-sm text-slate-600 transition-colors hover:text-slate-900"
                                 >
                                     Careers
                                 </Link>
@@ -50,14 +50,14 @@ const Footer = () => {
 
                     {/* Contact & Support Section */}
                     <div>
-                        <h3 className="text-gray-900 font-bold text-lg mb-4">Contact & Support</h3>
-                        <ul className="space-y-3">
+                        <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">Contact & Support</h3>
+                        <ul className="space-y-2">
                             <li>
                                 <Link
                                     href="/contact"
-                                    className="text-gray-600 hover:text-indigo-600 transition-colors text-sm flex items-center gap-2"
+                                    className="flex items-center gap-2 text-sm text-slate-600 transition-colors hover:text-slate-900"
                                 >
-                                    <Mail className="h-4 w-4" />
+                                    
                                     Help Center
                                 </Link>
                             </li>
@@ -65,16 +65,16 @@ const Footer = () => {
                                 {/* TODO: 향후 디스코드(Discord) 등 전용 커뮤니티 서버가 개설되면 해당 URL로 교체 예정. 현재는 contact 페이지로 연동 */}
                                 <Link
                                     href="/contact"
-                                    className="text-gray-600 hover:text-indigo-600 transition-colors text-sm flex items-center gap-2"
+                                    className="flex items-center gap-2 text-sm text-slate-600 transition-colors hover:text-slate-900"
                                 >
-                                    <MessageCircle className="h-4 w-4" />
+                                    
                                     Support Community
                                 </Link>
                             </li>
                             <li>
                                 <Link
                                     href="/contact"
-                                    className="text-gray-600 hover:text-indigo-600 transition-colors text-sm flex items-center gap-2"
+                                    className="flex items-center gap-2 text-sm text-slate-600 transition-colors hover:text-slate-900"
                                 >
                                     Contact Us
                                 </Link>
@@ -82,7 +82,7 @@ const Footer = () => {
                             <li>
                                 <Link
                                     href="/faq"
-                                    className="text-gray-600 hover:text-indigo-600 transition-colors text-sm flex items-center gap-2"
+                                    className="flex items-center gap-2 text-sm text-slate-600 transition-colors hover:text-slate-900"
                                 >
                                     FAQ
                                 </Link>
@@ -92,21 +92,21 @@ const Footer = () => {
 
                     {/* Vision & Mission Section */}
                     <div>
-                        <h3 className="text-gray-900 font-bold text-lg mb-4">Vision & Mission</h3>
-                        <ul className="space-y-3">
+                        <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">Vision & Mission</h3>
+                        <ul className="space-y-2">
                             <li>
                                 <Link
                                     href="/vision"
-                                    className="text-gray-600 hover:text-indigo-600 transition-colors text-sm flex items-center gap-2"
+                                    className="flex items-center gap-2 text-sm text-slate-600 transition-colors hover:text-slate-900"
                                 >
-                                    <Heart className="h-4 w-4" />
+                                    
                                     Our Vision
                                 </Link>
                             </li>
                             <li>
                                 <Link
                                     href="/vision"
-                                    className="text-gray-600 hover:text-indigo-600 transition-colors text-sm flex items-center gap-2"
+                                    className="flex items-center gap-2 text-sm text-slate-600 transition-colors hover:text-slate-900"
                                 >
                                     Our Mission
                                 </Link>
@@ -114,7 +114,7 @@ const Footer = () => {
                             <li>
                                 <Link
                                     href="/social-impact"
-                                    className="text-gray-600 hover:text-indigo-600 transition-colors text-sm flex items-center gap-2"
+                                    className="flex items-center gap-2 text-sm text-slate-600 transition-colors hover:text-slate-900"
                                 >
                                     Social Impact
                                 </Link>
@@ -122,7 +122,7 @@ const Footer = () => {
                             <li>
                                 <Link
                                     href="/roadmap"
-                                    className="text-gray-600 hover:text-indigo-600 transition-colors text-sm flex items-center gap-2"
+                                    className="flex items-center gap-2 text-sm text-slate-600 transition-colors hover:text-slate-900"
                                 >
                                     Roadmap
                                 </Link>
@@ -132,30 +132,30 @@ const Footer = () => {
 
                     {/* Terms & Privacy Section */}
                     <div>
-                        <h3 className="text-gray-900 font-bold text-lg mb-4">Terms & Privacy</h3>
-                        <ul className="space-y-3">
+                        <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">Terms & Privacy</h3>
+                        <ul className="space-y-2">
                             <li>
                                 <Link
                                     href="/terms"
-                                    className="text-gray-600 hover:text-indigo-600 transition-colors text-sm flex items-center gap-2"
+                                    className="flex items-center gap-2 text-sm text-slate-600 transition-colors hover:text-slate-900"
                                 >
-                                    <FileText className="h-4 w-4" />
+                                    
                                     Terms of Service
                                 </Link>
                             </li>
                             <li>
                                 <Link
                                     href="/privacy"
-                                    className="text-gray-600 hover:text-indigo-600 transition-colors text-sm flex items-center gap-2"
+                                    className="flex items-center gap-2 text-sm text-slate-600 transition-colors hover:text-slate-900"
                                 >
-                                    <Shield className="h-4 w-4" />
+                                    
                                     Privacy Policy
                                 </Link>
                             </li>
                             <li>
                                 <Link
                                     href="/cookie-policy"
-                                    className="text-gray-600 hover:text-indigo-600 transition-colors text-sm flex items-center gap-2"
+                                    className="flex items-center gap-2 text-sm text-slate-600 transition-colors hover:text-slate-900"
                                 >
                                     Cookie Policy
                                 </Link>
@@ -163,7 +163,7 @@ const Footer = () => {
                             <li>
                                 <Link
                                     href="/community-guidelines"
-                                    className="text-gray-600 hover:text-indigo-600 transition-colors text-sm flex items-center gap-2"
+                                    className="flex items-center gap-2 text-sm text-slate-600 transition-colors hover:text-slate-900"
                                 >
                                     Community Guidelines
                                 </Link>
@@ -173,11 +173,11 @@ const Footer = () => {
                 </div>
 
                 {/* Divider */}
-                <div className="border-t border-gray-300 mt-10 pt-8">
+                <div className="mt-8 border-t border-slate-200 pt-5">
                     <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                         {/* Logo and Copyright */}
                         <div className="flex items-center gap-3">
-                            <div className="relative w-8 h-8">
+                            <div className="relative h-6 w-6">
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img
                                     src="/noilab_logo.png"
@@ -185,7 +185,7 @@ const Footer = () => {
                                     className="object-contain w-full h-full mix-blend-multiply"
                                 />
                             </div>
-                            <div className="text-sm text-gray-600">
+                            <div className="text-xs text-slate-500">
                                 © {new Date().getFullYear()} noi.lab. All rights reserved.
                             </div>
                         </div>
@@ -196,7 +196,7 @@ const Footer = () => {
                                 href="https://x.com"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-gray-600 hover:text-indigo-600 transition-colors"
+                                className="text-slate-400 transition-colors hover:text-slate-900"
                                 aria-label="X (formerly Twitter)"
                             >
                                 <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
@@ -207,7 +207,7 @@ const Footer = () => {
                                 href="https://github.com"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-gray-600 hover:text-indigo-600 transition-colors"
+                                className="text-slate-400 transition-colors hover:text-slate-900"
                                 aria-label="GitHub"
                             >
                                 <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
@@ -218,7 +218,7 @@ const Footer = () => {
                                 href="https://linkedin.com"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-gray-600 hover:text-indigo-600 transition-colors"
+                                className="text-slate-400 transition-colors hover:text-slate-900"
                                 aria-label="LinkedIn"
                             >
                                 <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
@@ -229,7 +229,7 @@ const Footer = () => {
                                 href="https://youtube.com"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-gray-600 hover:text-indigo-600 transition-colors"
+                                className="text-slate-400 transition-colors hover:text-slate-900"
                                 aria-label="YouTube"
                             >
                                 <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
@@ -240,7 +240,7 @@ const Footer = () => {
                                 href="/contact" // TODO: 향후 디스코드(Discord) 서버 생성 시 해당 URL로 업데이트 예정
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-gray-600 hover:text-indigo-600 transition-colors"
+                                className="text-slate-400 transition-colors hover:text-slate-900"
                                 aria-label="Discord"
                             >
                                 <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">

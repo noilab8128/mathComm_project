@@ -1,46 +1,14 @@
 "use client";
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { BookOpen, Send, Lock, Unlock, Star, Loader2, Heart, GitBranch, ArrowUp, ArrowDown, ChevronRight, Sparkles, CheckCircle2, XCircle, AlertCircle, RefreshCcw } from "lucide-react";
+import { BookOpen, Send, Star, Loader2, Heart, GitBranch, CheckCircle2, AlertCircle, RefreshCcw } from "lucide-react";
 import MathPreview from "@/components/MathPreview";
+import { DifficultyBadge } from "@/components/DifficultyRating";
 import { getDifficultyLabel, calculateXP, type Problem as SupabaseProblem, problemHierarchiesAPI } from "@/lib/supabase";
 import { useLikes } from "@/hooks/useUserInteractions";
-
-// Custom scrollbar styles to ensure they are always visible
-const scrollbarStyles = `
-  .custom-scrollbar::-webkit-scrollbar {
-    width: 8px;
-  }
-  .custom-scrollbar::-webkit-scrollbar-track {
-    background: #f3f4f6;
-    border-radius: 4px;
-  }
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: #d1d5db;
-    border-radius: 4px;
-    border: 2px solid #f3f4f6;
-  }
-  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: #9ca3af;
-  }
-  .custom-scrollbar {
-    scrollbar-width: thin;
-    scrollbar-color: #d1d5db #f3f4f6;
-  }
-  @keyframes bounce-slow {
-    0%, 100% { transform: translateY(-15%); animation-timing-function: cubic-bezier(0.8,0,1,1); }
-    50% { transform: translateY(0); animation-timing-function: cubic-bezier(0,0,0.2,1); }
-  }
-  .animate-bounce-slow {
-    animation: bounce-slow 3s infinite;
-  }
-`;
 
 // -------------------------------------------------------
 // Types
@@ -121,51 +89,43 @@ export function convertSupabaseProblem(sp: SupabaseProblem): ProblemDisplay {
 // -------------------------------------------------------
 // Sub-component: Learning Path Item
 // -------------------------------------------------------
-function LearningPathItem({ 
-  title, 
-  isCurrent = false, 
-  isCompleted = false,
-  isLocked = false 
-}: { 
-  title: string; 
-  isCurrent?: boolean; 
-  isCompleted?: boolean;
-  isLocked?: boolean;
+function LearningPathItem({
+  title,
+  isCurrent = false,
+  isFinal = false,
+  isLast = false,
+}: {
+  title: string;
+  isCurrent?: boolean;
+  /** The top (final) problem of the path */
+  isFinal?: boolean;
+  /** Last row: no connector line below the marker */
+  isLast?: boolean;
 }) {
   return (
-    <div className={`relative flex flex-col items-center w-full group`}>
-      <div 
-        className={`w-full p-3 rounded-xl border-2 transition-all duration-300 flex items-center gap-3 ${
-          isCurrent 
-            ? 'border-blue-500 bg-blue-50 shadow-md transform scale-[1.02] z-10' 
-            : isCompleted
-            ? 'border-emerald-200 bg-emerald-50'
-            : 'border-gray-100 bg-white hover:border-blue-200 hover:shadow-sm'
+    <div className="relative flex gap-3">
+      {/* Marker + connector */}
+      <div className="relative flex w-4 flex-shrink-0 justify-center">
+        {!isLast && <span className="absolute top-5 bottom-[-4px] w-px bg-slate-200" aria-hidden />}
+        <span
+          className={`relative z-10 mt-1.5 h-3 w-3 rounded-full border ${
+            isCurrent ? "border-slate-900 bg-slate-900" : isFinal ? "border-slate-700 bg-white" : "border-slate-300 bg-white"
+          }`}
+          aria-hidden
+        />
+      </div>
+      <div
+        className={`mb-1 min-w-0 flex-1 rounded-md px-2.5 py-1.5 transition-colors ${
+          isCurrent ? "bg-white shadow-[0_0_0_1px_rgb(15_23_42)]" : "hover:bg-white"
         }`}
       >
-        <div 
-          className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold ${
-            isCurrent 
-              ? 'bg-blue-600 text-white ring-4 ring-blue-100' 
-              : isCompleted
-              ? 'bg-emerald-500 text-white'
-              : 'bg-gray-100 text-gray-500'
-          }`}
-        >
-          {isCompleted ? '✓' : ''}
+        <div className={`truncate text-[13px] ${isCurrent ? "font-semibold text-slate-900" : "text-slate-700"}`} title={title}>
+          {title}
         </div>
-        <div className="flex-1 min-w-0">
-          <div className={`text-sm font-bold truncate ${isCurrent ? 'text-blue-900 font-extrabold' : 'text-gray-700'}`}>
-            {title}
+        {(isCurrent || isFinal) && (
+          <div className="mt-0.5 text-[10px] font-medium uppercase tracking-[0.08em] text-slate-500">
+            {isCurrent ? "Current" : ""}{isCurrent && isFinal ? " · " : ""}{isFinal ? "Final problem" : ""}
           </div>
-          {isCurrent && (
-            <div className="text-[10px] text-blue-600 font-bold uppercase tracking-wider flex items-center gap-1 mt-0.5">
-              <Star className="h-2 w-2 fill-current" /> Current Step
-            </div>
-          )}
-        </div>
-        {!isCurrent && !isCompleted && isLocked && (
-          <Lock className="h-4 w-4 text-gray-300" />
         )}
       </div>
     </div>
@@ -287,8 +247,8 @@ function HierarchyPanel({
   if (loading) {
     return (
       <div className="flex flex-col items-center py-12 gap-3">
-        <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
-        <span className="text-[10px] text-gray-400 font-bold uppercase">Loading Roadmap...</span>
+        <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
+        <span className="text-xs text-slate-400">Loading path…</span>
       </div>
     );
   }
@@ -296,17 +256,17 @@ function HierarchyPanel({
   const nodes = routes.find((r) => r.id === activeRoute)?.nodes ?? [];
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex h-full flex-col">
       {routes.length > 1 && (
-        <div className="sticky top-0 z-20 mb-6">
-          <div className="text-[10px] font-extrabold text-blue-600 uppercase tracking-widest mb-1.5 px-0.5">Choose a Path</div>
+        <div className="sticky top-0 z-20 mb-4 bg-slate-50 pb-1">
+          <div className="mb-1.5 text-[11px] text-slate-500">This problem has {routes.length} solution paths</div>
           <Tabs value={activeRoute} onValueChange={setActiveRoute} className="w-full">
-            <TabsList className="bg-white/50 backdrop-blur-sm border border-gray-100 flex-wrap h-auto min-h-10 p-1 mb-2 grid grid-cols-2 gap-1 shadow-sm rounded-xl">
+            <TabsList className="grid h-auto w-full grid-cols-2 gap-0 rounded-md border border-slate-200 bg-white p-0">
               {routes.map((route, idx) => (
                 <TabsTrigger
                   key={route.id}
                   value={route.id}
-                  className="text-[10px] font-bold h-7 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-300 rounded-lg"
+                  className="h-8 rounded-none border-l border-slate-200 text-xs text-slate-600 first:border-l-0 data-[state=active]:bg-slate-900 data-[state=active]:text-white data-[state=active]:shadow-none"
                 >
                   Path {idx + 1}
                 </TabsTrigger>
@@ -316,32 +276,25 @@ function HierarchyPanel({
         </div>
       )}
 
-      <div className="flex flex-col items-center space-y-1 w-full max-w-[320px] mx-auto pb-10">
-        <div className="w-full cursor-pointer" onClick={() => onSelect(root)}>
-          <LearningPathItem title={root.title} isCurrent={root.id === currentId} />
-        </div>
+      <div className="w-full pb-6">
+        <button className="block w-full text-left" onClick={() => onSelect(root)}>
+          <LearningPathItem title={root.title} isCurrent={root.id === currentId} isFinal isLast={nodes.length === 0} />
+        </button>
 
         {nodes.length === 0 ? (
-          <div className="text-center py-12 px-6 mt-4 bg-white/30 backdrop-blur-sm rounded-2xl border border-dashed border-gray-200 w-full">
-            <GitBranch className="h-10 w-10 text-gray-200 mx-auto mb-4" />
-            <p className="text-[11px] text-gray-400 font-medium italic leading-relaxed">
-              This problem is a foundational step.<br/>Master it to unlock more complex challenges!
-            </p>
-          </div>
+          <p className="mt-4 rounded-md border border-dashed border-slate-200 px-4 py-6 text-center text-xs leading-relaxed text-slate-500">
+            No easier steps are linked to this problem.
+          </p>
         ) : (
-          nodes.map(({ problem, depth }) => (
-            <React.Fragment key={problem.id}>
-              <div className="flex flex-col items-center py-2">
-                <ArrowUp className="h-5 w-5 text-blue-500" />
-              </div>
-              <div
-                className="w-full cursor-pointer"
-                style={{ paddingLeft: `${(depth - 1) * 16}px` }}
-                onClick={() => onSelect(problem)}
-              >
-                <LearningPathItem title={problem.title} isCurrent={problem.id === currentId} />
-              </div>
-            </React.Fragment>
+          nodes.map(({ problem, depth }, i) => (
+            <button
+              key={problem.id}
+              className="block w-full text-left"
+              style={{ paddingLeft: `${(depth - 1) * 14}px` }}
+              onClick={() => onSelect(problem)}
+            >
+              <LearningPathItem title={problem.title} isCurrent={problem.id === currentId} isLast={i === nodes.length - 1} />
+            </button>
           ))
         )}
       </div>
@@ -499,216 +452,204 @@ export function ProblemDialog({ problem: initialProblem }: { problem: ProblemDis
   }, [currentProblem?.id, currentProblem?.content]);
 
   return (
-    <DialogContent className="max-w-none w-[98vw] sm:max-w-[1400px] h-[90vh] bg-white border-2 border-gray-200 shadow-2xl overflow-hidden flex flex-col p-0">
-      <style dangerouslySetInnerHTML={{ __html: scrollbarStyles }} />
+    <DialogContent className="flex h-[90vh] w-[98vw] max-w-none flex-col overflow-hidden rounded-lg border border-slate-200 bg-white p-0 shadow-xl sm:max-w-[1400px]">
       <div className="flex h-full overflow-hidden">
         {/* Main Problem/Solution Column (Left) */}
-        <div className="flex-1 flex flex-col min-w-0 border-r border-gray-200">
-          <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
-              <DialogHeader className="pb-4">
-                <div className="flex items-center justify-between gap-4">
-                  <DialogTitle className="flex items-center gap-2 text-lg font-bold text-gray-800">
+        <div className="flex min-w-0 flex-1 flex-col">
+          <div className="scroll-thin flex-1 overflow-y-auto px-8 py-7">
+              <DialogHeader className="space-y-0 pb-3 pr-8 text-left">
+                {currentProblem.category_path && (
+                  <div className="mb-1.5 text-xs text-slate-500">{currentProblem.category_path.split(" > ").join(" › ")}</div>
+                )}
+                <div className="flex items-start justify-between gap-4">
+                  <DialogTitle className="text-xl font-semibold leading-snug tracking-tight text-slate-900">
                     {currentProblem.title}
-                    {currentProblem.unlocked ? <Unlock className="h-3.5 w-3.5 text-blue-600" /> : <Lock className="h-3.5 w-3.5 text-red-500" />}
                   </DialogTitle>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => toggleLike(currentProblem.id)}
-                    className={`gap-2 ${likedIds.has(currentProblem.id) ? "text-pink-600 bg-pink-50" : "text-gray-500 hover:bg-gray-100"}`}
+                    aria-pressed={likedIds.has(currentProblem.id)}
+                    className={`h-8 flex-shrink-0 gap-1.5 rounded-md px-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900 ${likedIds.has(currentProblem.id) ? "text-slate-900" : ""}`}
                   >
-                    <Heart className={`h-5 w-5 ${likedIds.has(currentProblem.id) ? "fill-current" : ""}`} />
-                    <span className="font-semibold">{currentProblem.likes_count ?? 0}</span>
+                    <Heart className={`h-4 w-4 ${likedIds.has(currentProblem.id) ? "fill-current" : ""}`} />
+                    <span className="tnum font-mono text-xs">{currentProblem.likes_count ?? 0}</span>
                   </Button>
                 </div>
               </DialogHeader>
 
-              {currentProblem.category_path && (
-                <div className="text-sm text-gray-500 mb-4 font-medium">Topic: {currentProblem.category_path}</div>
-              )}
-
-              <div className="flex flex-wrap gap-2 text-xs mb-8">
-                <Badge className="bg-blue-600 text-white px-2.5 py-0.5">XP {currentProblem.xp}</Badge>
-                <Badge variant="outline" className="border-gray-300 text-gray-700 px-2.5 py-0.5">{currentProblem.difficulty}</Badge>
-                {currentProblem.tags?.map((t: string, idx: number) => (
-                  <Badge key={`${currentProblem.id}-tag-${idx}`} variant="secondary" className="bg-gray-100 text-gray-700 px-2.5 py-0.5">{t}</Badge>
-                ))}
-              </div>
-
-              <div className="mb-10 bg-gray-50 rounded-2xl p-6 border border-gray-100 shadow-sm">
-                <div className="flex items-center gap-2 mb-4 text-gray-400">
-                  <BookOpen className="h-4 w-4" />
-                  <span className="text-xs font-bold uppercase tracking-wider">The Problem</span>
-                </div>
-                {problemContentLoading ? (
-                  <div className="flex items-center gap-3 text-gray-400">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span className="text-sm">Rendering LaTeX...</span>
-                  </div>
-                ) : problemHtml ? (
-                  <MathPreview html={problemHtml} className="text-gray-800 text-sm leading-relaxed" />
-                ) : (
-                  <div className="text-gray-400 italic">No problem content available.</div>
+              <div className="mb-6 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-b border-slate-100 pb-4 text-xs text-slate-500">
+                {currentProblem.difficulty_score !== undefined && <DifficultyBadge difficulty={currentProblem.difficulty_score} />}
+                <span className="tnum font-mono">{currentProblem.xp} XP</span>
+                {currentProblem.source && <span>Source: {currentProblem.source}</span>}
+                {currentProblem.tags && currentProblem.tags.length > 0 && (
+                  <span className="flex flex-wrap gap-1">
+                    {currentProblem.tags.map((t: string, idx: number) => (
+                      <span key={`${currentProblem.id}-tag-${idx}`} className="rounded border border-slate-200 px-1.5 py-px text-[11px] text-slate-500">{t}</span>
+                    ))}
+                  </span>
                 )}
               </div>
 
+              <section aria-label="Problem statement" className="mb-8 border-l-2 border-slate-900 pl-5">
+                <div className="mb-2 text-[11px] font-medium uppercase tracking-[0.08em] text-slate-500">Problem</div>
+                {problemContentLoading ? (
+                  <div className="flex items-center gap-2 text-slate-400">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span className="text-sm">Rendering…</span>
+                  </div>
+                ) : problemHtml ? (
+                  <MathPreview html={problemHtml} className="font-serif text-[17px] leading-[1.7] text-slate-900" />
+                ) : (
+                  <div className="italic text-slate-400">No problem content available.</div>
+                )}
+              </section>
+
               <div className="flex flex-col gap-4">
                 <Tabs value={tab} onValueChange={(v) => setTab(v as "write" | "auto")} className="w-full">
-                  <TabsList className="bg-gray-100 p-1 mb-2 h-10 w-fit">
-                    <TabsTrigger value="write" className="px-4 h-8 text-xs data-[state=active]:bg-white data-[state=active]:shadow-sm">Solution Board</TabsTrigger>
-                    <TabsTrigger value="auto" className="px-4 h-8 text-xs data-[state=active]:bg-white data-[state=active]:shadow-sm">Numerical Check</TabsTrigger>
+                  <TabsList className="mb-4 h-auto w-full justify-start gap-1 rounded-none border-b border-slate-200 bg-transparent p-0">
+                    <TabsTrigger value="write" className="-mb-px h-auto flex-none rounded-none border-0 border-b-2 border-transparent px-3 py-2 text-sm font-normal text-slate-500 data-[state=active]:border-slate-900 data-[state=active]:bg-transparent data-[state=active]:font-medium data-[state=active]:text-slate-900 data-[state=active]:shadow-none">Written solution</TabsTrigger>
+                    <TabsTrigger value="auto" className="-mb-px h-auto flex-none rounded-none border-0 border-b-2 border-transparent px-3 py-2 text-sm font-normal text-slate-500 data-[state=active]:border-slate-900 data-[state=active]:bg-transparent data-[state=active]:font-medium data-[state=active]:text-slate-900 data-[state=active]:shadow-none">Short answer</TabsTrigger>
                   </TabsList>
 
                   <TabsContent value="write" className="mt-0 outline-none">
                     {showGradingResult && gradingResult ? (
-                      <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        <div className={`rounded-3xl p-8 mb-8 border-2 ${gradingResult.isCorrect ? 'bg-emerald-50 border-emerald-200' : 'bg-blue-50 border-blue-200'}`}>
-                          <div className="flex items-start justify-between mb-8">
-                            <div>
-                               <div className="flex items-center gap-3 mb-2">
-                                  {gradingResult.isCorrect ? (
-                                    <CheckCircle2 className="h-8 w-8 text-emerald-500" />
-                                  ) : (
-                                    <Sparkles className="h-8 w-8 text-blue-500" />
+                      <div className="rounded-md border border-slate-200">
+                        <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 px-5 py-4">
+                          <div className="max-w-2xl">
+                            <div className="flex items-center gap-2">
+                              {gradingResult.isCorrect ? (
+                                <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                              ) : (
+                                <AlertCircle className="h-4 w-4 text-amber-600" />
+                              )}
+                              <h3 className="text-sm font-semibold text-slate-900">
+                                {gradingResult.isCorrect ? "Correct" : "Not yet correct"}
+                              </h3>
+                            </div>
+                            <p className="mt-1.5 text-sm leading-relaxed text-slate-600">{gradingResult.overallSummary}</p>
+                          </div>
+                          <div className="text-right">
+                            <div className="tnum text-2xl font-semibold text-slate-900">
+                              {gradingResult.totalScore}<span className="text-base text-slate-400"> / {gradingResult.maxScore}</span>
+                            </div>
+                            <div className="text-[11px] text-slate-500">Total score</div>
+                          </div>
+                        </div>
+
+                        <table className="w-full text-sm">
+                          <tbody className="divide-y divide-slate-100">
+                            {Object.entries(gradingResult.scores).map(([key, score]) => (
+                              <tr key={key}>
+                                <td className="px-5 py-2 capitalize text-slate-600">{key.replace(/_/g, " ")}</td>
+                                <td className="w-40 px-5 py-2">
+                                  <div className="h-1 bg-slate-100">
+                                    <div className="h-1 bg-slate-800" style={{ width: `${Math.max(0, Math.min(10, Number(score))) * 10}%` }} />
+                                  </div>
+                                </td>
+                                <td className="tnum w-16 px-5 py-2 text-right font-mono text-slate-900">{score}<span className="text-slate-400">/10</span></td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+
+                        {gradingResult.feedback.length > 0 && (
+                          <div className="border-t border-slate-200 px-5 py-4">
+                            <div className="mb-3 text-[11px] font-medium uppercase tracking-[0.08em] text-slate-500">Feedback</div>
+                            <ol className="space-y-4">
+                              {gradingResult.feedback.map((f, idx) => (
+                                <li key={idx} className="text-sm">
+                                  <div className="font-medium text-slate-900">{f.criterion}</div>
+                                  <p className="mt-0.5 leading-relaxed text-slate-600">{f.comment}</p>
+                                  {f.hint && (
+                                    <p className="mt-2 border-l-2 border-slate-300 pl-3 text-[13px] leading-relaxed text-slate-600">
+                                      <span className="font-medium text-slate-800">Hint. </span>{f.hint}
+                                    </p>
                                   )}
-                                  <h3 className="text-2xl font-black text-gray-900">
-                                    {gradingResult.isCorrect ? "Mastered!" : "AI Analysis Complete"}
-                                  </h3>
-                               </div>
-                               <p className="text-gray-600 font-medium max-w-xl leading-relaxed">
-                                 {gradingResult.overallSummary}
-                               </p>
-                            </div>
-                            <div className="text-right">
-                               <div className="text-4xl font-black text-gray-900">{gradingResult.totalScore}<span className="text-xl text-gray-400">/{gradingResult.maxScore}</span></div>
-                               <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Total Performance</div>
-                            </div>
+                                </li>
+                              ))}
+                            </ol>
                           </div>
+                        )}
 
-                          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
-                             {Object.entries(gradingResult.scores).map(([key, score]) => (
-                               <div key={key} className="bg-white/80 backdrop-blur-sm p-4 rounded-2xl border border-white shadow-sm">
-                                  <div className="text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-1 truncate">
-                                    {key.replace('_', ' ')}
-                                  </div>
-                                  <div className="flex items-end gap-1">
-                                    <span className="text-xl font-black text-gray-800">{score}</span>
-                                    <span className="text-[10px] text-gray-400 font-bold mb-1">/10</span>
-                                  </div>
-                               </div>
-                             ))}
-                          </div>
-
-                          <div className="space-y-4">
-                             <div className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
-                               <ChevronRight className="h-4 w-4" /> Actionable Feedback
-                             </div>
-                             <div className="grid gap-3">
-                                {gradingResult.feedback.map((f, idx) => (
-                                  <div key={idx} className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-md transition-shadow group">
-                                     <div className="flex items-start gap-4">
-                                        <div className="h-8 w-8 rounded-full bg-gray-50 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-50 transition-colors">
-                                          <AlertCircle className="h-4 w-4 text-gray-400 group-hover:text-blue-500" />
-                                        </div>
-                                        <div className="flex-1">
-                                           <div className="text-[10px] font-extrabold text-blue-600 uppercase tracking-widest mb-1">{f.criterion}</div>
-                                           <div className="text-sm text-gray-700 leading-relaxed font-medium mb-3">{f.comment}</div>
-                                           {f.hint && (
-                                             <div className="bg-orange-50 border border-orange-100 rounded-xl p-3 flex items-start gap-3">
-                                                <Star className="h-4 w-4 text-orange-400 mt-0.5 fill-current" />
-                                                <div className="text-xs text-orange-800 font-medium">
-                                                  <span className="font-bold uppercase text-[9px] block mb-0.5">Scaffolded Hint</span>
-                                                  {f.hint}
-                                                </div>
-                                             </div>
-                                           )}
-                                        </div>
-                                     </div>
-                                  </div>
-                                ))}
-                             </div>
-                          </div>
-                          
-                          <div className="mt-8 flex justify-center">
-                             <Button 
-                               variant="outline" 
-                               onClick={() => setShowGradingResult(false)}
-                               className="bg-white border-2 border-gray-200 text-gray-600 font-bold px-8 h-12 rounded-2xl hover:bg-gray-50 hover:border-blue-200 hover:text-blue-600 transition-all gap-2"
-                             >
-                               <RefreshCcw className="h-4 w-4" /> Return to Editor
-                             </Button>
-                          </div>
+                        <div className="flex justify-end border-t border-slate-200 px-5 py-3">
+                          <Button
+                            variant="outline"
+                            onClick={() => setShowGradingResult(false)}
+                            className="h-9 gap-2 rounded-md border-slate-300 text-slate-700 hover:text-slate-900"
+                          >
+                            <RefreshCcw className="h-4 w-4" /> Back to editor
+                          </Button>
                         </div>
                       </div>
                     ) : (
                       <>
                         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 items-stretch">
                           {/* Editor */}
-                          <div className="flex flex-col h-[300px] rounded-2xl border border-gray-200 bg-white overflow-hidden shadow-sm focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent transition-all">
-                            <div className="bg-gray-50 border-b border-gray-200 px-3 py-2 flex justify-between items-center">
-                              <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">LaTeX Editor</span>
+                          <div className="flex h-[300px] flex-col overflow-hidden rounded-md border border-slate-200 bg-white transition-colors focus-within:border-slate-400">
+                            <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-3 py-1.5">
+                              <span className="text-xs text-slate-500">Your solution · LaTeX</span>
                             </div>
                             <textarea
-                              className="flex-1 w-full p-4 text-[13px] font-mono leading-relaxed text-gray-800 resize-none outline-none bg-white"
-                              placeholder="Write your proof here using LaTeX..."
+                              className="w-full flex-1 resize-none bg-white p-4 font-mono text-[13px] leading-relaxed text-slate-800 outline-none placeholder:text-slate-400"
+                              placeholder="Write your solution. Use $...$ for math, e.g. $x^2 + 1$."
                               value={solutionDraft}
                               onChange={(e) => setSolutionDraft(e.target.value)}
                             />
                           </div>
     
                           {/* Preview */}
-                          <div className="flex flex-col h-[300px] rounded-2xl border border-gray-200 bg-white overflow-hidden shadow-sm">
-                            <div className="bg-gray-50 border-b border-gray-200 px-3 py-2 flex justify-between items-center">
-                              <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Live Preview</span>
-                              <Badge variant="outline" className="text-[9px] font-mono">{previewHeaderStatus}</Badge>
+                          <div className="flex h-[300px] flex-col overflow-hidden rounded-md border border-slate-200 bg-white">
+                            <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-3 py-1.5">
+                              <span className="text-xs text-slate-500">Preview</span>
+                              <span className="text-[11px] text-slate-400">{previewHeaderStatus}</span>
                             </div>
-                            <div className="flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-gray-200">
-                              {previewStatus === "loading" && <div className="flex items-center gap-2 text-gray-400 text-sm"><Loader2 className="h-4 w-4 animate-spin" /> Rendering...</div>}
+                            <div className="scroll-thin flex-1 overflow-y-auto p-4 font-serif text-[15px] leading-relaxed text-slate-900">
+                              {previewStatus === "loading" && <div className="flex items-center gap-2 font-sans text-sm text-slate-400"><Loader2 className="h-4 w-4 animate-spin" /> Rendering…</div>}
                               {previewStatus === "error" && previewError && (
-                                <div className="p-3 bg-red-50 border border-red-100 text-red-600 text-xs rounded-lg">{previewError}</div>
+                                <div className="rounded-md border border-red-200 bg-red-50 p-3 font-sans text-xs text-red-700">{previewError}</div>
                               )}
                               {previewStatus === "ready" && (
                                 <>
                                   {previewSource !== solutionDraft && (
-                                    <div className="mb-4 p-2 bg-amber-50 border border-amber-100 text-amber-600 text-[10px] rounded text-center">Content changed - refresh needed</div>
+                                    <div className="mb-4 font-sans text-[11px] text-amber-700">Edited since last preview — click Preview to update.</div>
                                   )}
                                   <MathPreview html={previewHtml} />
                                 </>
                               )}
                               {previewStatus === "idle" && (
-                                <div className="h-full flex flex-col items-center justify-center text-gray-400 gap-3 py-10">
-                                  <GitBranch className="h-10 w-10 opacity-20" />
-                                  <p className="text-sm">Click preview to see your progress</p>
+                                <div className="flex h-full items-center justify-center py-10 font-sans text-sm text-slate-400">
+                                  Click Preview to render your solution.
                                 </div>
                               )}
                             </div>
                           </div>
                         </div>
 
-                        <div className="mt-8 flex items-center justify-between border-t border-gray-100 pt-8">
+                        <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
                           <div className="flex gap-3">
                             <Button 
                               onClick={handleSubmitSolution}
                               disabled={isGrading || !solutionDraft.trim()}
-                              className="bg-blue-600 hover:bg-blue-700 text-white px-8 h-12 shadow-md shadow-blue-100 min-w-[180px]"
+                              className="h-9 min-w-[150px] rounded-md bg-slate-900 px-5 text-sm text-white hover:bg-slate-800"
                             >
                               {isGrading ? (
                                 <>
-                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Grading...
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Grading…
                                 </>
                               ) : (
                                 <>
-                                  Submit Solution <Send className="ml-2 h-4 w-4" />
+                                  Submit solution <Send className="ml-2 h-3.5 w-3.5" />
                                 </>
                               )}
                             </Button>
-                            <Button variant="outline" className="px-6 h-12 border-gray-200 hover:bg-gray-50" onClick={handlePreviewClick} disabled={previewStatus === "loading" || isGrading}>
-                              {previewStatus === "loading" ? "Processing..." : "Preview"}
+                            <Button variant="outline" className="h-9 rounded-md border-slate-300 px-4 text-sm text-slate-700 hover:text-slate-900" onClick={handlePreviewClick} disabled={previewStatus === "loading" || isGrading}>
+                              {previewStatus === "loading" ? "Rendering…" : "Preview"}
                             </Button>
                           </div>
                           <div className="flex gap-2">
-                            <Button variant="ghost" size="sm" className="text-gray-500 hover:text-blue-600"><Star className="h-4 w-4 mr-1.5" /> Hint (-10 XP)</Button>
-                            <Button variant="ghost" size="sm" className="text-gray-500 hover:text-blue-600"><BookOpen className="h-4 w-4 mr-1.5" /> Theory</Button>
+                            <Button variant="ghost" size="sm" className="h-9 rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-900"><Star className="mr-1.5 h-4 w-4" /> Hint <span className="ml-1 text-slate-400">(−10 XP)</span></Button>
+                            <Button variant="ghost" size="sm" className="h-9 rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-900"><BookOpen className="mr-1.5 h-4 w-4" /> Theory</Button>
                           </div>
                         </div>
                       </>
@@ -716,11 +657,12 @@ export function ProblemDialog({ problem: initialProblem }: { problem: ProblemDis
                   </TabsContent>
 
                   <TabsContent value="auto" className="mt-0">
-                    <div className="bg-gray-50 border border-gray-200 rounded-2xl p-8 max-w-md shadow-sm">
-                      <h4 className="text-sm font-bold text-gray-800 mb-4">Numerical Answer</h4>
-                      <div className="flex flex-col gap-4">
-                        <Input placeholder="Enter your answer (e.g. 42)" className="h-12 border-gray-200 focus:ring-blue-500" />
-                        <Button className="bg-blue-600 hover:bg-blue-700 text-white h-12">Verify Answer</Button>
+                    <div className="max-w-md">
+                      <label className="text-sm font-medium text-slate-900" htmlFor="short-answer">Your answer</label>
+                      <p className="mt-0.5 text-xs text-slate-500">For problems with a single number as the answer.</p>
+                      <div className="mt-3 flex gap-2">
+                        <Input id="short-answer" inputMode="numeric" placeholder="e.g. 42" className="tnum h-9 rounded-md border-slate-300 font-mono focus-visible:ring-slate-400" />
+                        <Button className="h-9 rounded-md bg-slate-900 px-4 text-sm text-white hover:bg-slate-800">Check</Button>
                       </div>
                     </div>
                   </TabsContent>
@@ -730,37 +672,31 @@ export function ProblemDialog({ problem: initialProblem }: { problem: ProblemDis
         </div>
 
         {/* Learning Path Column (Right) */}
-        <div className="w-[380px] flex flex-col bg-[#F9FAFB] min-h-0 flex-shrink-0 border-l border-gray-200">
-          <div className="p-6 border-b border-gray-200 bg-white">
-            <div className="flex items-center justify-between mb-1">
-              <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                <GitBranch className="h-5 w-5 text-indigo-500" />
-                Learning Path
-              </h3>
-              <Badge className="bg-violet-600 text-[10px] h-5 px-2">Hierarchical</Badge>
-            </div>
-            <p className="text-xs text-gray-500 font-medium">Master this topic step-by-step</p>
+        <div className="flex min-h-0 w-[340px] flex-shrink-0 flex-col border-l border-slate-200 bg-slate-50">
+          <div className="border-b border-slate-200 px-5 py-4">
+            <h3 className="flex items-center gap-2 text-[13px] font-semibold text-slate-900">
+              <GitBranch className="h-4 w-4 text-slate-400" />
+              Learning path
+            </h3>
+            <p className="mt-0.5 text-xs text-slate-500">From the final problem down to the first step</p>
           </div>
-          <div className="flex-1 overflow-y-auto p-6 custom-scrollbar bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:20px_20px]">
+          <div className="scroll-thin flex-1 overflow-y-auto px-4 py-4">
             <HierarchyPanel
                 openedProblem={initialProblem}
                 currentId={currentProblem.id}
                 onSelect={setCurrentProblem}
               />
           </div>
-          <div className="p-6 border-t border-gray-200 bg-white bg-opacity-90 backdrop-blur-sm">
-           <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-4">Path Stats</div>
-           <div className="grid grid-cols-2 gap-4">
-             <div className="flex flex-col p-3 rounded-xl bg-blue-50/50 border border-blue-100">
-               <span className="text-lg font-black text-blue-700">{currentProblem.completes_count ?? 0}</span>
-               <span className="text-[9px] text-blue-500 font-bold uppercase tracking-wider">Completed</span>
-             </div>
-             <div className="flex flex-col p-3 rounded-xl bg-orange-50/50 border border-orange-100">
-               <span className="text-lg font-black text-orange-700">{currentProblem.starts_count ?? 0}</span>
-               <span className="text-[9px] text-orange-500 font-bold uppercase tracking-wider">Enrolled</span>
-             </div>
-           </div>
-          </div>
+          <dl className="tnum grid grid-cols-2 border-t border-slate-200 bg-white text-center">
+            <div className="border-r border-slate-200 px-4 py-3">
+              <dt className="text-[11px] text-slate-500">Solved by</dt>
+              <dd className="text-base font-semibold text-slate-900">{currentProblem.completes_count ?? 0}</dd>
+            </div>
+            <div className="px-4 py-3">
+              <dt className="text-[11px] text-slate-500">Attempted by</dt>
+              <dd className="text-base font-semibold text-slate-900">{currentProblem.starts_count ?? 0}</dd>
+            </div>
+          </dl>
         </div>
 
       </div>

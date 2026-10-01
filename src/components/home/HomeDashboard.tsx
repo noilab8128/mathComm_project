@@ -138,27 +138,27 @@ export default function HomeDashboard() {
   if (data.isLoading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
-        <Loader2 className="h-7 w-7 animate-spin text-blue-600" />
+        <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
       </div>
     );
   }
 
   return (
     <div className="mx-auto w-full max-w-7xl p-4 sm:p-6">
-      <header className="mb-5">
-        <h1 className="text-2xl font-bold text-gray-800">
-          {stage === "new" ? "Welcome to Math Quest" : "Welcome back"}
-          {firstName ? `, ${firstName}` : ""}
+      <header className="mb-6">
+        <h1 className="text-xl font-semibold tracking-tight text-slate-900">
+          {stage === "new" ? "Welcome to Math Quest" : "Dashboard"}
+          {stage === "new" && firstName ? `, ${firstName}` : ""}
         </h1>
-        <p className="mt-1 text-sm text-gray-500">
+        <p className="mt-1 text-sm text-slate-500">
           {stage === "new"
             ? "Start with a short warm-up. Each ladder climbs one idea at a time."
-            : `${data.solvedCount} solved so far. Here is what to do next.`}
+            : `${firstName ? `${firstName} · ` : ""}${data.solvedCount} solved`}
         </p>
       </header>
 
       {data.loadError && (
-        <div className="mb-5 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{data.loadError}</div>
+        <div className="mb-5 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">{data.loadError}</div>
       )}
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
@@ -171,8 +171,8 @@ export default function HomeDashboard() {
             onBrowseLadders={() => selectTab("ladders")}
           />
 
-          <section className="rounded-lg border border-gray-200 bg-white">
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-4 pt-3">
+          <section className="rounded-md border border-slate-200 bg-white">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4 pt-2">
               <div role="tablist" aria-label="Problems" className="flex gap-1">
                 {([
                   ["for-you", "For you"],
@@ -184,10 +184,10 @@ export default function HomeDashboard() {
                     role="tab"
                     aria-selected={tab === key}
                     onClick={() => selectTab(key)}
-                    className={`-mb-px border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
+                    className={`-mb-px border-b-2 px-3 py-2.5 text-sm transition-colors ${
                       tab === key
-                        ? "border-blue-600 text-gray-800"
-                        : "border-transparent text-gray-500 hover:text-gray-800"
+                        ? "border-slate-900 font-medium text-slate-900"
+                        : "border-transparent text-slate-500 hover:text-slate-900"
                     }`}
                   >
                     {label}
@@ -196,26 +196,27 @@ export default function HomeDashboard() {
               </div>
 
               {tab === "for-you" && stage !== "new" && (
-                <div className="flex flex-wrap items-center gap-1.5 pb-2">
-                  {(["all", "Easy", "Medium", "Hard+"] as LevelFilter[]).map((f) => (
-                    <button
-                      key={f}
-                      onClick={() => setLevelFilter(f)}
-                      className={`rounded-full border px-2.5 py-0.5 text-xs ${
-                        levelFilter === f
-                          ? "border-blue-600 bg-blue-600 text-white"
-                          : "border-gray-200 text-gray-600 hover:bg-gray-100"
-                      }`}
-                    >
-                      {f === "all" ? "All levels" : f}
-                    </button>
-                  ))}
-                  <label className="ml-1 flex cursor-pointer items-center gap-1 text-xs text-gray-600">
+                <div className="flex flex-wrap items-center gap-3 pb-2">
+                  <div className="flex overflow-hidden rounded-md border border-slate-200" role="group" aria-label="Level">
+                    {(["all", "Easy", "Medium", "Hard+"] as LevelFilter[]).map((f) => (
+                      <button
+                        key={f}
+                        onClick={() => setLevelFilter(f)}
+                        aria-pressed={levelFilter === f}
+                        className={`border-l border-slate-200 px-2.5 py-1 text-xs first:border-l-0 ${
+                          levelFilter === f ? "bg-slate-900 text-white" : "bg-white text-slate-600 hover:bg-slate-50"
+                        }`}
+                      >
+                        {f === "all" ? "All" : f}
+                      </button>
+                    ))}
+                  </div>
+                  <label className="flex cursor-pointer items-center gap-1.5 text-xs text-slate-600">
                     <input
                       type="checkbox"
                       checked={hideSolved}
                       onChange={(e) => setHideSolved(e.target.checked)}
-                      className="h-3.5 w-3.5 accent-blue-600"
+                      className="h-3.5 w-3.5 accent-slate-900"
                     />
                     Hide solved
                   </label>
@@ -223,11 +224,11 @@ export default function HomeDashboard() {
               )}
             </div>
 
-            <div className="p-4">
+            <div>
               {tab === "for-you" && (
-                <div className="space-y-2">
+                <div className="divide-y divide-slate-100">
                   {visibleFeed.length === 0 ? (
-                    <p className="py-8 text-center text-sm text-gray-500">
+                    <p className="py-10 text-center text-sm text-slate-500">
                       Nothing matches these filters. Try &ldquo;All levels&rdquo;.
                     </p>
                   ) : (
@@ -253,7 +254,7 @@ export default function HomeDashboard() {
                     ))
                   )}
                   {feed.length > pageSize && (
-                    <Button variant="ghost" size="sm" className="w-full text-gray-600" onClick={() => setShowAll((v) => !v)}>
+                    <Button variant="ghost" size="sm" className="h-10 w-full rounded-none text-[13px] text-slate-600 hover:bg-slate-50 hover:text-slate-900" onClick={() => setShowAll((v) => !v)}>
                       {showAll ? "Show less" : `Show ${feed.length - pageSize} more`}
                     </Button>
                   )}
@@ -261,20 +262,22 @@ export default function HomeDashboard() {
               )}
 
               {tab === "ladders" && (
+                <div className="p-4">
                 <LadderList ladders={ladders} solvedIds={solvedIds} startedIds={startedIds} onOpen={open} />
+                </div>
               )}
 
               {tab === "queue" &&
                 (queue.length === 0 ? (
-                  <div className="flex flex-col items-center gap-2 py-8 text-center text-sm text-gray-500">
-                    <ListPlus className="h-6 w-6 text-gray-300" />
+                  <div className="flex flex-col items-center gap-2 py-10 text-center text-sm text-slate-500">
+                    <ListPlus className="h-5 w-5 text-slate-300" />
                     <p>Save up to 5 problems you want to come back to.</p>
                     <p className="text-xs">
                       Use the <ListPlus className="inline h-3.5 w-3.5" /> button on any problem.
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="divide-y divide-slate-100">
                     {queue.map((q) => {
                       const p = problemsById.get(q.id);
                       if (!p) return null;

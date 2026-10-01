@@ -2,7 +2,7 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Crown, Network, Users, Brain, Home, LineChart, ShieldAlert } from "lucide-react";
+import { Network, Users, BookOpen, Home, LineChart, ShieldAlert } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -15,7 +15,7 @@ export default function SideNav({ active, onChange, isAdmin }: { active: string;
   const items = [
     { key: "dashboard", label: "Home", icon: <Home className="h-4 w-4" />, href: "/dashboard" },
     { key: "skill-tree", label: "Skill Tree", icon: <Network className="h-4 w-4" />, href: "/dashboard" },
-    { key: "problems", label: "Problems", icon: <Brain className="h-4 w-4" />, href: "/dashboard" },
+    { key: "problems", label: "Problems", icon: <BookOpen className="h-4 w-4" />, href: "/dashboard" },
     { key: "stats", label: "Stats", icon: <LineChart className="h-4 w-4" />, href: "/dashboard/stats" },
     { key: "community", label: "Community", icon: <Users className="h-4 w-4" />, href: "/dashboard" },
   ];
@@ -34,63 +34,61 @@ export default function SideNav({ active, onChange, isAdmin }: { active: string;
   };
 
   return (
-    <div className="h-full w-64 border-r bg-white/60 backdrop-blur p-3 hidden xl:flex xl:flex-col shrink-0 min-h-[calc(100vh-64px)]">
-      {/* App Logo and Title */}
-      <div className="flex items-center gap-2 px-2 py-3">
-        <Crown className="h-5 w-5" />
-        <div className="font-bold">MathQuest</div>
-      </div>
-
+    <nav className="hidden min-h-[calc(100vh-56px)] w-56 shrink-0 flex-col border-r border-slate-200 bg-white px-3 py-4 xl:flex">
       {/* Navigation Menu Items */}
-      <div className="mt-2 space-y-1">
-        {items.map((it) => (
-          <button
-            key={it.key}
-            onClick={() => handleNav(it)}
-            className={`w-full flex items-center gap-2 rounded-xl px-3 py-2 text-left hover:bg-muted ${active === it.key ? "bg-muted text-indigo-700 font-semibold" : "text-gray-700 font-medium"}`}
-          >
-            {it.icon}
-            <span>{it.label}</span>
-          </button>
-        ))}
-        {isAdmin && (
-          <Link href="/admin" className="block w-full">
-            <button className="w-full flex items-center gap-2 rounded-xl px-3 py-2 text-left text-indigo-600 hover:bg-indigo-50 font-medium mt-4 border border-indigo-100">
-              <ShieldAlert className="h-4 w-4" />
-              <span>Admin Dashboard</span>
+      <div className="space-y-0.5">
+        {items.map((it) => {
+          const isActive = active === it.key;
+          return (
+            <button
+              key={it.key}
+              onClick={() => handleNav(it)}
+              aria-current={isActive ? "page" : undefined}
+              className={`flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-sm transition-colors ${
+                isActive
+                  ? "bg-slate-100 font-medium text-slate-900"
+                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+              }`}
+            >
+              <span className={isActive ? "text-slate-900" : "text-slate-400"}>{it.icon}</span>
+              <span>{it.label}</span>
             </button>
+          );
+        })}
+        {isAdmin && (
+          <Link
+            href="/admin"
+            className="mt-3 flex w-full items-center gap-2.5 rounded-md border-t border-slate-100 px-2.5 pb-1.5 pt-3 text-sm text-slate-600 hover:text-slate-900"
+          >
+            <ShieldAlert className="h-4 w-4 text-slate-400" />
+            <span>Admin</span>
           </Link>
         )}
       </div>
 
-      {/* User Profile Section */}
-      <div className="mt-auto p-3">
-        <div className="rounded-xl border bg-white/60 backdrop-blur p-3">
-          <div className="pb-2">
-            <div className="text-sm font-semibold">Your Profile</div>
+      {/* Signed-in user */}
+      <div className="mt-auto border-t border-slate-100 pt-3">
+        <div className="flex items-center gap-2.5 px-1">
+          <Avatar className="h-7 w-7">
+            {session?.user?.image ? (
+              <AvatarImage src={session.user.image} alt={session.user.name || "User"} />
+            ) : (
+              <AvatarFallback className="bg-slate-100 text-xs text-slate-600">{session?.user?.name?.charAt(0) || "U"}</AvatarFallback>
+            )}
+          </Avatar>
+          <div className="min-w-0">
+            <div className="truncate text-sm font-medium text-slate-900">{session?.user?.name || "…"}</div>
+            <div className="truncate text-xs text-slate-500">{session?.user?.email || ""}</div>
           </div>
-          <div className="flex items-center gap-3">
-            <Avatar className="h-8 w-8">
-              {session?.user?.image ? (
-                <AvatarImage src={session.user.image} alt={session.user.name || "User"} />
-              ) : (
-                <AvatarFallback>{session?.user?.name?.charAt(0) || "U"}</AvatarFallback>
-              )}
-            </Avatar>
-            <div className="overflow-hidden">
-              <div className="text-sm font-medium truncate">{session?.user?.name || "Loading..."}</div>
-              <div className="text-xs text-muted-foreground truncate">{session?.user?.email || "Loading..."}</div>
-            </div>
-          </div>
-          <Button
-            variant="ghost"
-            className="w-full mt-2 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 justify-start"
-            onClick={() => signOut({ callbackUrl: '/' })}
-          >
-            Log out
-          </Button>
         </div>
+        <Button
+          variant="ghost"
+          className="mt-2 h-8 w-full justify-start px-2 text-sm font-normal text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+          onClick={() => signOut({ callbackUrl: '/' })}
+        >
+          Log out
+        </Button>
       </div>
-    </div>
+    </nav>
   );
 }

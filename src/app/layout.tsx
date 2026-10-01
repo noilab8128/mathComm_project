@@ -1,7 +1,7 @@
 
 // Import Next.js types and Google Fonts
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Source_Serif_4 } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
 
@@ -15,6 +15,12 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono", // CSS variable name for Tailwind CSS
   subsets: ["latin"], // Only load Latin character subset
+});
+
+// Serif for problem statements (Tailwind `font-serif`)
+const sourceSerif = Source_Serif_4({
+  variable: "--font-serif",
+  subsets: ["latin"],
 });
 
 // SEO metadata for the application
@@ -32,7 +38,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${sourceSerif.variable} font-sans antialiased`}
       >
         <Providers>
           {children}
