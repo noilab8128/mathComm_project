@@ -9,7 +9,7 @@ Each ladder becomes:
                                 Challenge in `problem_hierarchies` (sequence_order = step order,
                                 depth = 2, parent_solution_id = the Challenge's solution)
   - answer + short solution  -> one `solutions` row per problem (students never see solutions)
-  - related IMO problems, Explore, famous open problem, research field
+  - Explore, famous open problem, research field
                              -> end of the Challenge's solution (default), or of its problem text
                                 with --endings content (visible to students; can give away the
                                 Challenge answer for ladders B and D)
@@ -247,9 +247,14 @@ def parse_ladder(key, name, block):
 # Ladder -> rows
 # ---------------------------------------------------------------------------
 
+# Related contest problems (IMO etc.) stay in LADDERS_v0.1.md as internal research notes but are not
+# published on the site (copyright caution, decided 2026-09-30).
+PUBLISH_RELATED_CONTESTS = False
+
+
 def endings_text(ladder):
     parts = ["Going further"]
-    if ladder["related"]:
+    if PUBLISH_RELATED_CONTESTS and ladder["related"]:
         intro = f" ({ladder['related_intro']})" if ladder["related_intro"] else ""
         parts.append(f"Related Olympiad problems{intro}:\n{ladder['related']}")
     if ladder["explore"]:

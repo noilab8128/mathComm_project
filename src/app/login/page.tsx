@@ -289,7 +289,7 @@ function AuthFrame({ children }: { children: React.ReactNode }) {
                         In how many ways can 2026 be written as a sum of different numbers from the list 1, 2, 3, 5, 8, 13, 21, …?
                     </blockquote>
                     <figcaption className="mt-6 text-sm text-slate-400">
-                        Five short steps lead up to it. The idea goes back to IMO Shortlist 2006 A3.
+                        Five short steps lead up to it.
                     </figcaption>
                 </figure>
                 <div className="relative text-xs text-slate-500">© {new Date().getFullYear()} noi.lab</div>

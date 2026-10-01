@@ -9,7 +9,6 @@ import { DifficultyBadge } from "@/components/DifficultyRating";
 // A real ladder (olympiad/ladders/LADDERS_v0.1.md, Ladder F), shown top-down: the Challenge on top.
 const LADDER = {
     name: "Carries Cost Nine",
-    source: "Built from the idea of IMO Shortlist 2022 A7",
     steps: [
         { label: "Challenge", level: "AIME", d: 8, q: "Let Q(x) = x² + 9x. Add up s(Q(101 · 10ᵐ)) for m = 0, 1, …, 20." },
         { label: "Step 5", level: "AMC 10", d: 6, q: "What is s(1001⁶)?" },
@@ -87,7 +86,7 @@ function LadderPreview() {
                 })}
             </ol>
             <div className="border-t border-slate-200 px-5 py-2.5 text-[11px] text-slate-500">
-                s(n) is the sum of the digits of n · {LADDER.source}
+                s(n) is the sum of the digits of n
             </div>
         </div>
     );
@@ -127,7 +126,7 @@ export default function LandingPage() {
                             </div>
                             <ul className="mt-8 grid gap-2 text-sm text-slate-600 sm:grid-cols-2">
                                 {[
-                                    "Ideas from the IMO Shortlist",
+                                    "Original problems, written in-house",
                                     "Every answer checked by computer",
                                     "Feedback on written solutions",
                                     "Free to start",
@@ -227,7 +226,7 @@ export default function LandingPage() {
                                 <div className="flex h-9 items-center rounded-md bg-slate-900 px-4 text-sm text-white">Check</div>
                             </div>
                             <figcaption className="mt-4 text-xs text-slate-500">
-                                Related: IMO Shortlist 2022 C4 and IMO 1986 Problem 3. Beyond it: the Collatz conjecture.
+                                Beyond it: the Collatz conjecture, which nobody has proved.
                             </figcaption>
                         </figure>
                     </div>

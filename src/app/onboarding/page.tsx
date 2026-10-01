@@ -21,7 +21,7 @@ const ROLES = [
 const PREDEFINED_GOALS: Record<string, { category: string; goals: string[] }> = {
     Student: {
         category: "student",
-        goals: ["IMO / National Olympiads", "AMC 10/12 / AIME", "SAT / ACT", "AP / IB / A-Levels", "School Exams / GPA", "Personal Interest / Fun"]
+        goals: ["Math Olympiads", "AMC 10/12 / AIME", "SAT / ACT", "AP / IB / A-Levels", "School Exams / GPA", "Personal Interest / Fun"]
     },
     Default: {
         category: "general",
