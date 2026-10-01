@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Mail, Linkedin, Github, Award, BookOpen, Users } from "lucide-react";
+import { Mail, Linkedin, Github, Award, BookOpen } from "lucide-react";
 
 const TeamPage = () => {
     const teamMembers = [
@@ -38,42 +38,36 @@ const TeamPage = () => {
     ];
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+        <div className="bg-white">
             {/* Hero Section */}
-            <section className="relative bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-20">
+            <section className="border-b border-slate-200 py-16">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="text-center">
-                        <h1 className="text-4xl md:text-5xl font-bold mb-4">
+                    <div className="max-w-3xl">
+                        <h1 className="font-serif text-4xl md:text-5xl font-semibold tracking-tight text-slate-900 mb-4">
                             Meet Our Team
                         </h1>
-                        <p className="text-xl text-indigo-100 max-w-3xl mx-auto">
+                        <p className="text-lg leading-relaxed text-slate-600">
                             Passionate educators and technologists dedicated to transforming mathematics education
                         </p>
                     </div>
                 </div>
                 {/* Decorative wave */}
-                <div className="absolute bottom-0 left-0 right-0">
-                    <svg viewBox="0 0 1440 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M0 120L60 105C120 90 240 60 360 45C480 30 600 30 720 37.5C840 45 960 60 1080 67.5C1200 75 1320 75 1380 75L1440 75V120H1380C1320 120 1200 120 1080 120C960 120 840 120 720 120C600 120 480 120 360 120C240 120 120 120 60 120H0Z" fill="rgb(248, 250, 252)" />
-                    </svg>
-                </div>
             </section>
 
             {/* Team Members Grid */}
             <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     {teamMembers.map((member, index) => (
                         <div
                             key={index}
-                            className="bg-white rounded-2xl shadow-xl overflow-hidden hover:shadow-2xl transition-shadow duration-300"
+                            className="rounded-lg border border-slate-200 bg-white"
                         >
                             {/* Profile Header */}
-                            <div className="bg-gradient-to-r from-indigo-500 to-purple-500 h-32"></div>
-
+                            
                             {/* Profile Image */}
-                            <div className="relative px-8 -mt-16">
-                                <div className="w-32 h-32 rounded-full border-4 border-white bg-gradient-to-br from-indigo-400 to-purple-400 shadow-lg flex items-center justify-center">
-                                    <span className="text-4xl font-bold text-white">
+                            <div className="px-8 pt-8">
+                                <div className="flex h-16 w-16 items-center justify-center rounded-full border border-slate-200 bg-slate-50">
+                                    <span className="font-serif text-xl font-semibold text-slate-700">
                                         {member.name.split(' ').map(n => n[0]).join('')}
                                     </span>
                                 </div>
@@ -81,29 +75,29 @@ const TeamPage = () => {
 
                             {/* Profile Content */}
                             <div className="px-8 py-6">
-                                <h2 className="text-2xl font-bold text-gray-900 mb-1">
+                                <h2 className="font-serif text-2xl font-semibold text-slate-900 mb-1">
                                     {member.name}
                                 </h2>
-                                <p className="text-indigo-600 font-semibold mb-4">
+                                <p className="text-sm text-slate-500 mb-4">
                                     {member.role}
                                 </p>
 
                                 {/* Bio */}
-                                <p className="text-gray-600 leading-relaxed mb-6">
+                                <p className="text-slate-600 leading-relaxed mb-6">
                                     {member.bio}
                                 </p>
 
                                 {/* Expertise */}
                                 <div className="mb-6">
-                                    <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                                        <BookOpen className="h-4 w-4 text-indigo-500" />
+                                    <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
+                                        <BookOpen className="h-4 w-4 text-slate-500" />
                                         Expertise
                                     </h3>
                                     <div className="flex flex-wrap gap-2">
                                         {member.expertise.map((skill, i) => (
                                             <span
                                                 key={i}
-                                                className="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full text-sm font-medium"
+                                                className="rounded border border-slate-200 px-2 py-0.5 text-xs text-slate-700"
                                             >
                                                 {skill}
                                             </span>
@@ -113,14 +107,14 @@ const TeamPage = () => {
 
                                 {/* Achievements */}
                                 <div className="mb-6">
-                                    <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                                        <Award className="h-4 w-4 text-indigo-500" />
+                                    <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
+                                        <Award className="h-4 w-4 text-slate-500" />
                                         Key Achievements
                                     </h3>
                                     <ul className="space-y-2">
                                         {member.achievements.map((achievement, i) => (
-                                            <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
-                                                <span className="text-indigo-500 mt-1">•</span>
+                                            <li key={i} className="flex items-start gap-2 text-sm text-slate-600">
+                                                <span className="text-slate-500 mt-1">•</span>
                                                 <span>{achievement}</span>
                                             </li>
                                         ))}
@@ -128,32 +122,32 @@ const TeamPage = () => {
                                 </div>
 
                                 {/* Contact Links */}
-                                <div className="pt-6 border-t border-gray-200">
+                                <div className="pt-6 border-t border-slate-200">
                                     <div className="flex items-center gap-4">
                                         <a
                                             href={`mailto:${member.email}`}
-                                            className="flex items-center gap-2 text-gray-600 hover:text-indigo-600 transition-colors"
+                                            className="flex items-center gap-2 text-slate-400 transition-colors hover:text-slate-900"
                                             aria-label="Email"
                                         >
-                                            <Mail className="h-5 w-5" />
+                                            <Mail className="h-4 w-4" />
                                         </a>
                                         <a
                                             href={member.linkedin}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="flex items-center gap-2 text-gray-600 hover:text-indigo-600 transition-colors"
+                                            className="flex items-center gap-2 text-slate-400 transition-colors hover:text-slate-900"
                                             aria-label="LinkedIn"
                                         >
-                                            <Linkedin className="h-5 w-5" />
+                                            <Linkedin className="h-4 w-4" />
                                         </a>
                                         <a
                                             href={member.github}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="flex items-center gap-2 text-gray-600 hover:text-indigo-600 transition-colors"
+                                            className="flex items-center gap-2 text-slate-400 transition-colors hover:text-slate-900"
                                             aria-label="GitHub"
                                         >
-                                            <Github className="h-5 w-5" />
+                                            <Github className="h-4 w-4" />
                                         </a>
                                     </div>
                                 </div>
@@ -164,15 +158,14 @@ const TeamPage = () => {
 
                 {/* Join Our Team Section */}
                 <div className="mt-20 text-center">
-                    <div className="bg-gradient-to-r from-indigo-500 to-purple-500 rounded-2xl p-12 text-white">
-                        <Users className="h-16 w-16 mx-auto mb-4 opacity-90" />
-                        <h2 className="text-3xl font-bold mb-4">Join Our Mission</h2>
-                        <p className="text-lg text-indigo-100 mb-6 max-w-2xl mx-auto">
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-10">
+                        <h2 className="font-serif text-3xl font-semibold text-slate-900 mb-3">Join our mission</h2>
+                        <p className="text-slate-600 mb-6 max-w-2xl mx-auto">
                             We&apos;re always looking for passionate individuals who share our vision of making mathematics education accessible to everyone.
                         </p>
                         <a
                             href="/careers"
-                            className="inline-block px-8 py-3 bg-white text-indigo-600 rounded-lg font-semibold hover:bg-indigo-50 transition-colors shadow-lg"
+                            className="inline-block rounded-md bg-slate-900 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-slate-800"
                         >
                             View Open Positions
                         </a>

@@ -51,7 +51,15 @@ export default withAuth(
             authorized: ({ req, token }) => {
                 const url = req.nextUrl.clone();
 
-                const isPublicRoute = url.pathname === "/" || url.pathname === "/login" || url.pathname === "/top-secret";
+                // Info pages (About, FAQ, legal, …) are public so visitors can read the Terms and
+                // Privacy Policy before signing up. Everything else still requires sign-in.
+                const INFO_PAGES = [
+                    "/about", "/faq", "/terms", "/privacy", "/cookie-policy", "/community-guidelines",
+                    "/contact", "/team", "/vision", "/roadmap", "/careers", "/partners", "/social-impact",
+                ];
+                const isPublicRoute =
+                    url.pathname === "/" || url.pathname === "/login" || url.pathname === "/top-secret" ||
+                    INFO_PAGES.includes(url.pathname);
 
                 // Return true if authenticated or if accessing public pages
                 return !!token || isPublicRoute;
