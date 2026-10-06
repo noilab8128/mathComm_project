@@ -5,7 +5,7 @@ import { Check, Heart, ListPlus, ListChecks } from "lucide-react";
 import { DifficultyBadge } from "@/components/DifficultyRating";
 import type { HomeProblem } from "./useHomeData";
 
-// Re-exported for existing imports (NextUpCard)
+// Re-exported for existing imports
 export { DifficultyBadge };
 
 export interface RowActions {

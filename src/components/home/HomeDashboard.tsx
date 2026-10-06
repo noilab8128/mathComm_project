@@ -17,19 +17,20 @@ import { ProblemDialog, convertSupabaseProblem } from "@/components/ProblemDialo
 import { useLikes, useMyQueue, useStarts } from "@/hooks/useUserInteractions";
 import { calculateXP, getDifficultyLabel } from "@/lib/supabase";
 import { useHomeData, type HomeProblem, type Ladder } from "./useHomeData";
-import { NextUpCard } from "./NextUpCard";
+import { ContinuePanel } from "./ContinuePanel";
+import { StatStrip } from "./StatStrip";
+import { ActivityCard } from "./ActivityCard";
 import { ProblemRow, type RowActions } from "./ProblemRow";
 import { LadderList } from "./LadderList";
 import {
   GettingStartedCard,
   LeaderboardCard,
   MasteryCard,
-  ProgressCard,
   SupportCard,
   useChecklistDismissed,
 } from "./SidePanel";
 
-type FeedTab = "for-you" | "ladders" | "queue";
+type FeedTab = "for-you" | "queue";
 
 function ladderContext(ladder: Ladder, entry: HomeProblem) {
   if (ladder.next === null) return `Ladder · all ${ladder.steps.length} solved`;
@@ -43,7 +44,7 @@ const TAB_KEY = "mq-home-tab";
 function readStoredTab(): FeedTab | null {
   try {
     const t = localStorage.getItem(TAB_KEY);
-    return t === "for-you" || t === "ladders" || t === "queue" ? t : null;
+    return t === "for-you" || t === "queue" ? t : null;
   } catch {
     return null;
   }
@@ -143,93 +144,114 @@ export default function HomeDashboard() {
     );
   }
 
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+  const scrollToLadders = () => document.getElementById("ladders")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  // Ladders in progress first, then untouched, then finished
+  const orderedLadders = [...ladders].sort((a, b) => {
+    const rank = (l: Ladder) => (l.next === null ? 2 : l.solvedCount > 0 ? 0 : 1);
+    return rank(a) - rank(b);
+  });
+
   return (
-    <div className="mx-auto w-full max-w-7xl p-4 sm:p-6">
-      <header className="mb-6">
-        <h1 className="text-xl font-semibold tracking-tight text-slate-900">
-          {stage === "new" ? "Welcome to Math Quest" : "Dashboard"}
-          {stage === "new" && firstName ? `, ${firstName}` : ""}
-        </h1>
-        <p className="mt-1 text-sm text-slate-500">
-          {stage === "new"
-            ? "Start with a short warm-up. Each ladder climbs one idea at a time."
-            : `${firstName ? `${firstName} · ` : ""}${data.solvedCount} solved`}
-        </p>
+    <div className="mx-auto w-full max-w-[1280px] p-4 sm:p-6 lg:p-8">
+      <header className="mb-5 flex flex-wrap items-end justify-between gap-2">
+        <div>
+          <p className="text-xs text-slate-500">
+            {new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}
+          </p>
+          <h1 className="mt-0.5 text-2xl font-semibold tracking-tight text-slate-900">
+            {stage === "new" ? "Welcome to Math Quest" : greeting}
+            {firstName ? `, ${firstName}` : ""}
+          </h1>
+        </div>
+        {stage === "new" && (
+          <p className="text-sm text-slate-500">Start with a short warm-up. Each ladder climbs one idea at a time.</p>
+        )}
       </header>
 
       {data.loadError && (
         <div className="mb-5 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">{data.loadError}</div>
       )}
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-        {/* Main column */}
-        <div className="space-y-6 xl:col-span-2">
-          <NextUpCard
-            nextUp={nextUp}
-            solvedIds={solvedIds}
-            onOpen={() => nextUp && open(nextUp.problem)}
-            onBrowseLadders={() => selectTab("ladders")}
-          />
+      <div className="space-y-6">
+        <StatStrip stats={data.profile?.userStats} solvedCount={data.solvedCount} />
 
-          <section className="rounded-md border border-slate-200 bg-white">
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4 pt-2">
-              <div role="tablist" aria-label="Problems" className="flex gap-1">
-                {([
-                  ["for-you", "For you"],
-                  ["ladders", `Ladders (${ladders.length})`],
-                  ["queue", `My Queue (${queue.length}/5)`],
-                ] as [FeedTab, string][]).map(([key, label]) => (
-                  <button
-                    key={key}
-                    role="tab"
-                    aria-selected={tab === key}
-                    onClick={() => selectTab(key)}
-                    className={`-mb-px border-b-2 px-3 py-2.5 text-sm transition-colors ${
-                      tab === key
-                        ? "border-slate-900 font-medium text-slate-900"
-                        : "border-transparent text-slate-500 hover:text-slate-900"
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
+        <ContinuePanel nextUp={nextUp} solvedIds={solvedIds} onOpen={open} onBrowseLadders={scrollToLadders} />
+
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr_320px]">
+          {/* Main column */}
+          <div className="min-w-0 space-y-8">
+            <section id="ladders" className="scroll-mt-20">
+              <div className="mb-3 flex items-baseline justify-between gap-3">
+                <div>
+                  <h2 className="text-base font-semibold text-slate-900">Ladders</h2>
+                  <p className="mt-0.5 text-xs text-slate-500">From a warm-up to a competition-level Challenge, one idea at a time.</p>
+                </div>
+                <span className="tnum text-xs text-slate-500">
+                  {ladders.filter((l) => l.next === null).length}/{ladders.length} completed
+                </span>
+              </div>
+              <LadderList ladders={orderedLadders} solvedIds={solvedIds} startedIds={startedIds} onOpen={open} />
+            </section>
+
+            <section className="rounded-md border border-slate-200 bg-white">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4 pt-2">
+                <div role="tablist" aria-label="Problems" className="flex gap-1">
+                  {([
+                    ["for-you", "Problems for you"],
+                    ["queue", `My queue (${queue.length}/5)`],
+                  ] as [FeedTab, string][]).map(([key, label]) => (
+                    <button
+                      key={key}
+                      role="tab"
+                      aria-selected={tab === key}
+                      onClick={() => selectTab(key)}
+                      className={`-mb-px border-b-2 px-3 py-2.5 text-sm transition-colors ${
+                        tab === key
+                          ? "border-slate-900 font-medium text-slate-900"
+                          : "border-transparent text-slate-500 hover:text-slate-900"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+
+                {tab === "for-you" && stage !== "new" && (
+                  <div className="flex flex-wrap items-center gap-3 pb-2">
+                    <div className="flex overflow-hidden rounded-md border border-slate-200" role="group" aria-label="Level">
+                      {(["all", "Easy", "Medium", "Hard+"] as LevelFilter[]).map((f) => (
+                        <button
+                          key={f}
+                          onClick={() => setLevelFilter(f)}
+                          aria-pressed={levelFilter === f}
+                          className={`border-l border-slate-200 px-2.5 py-1 text-xs first:border-l-0 ${
+                            levelFilter === f ? "bg-slate-900 text-white" : "bg-white text-slate-600 hover:bg-slate-50"
+                          }`}
+                        >
+                          {f === "all" ? "All" : f}
+                        </button>
+                      ))}
+                    </div>
+                    <label className="flex cursor-pointer items-center gap-1.5 text-xs text-slate-600">
+                      <input
+                        type="checkbox"
+                        checked={hideSolved}
+                        onChange={(e) => setHideSolved(e.target.checked)}
+                        className="h-3.5 w-3.5 accent-slate-900"
+                      />
+                      Hide solved
+                    </label>
+                  </div>
+                )}
               </div>
 
-              {tab === "for-you" && stage !== "new" && (
-                <div className="flex flex-wrap items-center gap-3 pb-2">
-                  <div className="flex overflow-hidden rounded-md border border-slate-200" role="group" aria-label="Level">
-                    {(["all", "Easy", "Medium", "Hard+"] as LevelFilter[]).map((f) => (
-                      <button
-                        key={f}
-                        onClick={() => setLevelFilter(f)}
-                        aria-pressed={levelFilter === f}
-                        className={`border-l border-slate-200 px-2.5 py-1 text-xs first:border-l-0 ${
-                          levelFilter === f ? "bg-slate-900 text-white" : "bg-white text-slate-600 hover:bg-slate-50"
-                        }`}
-                      >
-                        {f === "all" ? "All" : f}
-                      </button>
-                    ))}
-                  </div>
-                  <label className="flex cursor-pointer items-center gap-1.5 text-xs text-slate-600">
-                    <input
-                      type="checkbox"
-                      checked={hideSolved}
-                      onChange={(e) => setHideSolved(e.target.checked)}
-                      className="h-3.5 w-3.5 accent-slate-900"
-                    />
-                    Hide solved
-                  </label>
-                </div>
-              )}
-            </div>
-
-            <div>
               {tab === "for-you" && (
                 <div className="divide-y divide-slate-100">
                   {visibleFeed.length === 0 ? (
                     <p className="py-10 text-center text-sm text-slate-500">
-                      Nothing matches these filters. Try &ldquo;All levels&rdquo;.
+                      Nothing matches these filters. Try &ldquo;All&rdquo;.
                     </p>
                   ) : (
                     visibleFeed.map(({ problem, reasons, ladder, entry }) => (
@@ -261,12 +283,6 @@ export default function HomeDashboard() {
                 </div>
               )}
 
-              {tab === "ladders" && (
-                <div className="p-4">
-                <LadderList ladders={ladders} solvedIds={solvedIds} startedIds={startedIds} onOpen={open} />
-                </div>
-              )}
-
               {tab === "queue" &&
                 (queue.length === 0 ? (
                   <div className="flex flex-col items-center gap-2 py-10 text-center text-sm text-slate-500">
@@ -285,18 +301,18 @@ export default function HomeDashboard() {
                     })}
                   </div>
                 ))}
-            </div>
-          </section>
-        </div>
+            </section>
+          </div>
 
-        {/* Side column */}
-        <aside className="space-y-4">
-          {showChecklist && <GettingStartedCard steps={checklist} onDismiss={dismissChecklist} />}
-          <ProgressCard stats={data.profile?.userStats} solvedCount={data.solvedCount} stage={stage} />
-          <MasteryCard stats={data.profile?.userCategoryStats || []} />
-          <LeaderboardCard />
-          <SupportCard isAdmin={session?.user?.role === "admin"} />
-        </aside>
+          {/* Right column */}
+          <aside className="space-y-4">
+            {showChecklist && <GettingStartedCard steps={checklist} onDismiss={dismissChecklist} />}
+            <ActivityCard starts={progress.recentStarts} />
+            <MasteryCard stats={data.profile?.userCategoryStats || []} />
+            <LeaderboardCard />
+            <SupportCard isAdmin={session?.user?.role === "admin"} />
+          </aside>
+        </div>
       </div>
 
       <Dialog

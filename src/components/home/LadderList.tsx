@@ -1,74 +1,32 @@
 "use client"
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2 } from "lucide-react";
-import { LadderDots } from "./NextUpCard";
+import { Check } from "lucide-react";
 import type { HomeProblem, Ladder } from "./useHomeData";
 
-function LadderCard({
-  ladder,
-  solvedIds,
-  startedIds,
-  onOpen,
-}: {
-  ladder: Ladder;
-  solvedIds: Set<string>;
-  startedIds: Set<string>;
-  onOpen: (p: HomeProblem) => void;
-}) {
-  const done = ladder.next === null;
-  const first = ladder.steps[0].problem;
-  const topic = ladder.root.category_path?.split(" > ")[0];
-  const nextStarted = ladder.next && startedIds.has(ladder.next.problem.id);
-
+/** One segment per ladder step: solved = dark, current = outlined, the Challenge segment is wider. */
+export function LadderDots({ ladder, currentId, solvedIds }: { ladder: Ladder; currentId?: string; solvedIds: Set<string> }) {
   return (
-    <div className="flex flex-col rounded-md border border-slate-200 bg-white p-4 transition-colors hover:border-slate-300">
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <h3 className="truncate font-semibold text-slate-900">{ladder.name}</h3>
-          {topic && <div className="mt-0.5 truncate text-xs text-slate-500">{topic}</div>}
-        </div>
-        {done ? (
-          <span className="inline-flex items-center gap-1 rounded border border-emerald-200 bg-emerald-50 px-1.5 py-px text-[11px] font-medium text-emerald-700">
-            <CheckCircle2 className="h-3 w-3" />Completed
-          </span>
-        ) : ladder.matchesInterest ? (
-          <span className="whitespace-nowrap rounded border border-slate-200 px-1.5 py-px text-[11px] text-slate-600" title="Matches your interests">For you</span>
-        ) : null}
-      </div>
-
-      <div className="tnum mt-3 text-xs text-slate-500">
-        Difficulty {first.difficulty} → {ladder.root.difficulty} · {ladder.steps.length} problems
-      </div>
-
-      <div className="mt-3 flex items-center justify-between gap-2">
-        <LadderDots ladder={ladder} currentId={ladder.next?.problem.id} solvedIds={solvedIds} />
-        <span className="tnum text-xs text-slate-600">
-          {ladder.solvedCount}/{ladder.steps.length}
-        </span>
-      </div>
-
-      <div className="mt-4 flex items-center justify-between gap-2 border-t border-slate-100 pt-3">
-        <span className="truncate text-xs text-slate-500">
-          {done ? "All steps solved" : `Next: ${ladder.next!.label}`}
-        </span>
-        <Button
-          size="sm"
-          variant={ladder.solvedCount > 0 && !done ? "default" : "outline"}
-          className={`h-8 rounded-md text-[13px] ${
-            ladder.solvedCount > 0 && !done
-              ? "bg-slate-900 text-white hover:bg-slate-800"
-              : "border-slate-300 text-slate-700 hover:text-slate-900"
-          }`}
-          onClick={() => onOpen(done ? ladder.root : ladder.next!.problem)}
-        >
-          {done ? "Review" : ladder.solvedCount > 0 || nextStarted ? "Continue" : "Start"}
-        </Button>
-      </div>
+    <div className="flex items-center gap-[3px]" aria-label={`${ladder.solvedCount} of ${ladder.steps.length} steps solved`}>
+      {ladder.steps.map((s) => {
+        const solved = solvedIds.has(s.problem.id);
+        const current = s.problem.id === currentId;
+        const isChallenge = s.label === "Challenge";
+        return (
+          <span
+            key={s.problem.id}
+            title={`${s.label}${solved ? " (solved)" : current ? " (current)" : ""}`}
+            className={`h-1.5 rounded-[1px] ${isChallenge ? "w-7" : "w-4"} ${
+              solved ? "bg-slate-800" : current ? "bg-white ring-1 ring-inset ring-slate-800" : "bg-slate-200"
+            }`}
+          />
+        );
+      })}
     </div>
   );
 }
 
+/** Ladders as a compact table: one row per ladder with progress and the next action. */
 export function LadderList({
   ladders,
   solvedIds,
@@ -81,13 +39,54 @@ export function LadderList({
   onOpen: (p: HomeProblem) => void;
 }) {
   if (ladders.length === 0) {
-    return <div className="py-8 text-center text-sm text-slate-500">No ladders yet.</div>;
+    return <div className="rounded-md border border-slate-200 bg-white py-8 text-center text-sm text-slate-500">No ladders yet.</div>;
   }
   return (
-    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-      {ladders.map((l) => (
-        <LadderCard key={l.root.id} ladder={l} solvedIds={solvedIds} startedIds={startedIds} onOpen={onOpen} />
-      ))}
-    </div>
+    <ul className="divide-y divide-slate-100 overflow-hidden rounded-md border border-slate-200 bg-white">
+      {ladders.map((ladder) => {
+        const done = ladder.next === null;
+        const first = ladder.steps[0].problem;
+        const topic = ladder.root.category_path?.split(" > ")[0];
+        const inProgress = !done && (ladder.solvedCount > 0 || (!!ladder.next && startedIds.has(ladder.next.problem.id)));
+        return (
+          <li key={ladder.root.id} className="grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-2 px-4 py-3 transition-colors hover:bg-slate-50 sm:grid-cols-[minmax(0,1fr)_180px_88px_96px]">
+            <button className="col-start-1 row-start-1 min-w-0 text-left sm:col-start-auto sm:row-start-auto" onClick={() => onOpen(done ? ladder.root : ladder.next!.problem)}>
+              <span className="flex items-center gap-2">
+                <span className="truncate font-medium text-slate-900">{ladder.name}</span>
+                {done && (
+                  <span className="inline-flex items-center gap-0.5 rounded border border-emerald-200 bg-emerald-50 px-1 py-px text-[10px] font-medium text-emerald-700">
+                    <Check className="h-2.5 w-2.5" strokeWidth={3} /> Done
+                  </span>
+                )}
+                {!done && ladder.matchesInterest && (
+                  <span className="rounded border border-slate-200 px-1 py-px text-[10px] text-slate-500" title="Matches your interests">For you</span>
+                )}
+              </span>
+              <span className="mt-0.5 block truncate text-xs text-slate-500">
+                {topic ? `${topic} · ` : ""}
+                {done ? "All steps solved" : `Next: ${ladder.next!.label}`}
+              </span>
+            </button>
+            <div className="col-span-2 flex items-center gap-3 sm:col-span-1">
+              <LadderDots ladder={ladder} currentId={ladder.next?.problem.id} solvedIds={solvedIds} />
+              <span className="tnum text-xs text-slate-500">{ladder.solvedCount}/{ladder.steps.length}</span>
+            </div>
+            <span className="tnum hidden text-xs text-slate-500 sm:block" title="Difficulty of the first step and of the Challenge">
+              {first.difficulty} → {ladder.root.difficulty}
+            </span>
+            <div className="col-start-2 row-start-1 flex justify-end sm:col-start-auto sm:row-start-auto">
+              <Button
+                size="sm"
+                variant={inProgress ? "default" : "outline"}
+                className="h-8 min-w-[80px] text-[13px]"
+                onClick={() => onOpen(done ? ladder.root : ladder.next!.problem)}
+              >
+                {done ? "Review" : inProgress ? "Continue" : "Start"}
+              </Button>
+            </div>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
