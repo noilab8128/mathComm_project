@@ -182,12 +182,12 @@ export function LeaderboardCard() {
       ) : (
         <ol className="mt-3 space-y-2">
           {rows.map((u, i) => (
-            <li key={i + u.name} className="flex items-center justify-between text-sm">
-              <span className="flex items-center gap-2">
-                <span className="tnum w-5 text-right font-mono text-xs text-slate-400">{i + 1}</span>
-                <span className="text-slate-800">{u.name}</span>
+            <li key={i + u.name} className="flex items-center justify-between gap-2 text-sm">
+              <span className="flex min-w-0 items-center gap-2">
+                <span className="tnum w-5 shrink-0 text-right font-mono text-xs text-slate-400">{i + 1}</span>
+                <span className="truncate text-slate-800">{u.name}</span>
               </span>
-              <span className="tnum font-mono text-xs text-slate-500">{u.xp} XP</span>
+              <span className="tnum shrink-0 font-mono text-xs text-slate-500">{u.xp} XP</span>
             </li>
           ))}
         </ol>

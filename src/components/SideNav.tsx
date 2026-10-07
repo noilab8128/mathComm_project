@@ -6,6 +6,9 @@ import { Network, Users, BookOpen, Home, LineChart, ShieldAlert } from "lucide-r
 import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { SidebarStats } from "@/components/home/StatStrip";
+
+export const SIDENAV_SLOT_ID = "sidenav-page-slot";
 
 export default function SideNav({ active, onChange, isAdmin }: { active: string; onChange?: (k: string) => void, isAdmin: boolean }) {
   const { data: session } = useSession();
@@ -34,7 +37,7 @@ export default function SideNav({ active, onChange, isAdmin }: { active: string;
   };
 
   return (
-    <nav className="hidden min-h-[calc(100vh-56px)] w-56 shrink-0 flex-col border-r border-slate-200 bg-white px-3 py-4 xl:flex">
+    <nav className="hidden min-h-[calc(100vh-56px)] w-64 shrink-0 flex-col border-r border-slate-200 bg-white px-3 py-4 xl:flex">
       {/* Navigation Menu Items */}
       <div className="space-y-0.5">
         {items.map((it) => {
@@ -65,6 +68,16 @@ export default function SideNav({ active, onChange, isAdmin }: { active: string;
           </Link>
         )}
       </div>
+
+      {/* Solved / rating / streak / level */}
+      {session?.user && (
+        <div className="mt-5">
+          <SidebarStats />
+        </div>
+      )}
+
+      {/* The Home dashboard puts its Getting started / Activity / Top solvers cards here (HomeDashboard, createPortal) */}
+      <div id={SIDENAV_SLOT_ID} className="mt-4 space-y-3 empty:hidden" />
 
       {/* Signed-in user */}
       <div className="mt-auto border-t border-slate-100 pt-3">

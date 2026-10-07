@@ -59,7 +59,7 @@ export function ActivityCard({ starts }: { starts: { startedAt: string }[] }) {
           </div>
         ))}
       </div>
-      <div className="tnum mt-2 flex items-center justify-between text-[11px] text-slate-500">
+      <div className="tnum mt-2 flex flex-wrap items-center justify-between gap-x-2 gap-y-1 text-[11px] text-slate-500">
         <span>
           {total} opened · {activeDays} active {activeDays === 1 ? "day" : "days"}
         </span>

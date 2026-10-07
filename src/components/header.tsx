@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { Menu, Home, Settings, HelpCircle, LogOut, X, Search, Heart, ShieldAlert } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
@@ -9,6 +9,17 @@ const Header = () => {
     const { data: session } = useSession();
     const isAdmin = session?.user?.role === "admin";
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const firstName = session?.user?.name?.split(" ")[0];
+
+    // Set after mount: the greeting depends on the viewer's local time, which the server does not know.
+    const [greeting, setGreeting] = useState<{ text: string; date: string } | null>(null);
+    useEffect(() => {
+        const hour = new Date().getHours();
+        setGreeting({
+            text: hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening",
+            date: new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" }),
+        });
+    }, []);
 
     const toggleMenu = () => {
         setIsMenuOpen(!isMenuOpen);
@@ -43,6 +54,15 @@ const Header = () => {
 
                     {/* Right side */}
                     <div className="ml-auto flex items-center gap-1">
+                        {session?.user && greeting && (
+                            <div className="mr-3 hidden text-right leading-tight lg:block">
+                                <div className="text-sm font-medium text-slate-900">
+                                    {greeting.text}
+                                    {firstName ? `, ${firstName}` : ""}
+                                </div>
+                                <div className="text-[11px] text-slate-500">{greeting.date}</div>
+                            </div>
+                        )}
                         <a
                             href="https://paypal.me/mookwonseo"
                             target="_blank"
