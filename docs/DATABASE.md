@@ -33,6 +33,8 @@ use them.
 | `problems` | `title`, `content` (Markdown + KaTeX), `difficulty` 1–10, `category_level1/2/3`, `category_path`, `level`, `age_range`, `tags`, `concepts`, `diagram_image_url`, `is_generated`, `ai_confidence`, `source`, `license`, `is_reviewed`, `likes_count`, `starts_count`, `completes_count`, `search_vector` | `Archive/sql/supabase_hierarchical_migration.sql` ⚠ |
 | `solutions` | Several solutions per problem (`problem_id`, `content`, `sequence_order`) | same ⚠ |
 | `problem_hierarchies` | Parent → child problem links: `parent_problem_id`, `parent_solution_id`, `child_problem_id`, `stage_name`, `sequence_order`, `depth`. Each child has one parent. See [LEARNING_PATHS.md](LEARNING_PATHS.md) | same ⚠ |
+| `ladder_extras` | What students see under a ladder's Challenge, behind three buttons (`kind`: `similar` = related olympiad problems as citations, `research` = Explore / famous open problem / research field, `proof` = proof problems with `hints` and `solution`, no points). Read-only for everyone; written by `olympiad/ladders/import_extras.py` | `supabase/sql/ladder_extras.sql` |
+| `idea_cards` | Internal: key ideas of source olympiad problems in our own words, used to build new ladders. RLS on with no policies, so the site cannot read it; written by `olympiad/scripts/upload_idea_cards.py` | `supabase/sql/idea_cards.sql` |
 
 ⚠ That script **drops and recreates** the problem tables. It is in `Archive/sql/` so it is not run by
 accident. Read it for the column definitions, but never run it against the shared database.

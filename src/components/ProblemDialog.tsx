@@ -6,6 +6,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { BookOpen, Send, Star, Loader2, Heart, GitBranch, CheckCircle2, AlertCircle, RefreshCcw } from "lucide-react";
 import MathPreview from "@/components/MathPreview";
+import LadderExtras from "@/components/LadderExtras";
 import { DifficultyBadge } from "@/components/DifficultyRating";
 import { getDifficultyLabel, calculateXP, type Problem as SupabaseProblem, problemHierarchiesAPI } from "@/lib/supabase";
 import { useLikes } from "@/hooks/useUserInteractions";
@@ -668,6 +669,8 @@ export function ProblemDialog({ problem: initialProblem }: { problem: ProblemDis
                   </TabsContent>
                 </Tabs>
               </div>
+
+              <LadderExtras problemId={currentProblem.id} />
             </div>
         </div>
 
