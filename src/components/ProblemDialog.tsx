@@ -4,11 +4,13 @@ import { DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { BookOpen, Send, Star, Loader2, Heart, GitBranch, CheckCircle2, AlertCircle, RefreshCcw } from "lucide-react";
+import { Send, Loader2, Heart, GitBranch, CheckCircle2, AlertCircle, RefreshCcw } from "lucide-react";
 import MathPreview from "@/components/MathPreview";
 import LadderExtras from "@/components/LadderExtras";
+import LadderGuide from "@/components/LadderGuide";
+import ProblemHelp from "@/components/ProblemHelp";
 import { DifficultyBadge } from "@/components/DifficultyRating";
-import { getDifficultyLabel, calculateXP, type Problem as SupabaseProblem, problemHierarchiesAPI } from "@/lib/supabase";
+import { getDifficultyLabel, calculateXP, type Problem as SupabaseProblem, problemHierarchiesAPI, problemsAPI } from "@/lib/supabase";
 import { useLikes } from "@/hooks/useUserInteractions";
 
 // -------------------------------------------------------
@@ -28,6 +30,7 @@ export interface ProblemDisplay {
   hint?: string;
   solution?: string;
   category_path?: string;
+  subdomain_id?: number | null; // category_level3, picks the Theory card
   source?: string | null;
   likes_count?: number;
   starts_count?: number;
@@ -77,6 +80,7 @@ export function convertSupabaseProblem(sp: SupabaseProblem): ProblemDisplay {
     hint: undefined, 
     solution: solutionContent || undefined,
     category_path: sp.category_path || undefined,
+    subdomain_id: sp.category_level3 ?? null,
     source: sp.source || null,
     // @ts-ignore
     likes_count: sp.likes_count ?? 0,
@@ -326,6 +330,53 @@ export function ProblemDialog({ problem: initialProblem }: { problem: ProblemDis
   const [gradingResult, setGradingResult] = useState<GradingResult | null>(null);
   const [showGradingResult, setShowGradingResult] = useState(false);
 
+  // Short answer (checked against the stored answer by /api/check-answer, no AI)
+  const [shortAnswer, setShortAnswer] = useState("");
+  const [isChecking, setIsChecking] = useState(false);
+  const [checkResult, setCheckResult] = useState<
+    { kind: "correct" | "wrong" | "error"; message: string } | null
+  >(null);
+
+  // Open another problem of the ladder (used by the Problem analysis flow)
+  const openProblemById = async (id: string) => {
+    try {
+      const p = await problemsAPI.getById(id);
+      if (p) setCurrentProblem(convertSupabaseProblem(p as SupabaseProblem));
+    } catch (err) {
+      console.error("Failed to open problem:", err);
+    }
+  };
+
+  const checkShortAnswer = async () => {
+    if (!shortAnswer.trim() || isChecking) return;
+    setIsChecking(true);
+    setCheckResult(null);
+    try {
+      const res = await fetch("/api/check-answer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ problemId: currentProblem.id, answer: shortAnswer }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setCheckResult({ kind: "error", message: data.message || "The answer could not be checked." });
+      } else if (data.isCorrect) {
+        setCheckResult({
+          kind: "correct",
+          message: data.alreadySolved
+            ? "Correct. You had already solved this one, so no new XP."
+            : `Correct! +${data.xpEarned} XP`,
+        });
+      } else {
+        setCheckResult({ kind: "wrong", message: "Not yet. Check your work and try again." });
+      }
+    } catch {
+      setCheckResult({ kind: "error", message: "The answer could not be checked. Please try again." });
+    } finally {
+      setIsChecking(false);
+    }
+  };
+
   const { likedIds, toggleLike } = useLikes();
 
   // Reset local state when initialProblem changes (if the whole dialog is reopened with a different problem)
@@ -450,6 +501,8 @@ export function ProblemDialog({ problem: initialProblem }: { problem: ProblemDis
     setPreviewHtml("");
     setGradingResult(null);
     setShowGradingResult(false);
+    setShortAnswer("");
+    setCheckResult(null);
   }, [currentProblem?.id, currentProblem?.content]);
 
   return (
@@ -505,6 +558,8 @@ export function ProblemDialog({ problem: initialProblem }: { problem: ProblemDis
                   <div className="italic text-slate-400">No problem content available.</div>
                 )}
               </section>
+
+              <ProblemHelp problemId={currentProblem.id} subdomainId={currentProblem.subdomain_id} />
 
               <div className="flex flex-col gap-4">
                 <Tabs value={tab} onValueChange={(v) => setTab(v as "write" | "auto")} className="w-full">
@@ -648,10 +703,6 @@ export function ProblemDialog({ problem: initialProblem }: { problem: ProblemDis
                               {previewStatus === "loading" ? "Rendering…" : "Preview"}
                             </Button>
                           </div>
-                          <div className="flex gap-2">
-                            <Button variant="ghost" size="sm" className="h-9 rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-900"><Star className="mr-1.5 h-4 w-4" /> Hint <span className="ml-1 text-slate-400">(−10 XP)</span></Button>
-                            <Button variant="ghost" size="sm" className="h-9 rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-900"><BookOpen className="mr-1.5 h-4 w-4" /> Theory</Button>
-                          </div>
                         </div>
                       </>
                     )}
@@ -661,15 +712,58 @@ export function ProblemDialog({ problem: initialProblem }: { problem: ProblemDis
                     <div className="max-w-md">
                       <label className="text-sm font-medium text-slate-900" htmlFor="short-answer">Your answer</label>
                       <p className="mt-0.5 text-xs text-slate-500">For problems with a single number as the answer.</p>
-                      <div className="mt-3 flex gap-2">
-                        <Input id="short-answer" inputMode="numeric" placeholder="e.g. 42" className="tnum h-9 rounded-md border-slate-300 font-mono focus-visible:ring-slate-400" />
-                        <Button className="h-9 rounded-md bg-slate-900 px-4 text-sm text-white hover:bg-slate-800">Check</Button>
-                      </div>
+                      <form
+                        className="mt-3 flex gap-2"
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          checkShortAnswer();
+                        }}
+                      >
+                        <Input
+                          id="short-answer"
+                          inputMode="decimal"
+                          autoComplete="off"
+                          placeholder="e.g. 42"
+                          value={shortAnswer}
+                          onChange={(e) => {
+                            setShortAnswer(e.target.value);
+                            setCheckResult(null);
+                          }}
+                          className="tnum h-9 rounded-md border-slate-300 font-mono focus-visible:ring-slate-400"
+                        />
+                        <Button
+                          type="submit"
+                          disabled={isChecking || !shortAnswer.trim()}
+                          className="h-9 rounded-md bg-slate-900 px-4 text-sm text-white hover:bg-slate-800"
+                        >
+                          {isChecking ? <Loader2 className="h-4 w-4 animate-spin" /> : "Check"}
+                        </Button>
+                      </form>
+                      {checkResult && (
+                        <p
+                          role="status"
+                          className={`mt-3 flex items-center gap-1.5 text-sm ${
+                            checkResult.kind === "correct"
+                              ? "text-emerald-700"
+                              : checkResult.kind === "wrong"
+                                ? "text-amber-700"
+                                : "text-red-600"
+                          }`}
+                        >
+                          {checkResult.kind === "correct" ? (
+                            <CheckCircle2 className="h-4 w-4" />
+                          ) : (
+                            <AlertCircle className="h-4 w-4" />
+                          )}
+                          {checkResult.message}
+                        </p>
+                      )}
                     </div>
                   </TabsContent>
                 </Tabs>
               </div>
 
+              <LadderGuide problemId={currentProblem.id} onOpenProblem={openProblemById} />
               <LadderExtras problemId={currentProblem.id} />
             </div>
         </div>

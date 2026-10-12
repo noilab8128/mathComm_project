@@ -5,8 +5,8 @@
 //  - new:     one clear first step (a ladder's warm-up) + a getting-started checklist instead of empty stats
 //  - regular: "pick up where you left off" at the top, then the feed
 //  - heavy:   same, with denser rows, more rows, filters and extra stats
-// The three separate lists of the old page (My Queue, Problems for You, Recommended) are one tabbed
-// feed here, so the same problem never appears twice.
+// Every problem belongs to a ladder, so "Ladders" and "Problems for you" were the same list. They are one
+// tabbed section here: For you (recommended ladders with a reason), All ladders (with filters), My queue.
 
 import React, { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
@@ -32,25 +32,30 @@ import {
   useChecklistDismissed,
 } from "./SidePanel";
 
-type FeedTab = "for-you" | "queue";
-
-function ladderContext(ladder: Ladder, entry: HomeProblem) {
-  if (ladder.next === null) return `Ladder · all ${ladder.steps.length} solved`;
-  if (ladder.solvedCount === 0) return `Ladder · ${ladder.steps.length} problems, starts at ${getDifficultyLabel(entry.difficulty)} ${entry.difficulty}`;
-  return `Ladder · ${ladder.solvedCount}/${ladder.steps.length} · next: ${ladder.next.label}`;
-}
+type FeedTab = "for-you" | "all" | "queue";
 type LevelFilter = "all" | "Easy" | "Medium" | "Hard+";
 
 const TAB_KEY = "mq-home-tab";
+/** Recommended ladders shown on the "For you" tab, and at most this many from the same topic. */
+const RECOMMENDED_COUNT = 5;
+const PER_TOPIC = 2;
 
 function readStoredTab(): FeedTab | null {
   try {
     const t = localStorage.getItem(TAB_KEY);
-    return t === "for-you" || t === "queue" ? t : null;
+    return t === "for-you" || t === "all" || t === "queue" ? t : null;
   } catch {
     return null;
   }
 }
+
+function matchesLevel(difficulty: number, filter: LevelFilter) {
+  const label = getDifficultyLabel(difficulty);
+  if (filter === "Hard+") return label === "Hard" || label === "Olympiad";
+  return filter === "all" || label === filter;
+}
+
+const topicOf = (p: HomeProblem) => p.category_path?.split(" > ")[0] ?? "";
 
 /** The left sidebar's slot element while the sidebar is shown (xl and up, see SideNav), otherwise null. */
 function useSidebarSlot() {
@@ -76,18 +81,18 @@ export default function HomeDashboard() {
   const [openProblem, setOpenProblem] = useState<HomeProblem | null>(null);
   const [chosenTab, setChosenTab] = useState<FeedTab | null>(null);
   const [levelFilter, setLevelFilter] = useState<LevelFilter>("all");
-  const [hideSolved, setHideSolved] = useState(true);
+  const [topicFilter, setTopicFilter] = useState("all");
+  const [hideSolved, setHideSolved] = useState(false);
   const [showAll, setShowAll] = useState(false);
 
   useEffect(() => setChosenTab(readStoredTab()), []);
   const sidebarSlot = useSidebarSlot();
 
-  const { stage, progress, recommendations, ladders, nextUp, problemsById } = data;
+  const { stage, progress, recommendations, ladders, ladderOfProblem, nextUp, problemsById } = data;
   const solvedIds = progress.solvedIds;
   const isHeavy = stage === "heavy";
 
-  // Default tab: the queue if the user keeps one, otherwise recommendations.
-  const tab: FeedTab = chosenTab ?? (queue.length > 0 ? "queue" : "for-you");
+  const tab: FeedTab = chosenTab ?? "for-you";
   const selectTab = (t: FeedTab) => {
     setChosenTab(t);
     try {
@@ -101,6 +106,8 @@ export default function HomeDashboard() {
     markStarted(p.id);
     setOpenProblem(p);
   };
+
+  const toggleLadderQueue = (ladder: Ladder) => toggleQueue(ladder.root);
 
   const toggleQueue = (p: HomeProblem) => {
     if (isQueued(p.id)) removeFromQueue(p.id);
@@ -128,19 +135,56 @@ export default function HomeDashboard() {
     onToggleLike: () => toggleLike(p.id),
   });
 
-  const feed = useMemo(() => {
-    return recommendations.filter(({ problem: p, ladder, entry }) => {
-      if (hideSolved && (ladder ? ladder.next === null : solvedIds.has(p.id))) return false;
-      // Already the big card above (for a ladder, the card may show one of its steps)
-      if (nextUp && (p.id === nextUp.problem.id || entry.id === nextUp.problem.id)) return false;
-      const label = getDifficultyLabel(p.difficulty);
-      if (levelFilter === "Hard+") return label === "Hard" || label === "Olympiad";
-      return levelFilter === "all" || label === levelFilter;
-    });
-  }, [recommendations, hideSolved, solvedIds, nextUp, levelFilter]);
+  // For you: the best-scoring unfinished ladders, at most PER_TOPIC from one topic, each with its reasons.
+  // The ladder already shown in the big "Continue" card is left out.
+  const { recommended, recommendedReasons, singles } = useMemo(() => {
+    const candidates = recommendations.filter(
+      (r) => r.ladder && r.ladder.next !== null && !(nextUp && r.ladder.steps.some((s) => s.problem.id === nextUp.problem.id))
+    );
+    const picked: typeof candidates = [];
+    const perTopic = new Map<string, number>();
+    for (const r of candidates) {
+      const topic = r.problem.category_path?.split(" > ").slice(0, 2).join(" > ") ?? "";
+      if ((perTopic.get(topic) ?? 0) >= PER_TOPIC) continue;
+      perTopic.set(topic, (perTopic.get(topic) ?? 0) + 1);
+      picked.push(r);
+      if (picked.length === RECOMMENDED_COUNT) break;
+    }
+    // Not enough topics to stay diverse: fill up with the next best.
+    for (const r of candidates) {
+      if (picked.length >= RECOMMENDED_COUNT) break;
+      if (!picked.includes(r)) picked.push(r);
+    }
+    return {
+      recommended: picked.map((r) => r.ladder!),
+      recommendedReasons: new Map(picked.map((r) => [r.problem.id, r.reasons])),
+      // Top-level problems that are not ladders (few for now)
+      singles: recommendations.filter((r) => !r.ladder).map((r) => r.problem),
+    };
+  }, [recommendations, nextUp]);
 
-  const pageSize = isHeavy ? 10 : 5;
-  const visibleFeed = showAll ? feed : feed.slice(0, pageSize);
+  const topics = useMemo(() => [...new Set(ladders.map((l) => topicOf(l.root)).filter(Boolean))].sort(), [ladders]);
+
+  // All ladders: in progress first, then matching interests, then by starting difficulty (see useHomeData).
+  const filteredLadders = useMemo(
+    () =>
+      ladders.filter(
+        (l) =>
+          !(hideSolved && l.next === null) &&
+          (topicFilter === "all" || topicOf(l.root) === topicFilter) &&
+          matchesLevel(l.steps[0].problem.difficulty, levelFilter)
+      ),
+    [ladders, hideSolved, topicFilter, levelFilter]
+  );
+  const filteredSingles = singles.filter(
+    (p) =>
+      !(hideSolved && solvedIds.has(p.id)) &&
+      (topicFilter === "all" || topicOf(p) === topicFilter) &&
+      matchesLevel(p.difficulty, levelFilter)
+  );
+
+  const pageSize = isHeavy ? 15 : 10;
+  const visibleLadders = showAll ? filteredLadders : filteredLadders.slice(0, pageSize);
 
   const checklist = [
     { label: "Choose your interests", done: data.hasInterests },
@@ -168,12 +212,11 @@ export default function HomeDashboard() {
     </>
   );
 
-  const scrollToLadders =() => document.getElementById("ladders")?.scrollIntoView({ behavior: "smooth", block: "start" });
-  // Ladders in progress first, then untouched, then finished
-  const orderedLadders = [...ladders].sort((a, b) => {
-    const rank = (l: Ladder) => (l.next === null ? 2 : l.solvedCount > 0 ? 0 : 1);
-    return rank(a) - rank(b);
-  });
+  const scrollToLadders = () => {
+    selectTab("all");
+    document.getElementById("ladders")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+  const ladderQueue = { isQueued, onToggle: toggleLadderQueue };
 
   return (
     <div className="mx-auto w-full max-w-[1280px] p-4 sm:p-6 lg:p-8">
@@ -205,118 +248,169 @@ export default function HomeDashboard() {
                 <p className="mt-0.5 text-xs text-slate-500">From a warm-up to a competition-level Challenge, one idea at a time.</p>
               </div>
               <span className="tnum text-xs text-slate-500">
-                {ladders.filter((l) => l.next === null).length}/{ladders.length} completed
+                {ladders.filter((l) => l.next === null).length} of {ladders.length} completed
               </span>
             </div>
-            <LadderList ladders={orderedLadders} solvedIds={solvedIds} startedIds={startedIds} onOpen={open} />
-          </section>
 
-          <section className="rounded-md border border-slate-200 bg-white">
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4 pt-2">
-              <div role="tablist" aria-label="Problems" className="flex gap-1">
-                {([
-                  ["for-you", "Problems for you"],
-                  ["queue", `My queue (${queue.length}/5)`],
-                ] as [FeedTab, string][]).map(([key, label]) => (
-                  <button
-                    key={key}
-                    role="tab"
-                    aria-selected={tab === key}
-                    onClick={() => selectTab(key)}
-                    className={`-mb-px border-b-2 px-3 py-2.5 text-sm transition-colors ${
-                      tab === key
-                        ? "border-slate-900 font-medium text-slate-900"
-                        : "border-transparent text-slate-500 hover:text-slate-900"
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
+            <div className="rounded-md border border-slate-200 bg-white">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4 pt-2">
+                <div role="tablist" aria-label="Ladders" className="flex gap-1">
+                  {([
+                    ["for-you", "For you"],
+                    ["all", `All ladders (${ladders.length})`],
+                    ["queue", `My queue (${queue.length}/5)`],
+                  ] as [FeedTab, string][]).map(([key, label]) => (
+                    <button
+                      key={key}
+                      role="tab"
+                      aria-selected={tab === key}
+                      onClick={() => selectTab(key)}
+                      className={`-mb-px border-b-2 px-3 py-2.5 text-sm transition-colors ${
+                        tab === key
+                          ? "border-slate-900 font-medium text-slate-900"
+                          : "border-transparent text-slate-500 hover:text-slate-900"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+
+                {tab === "all" && (
+                  <div className="flex flex-wrap items-center gap-3 pb-2">
+                    <select
+                      value={topicFilter}
+                      onChange={(e) => setTopicFilter(e.target.value)}
+                      aria-label="Topic"
+                      className="h-7 rounded-md border border-slate-200 bg-white px-2 text-xs text-slate-700"
+                    >
+                      <option value="all">All topics</option>
+                      {topics.map((t) => (
+                        <option key={t} value={t}>
+                          {t}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs text-slate-500">Starts at</span>
+                      <div className="flex overflow-hidden rounded-md border border-slate-200" role="group" aria-label="Starting level">
+                        {(["all", "Easy", "Medium", "Hard+"] as LevelFilter[]).map((f) => (
+                          <button
+                            key={f}
+                            onClick={() => setLevelFilter(f)}
+                            aria-pressed={levelFilter === f}
+                            className={`border-l border-slate-200 px-2.5 py-1 text-xs first:border-l-0 ${
+                              levelFilter === f ? "bg-slate-900 text-white" : "bg-white text-slate-600 hover:bg-slate-50"
+                            }`}
+                          >
+                            {f === "all" ? "Any" : f}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <label className="flex cursor-pointer items-center gap-1.5 text-xs text-slate-600">
+                      <input
+                        type="checkbox"
+                        checked={hideSolved}
+                        onChange={(e) => setHideSolved(e.target.checked)}
+                        className="h-3.5 w-3.5 accent-slate-900"
+                      />
+                      Hide completed
+                    </label>
+                  </div>
+                )}
               </div>
 
-              {tab === "for-you" && stage !== "new" && (
-                <div className="flex flex-wrap items-center gap-3 pb-2">
-                  <div className="flex overflow-hidden rounded-md border border-slate-200" role="group" aria-label="Level">
-                    {(["all", "Easy", "Medium", "Hard+"] as LevelFilter[]).map((f) => (
-                      <button
-                        key={f}
-                        onClick={() => setLevelFilter(f)}
-                        aria-pressed={levelFilter === f}
-                        className={`border-l border-slate-200 px-2.5 py-1 text-xs first:border-l-0 ${
-                          levelFilter === f ? "bg-slate-900 text-white" : "bg-white text-slate-600 hover:bg-slate-50"
-                        }`}
-                      >
-                        {f === "all" ? "All" : f}
-                      </button>
-                    ))}
-                  </div>
-                  <label className="flex cursor-pointer items-center gap-1.5 text-xs text-slate-600">
-                    <input
-                      type="checkbox"
-                      checked={hideSolved}
-                      onChange={(e) => setHideSolved(e.target.checked)}
-                      className="h-3.5 w-3.5 accent-slate-900"
-                    />
-                    Hide solved
-                  </label>
-                </div>
-              )}
-            </div>
-
-            {tab === "for-you" && (
-              <div className="divide-y divide-slate-100">
-                {visibleFeed.length === 0 ? (
+              {tab === "for-you" &&
+                (recommended.length === 0 ? (
                   <p className="py-10 text-center text-sm text-slate-500">
-                    Nothing matches these filters. Try &ldquo;All&rdquo;.
+                    No new ladders to suggest right now.{" "}
+                    <button className="underline underline-offset-2 hover:text-slate-900" onClick={() => selectTab("all")}>
+                      See all ladders
+                    </button>
                   </p>
                 ) : (
-                  visibleFeed.map(({ problem, reasons, ladder, entry }) => (
-                    <ProblemRow
-                      key={problem.id}
-                      problem={problem}
-                      reasons={reasons}
-                      context={ladder ? ladderContext(ladder, entry) : undefined}
-                      compact={isHeavy}
-                      actions={
-                        ladder
-                          ? {
-                              ...actionsFor(problem),
-                              isStarted: ladder.solvedCount > 0 || startedIds.has(entry.id),
-                              isSolved: ladder.next === null,
-                              onOpen: () => open(entry),
-                              openLabel: ladder.next === null ? "Review" : ladder.solvedCount > 0 || startedIds.has(entry.id) ? "Continue" : "Start",
-                            }
-                          : actionsFor(problem)
-                      }
+                  <>
+                    <LadderList
+                      ladders={recommended}
+                      reasons={recommendedReasons}
+                      queue={ladderQueue}
+                      solvedIds={solvedIds}
+                      startedIds={startedIds}
+                      onOpen={open}
+                      bare
                     />
-                  ))
-                )}
-                {feed.length > pageSize && (
-                  <Button variant="ghost" size="sm" className="h-10 w-full rounded-none text-[13px] text-slate-600 hover:bg-slate-50 hover:text-slate-900" onClick={() => setShowAll((v) => !v)}>
-                    {showAll ? "Show less" : `Show ${feed.length - pageSize} more`}
-                  </Button>
-                )}
-              </div>
-            )}
+                    <button
+                      className="h-10 w-full border-t border-slate-100 text-[13px] text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                      onClick={() => selectTab("all")}
+                    >
+                      Browse all {ladders.length} ladders
+                    </button>
+                  </>
+                ))}
 
-            {tab === "queue" &&
-              (queue.length === 0 ? (
-                <div className="flex flex-col items-center gap-2 py-10 text-center text-sm text-slate-500">
-                  <ListPlus className="h-5 w-5 text-slate-300" />
-                  <p>Save up to 5 problems you want to come back to.</p>
-                  <p className="text-xs">
-                    Use the <ListPlus className="inline h-3.5 w-3.5" /> button on any problem.
-                  </p>
-                </div>
-              ) : (
-                <div className="divide-y divide-slate-100">
-                  {queue.map((q) => {
-                    const p = problemsById.get(q.id);
-                    if (!p) return null;
-                    return <ProblemRow key={q.id} problem={p} compact actions={actionsFor(p)} />;
-                  })}
-                </div>
-              ))}
+              {tab === "all" && (
+                <>
+                  <LadderList
+                    ladders={visibleLadders}
+                    queue={ladderQueue}
+                    solvedIds={solvedIds}
+                    startedIds={startedIds}
+                    onOpen={open}
+                    bare
+                  />
+                  {filteredLadders.length > pageSize && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-10 w-full rounded-none border-t border-slate-100 text-[13px] text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                      onClick={() => setShowAll((v) => !v)}
+                    >
+                      {showAll ? "Show less" : `Show ${filteredLadders.length - pageSize} more`}
+                    </Button>
+                  )}
+                  {filteredSingles.length > 0 && (
+                    <div className="border-t border-slate-200">
+                      <h3 className="px-4 pb-1 pt-3 text-[11px] font-medium uppercase tracking-[0.08em] text-slate-500">Single problems</h3>
+                      <div className="divide-y divide-slate-100">
+                        {filteredSingles.map((p) => (
+                          <ProblemRow key={p.id} problem={p} compact actions={actionsFor(p)} />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {tab === "queue" &&
+                (queue.length === 0 ? (
+                  <div className="flex flex-col items-center gap-2 py-10 text-center text-sm text-slate-500">
+                    <ListPlus className="h-5 w-5 text-slate-300" />
+                    <p>Save up to 5 ladders or problems you want to come back to.</p>
+                    <p className="text-xs">
+                      Use the <ListPlus className="inline h-3.5 w-3.5" /> button on any ladder.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-slate-100">
+                    {queue.map((q) => {
+                      const p = problemsById.get(q.id);
+                      if (!p) return null;
+                      const ladder = ladderOfProblem.get(p.id);
+                      const entry = ladder?.root.id === p.id ? (ladder.next?.problem ?? p) : p;
+                      return (
+                        <ProblemRow
+                          key={q.id}
+                          problem={p}
+                          compact
+                          context={ladder?.root.id === p.id ? `Ladder · ${ladder.solvedCount}/${ladder.steps.length}` : undefined}
+                          actions={{ ...actionsFor(p), onOpen: () => open(entry) }}
+                        />
+                      );
+                    })}
+                  </div>
+                ))}
+            </div>
           </section>
         </div>
 
