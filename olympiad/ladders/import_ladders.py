@@ -31,6 +31,8 @@ import re
 import sys
 from pathlib import Path
 
+from subdomains import LADDER_SUBDOMAIN, ladder_categories
+
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 LADDERS_MD = HERE / "LADDERS_v0.1.md"
@@ -52,16 +54,8 @@ DIFFICULTY_BY_LEVEL = {
     "aime / junior olympiad": 8,
 }
 
-# Ladder key -> categories (ids and names from src/lib/categories.ts).
-CATEGORIES = {
-    "0": [(5, "Combinatorics & Discrete Mathematics"), (24, "Enumeration")],
-    "A": [(4, "Number Theory"), (22, "Elementary Number Theory")],
-    "B": [(4, "Number Theory"), (22, "Elementary Number Theory"), (83, "Diophantine Equations")],
-    "C": [(4, "Number Theory"), (22, "Elementary Number Theory")],
-    "D": [(2, "Geometry"), (15, "Analytic Geometry"), (61, "Coordinate Systems")],
-    "E": [(4, "Number Theory"), (22, "Elementary Number Theory"), (83, "Diophantine Equations")],
-    "F": [(4, "Number Theory"), (22, "Elementary Number Theory")],
-}
+# Ladder key -> [(level1 id, name), (level2 id, name), (level3 id, name)]; the list lives in subdomains.py.
+CATEGORIES = {key: ladder_categories(key) for key in LADDER_SUBDOMAIN}
 
 
 # Steps written as follow-ups in the ladder table ("On a 4 × 4 grid?") must stand alone once each
