@@ -1,5 +1,5 @@
 // Real categories from Supabase (categories_rows.csv)
-// Total: 103 categories (Level 1: 10, Level 2: 34, Level 3: 59)
+// Total: 115 categories (Level 1: 10, Level 2: 35, Level 3: 70; ids 103-115 are the olympiad subdomains)
 
 export interface Category {
   id: number;
@@ -170,6 +170,21 @@ export const CATEGORIES_DATA: Category[] = [
   { id: 100, name: 'Descriptive Statistics', level: 3, parent_id: 28 },
   { id: 101, name: 'Estimation and Hypothesis Testing', level: 3, parent_id: 28 },
   { id: 102, name: 'Regression Analysis', level: 3, parent_id: 28 },
+
+  // Olympiad subdomains for the skill tree (2026-10-09; source: olympiad/ladders/subdomains.py)
+  { id: 103, name: 'Sequences and Recurrences', level: 3, parent_id: 11 },
+  { id: 104, name: 'Functional Equations', level: 3, parent_id: 11 },
+  { id: 105, name: 'Floor and Fractional Parts', level: 3, parent_id: 11 },
+  { id: 106, name: 'Divisors and Divisibility', level: 3, parent_id: 22 },
+  { id: 107, name: 'Digits and Number Bases', level: 3, parent_id: 22 },
+  { id: 108, name: 'Combinatorial Reasoning', level: 2, parent_id: 5 },
+  { id: 109, name: 'Invariants and Processes', level: 3, parent_id: 108 },
+  { id: 110, name: 'Extremal Combinatorics', level: 3, parent_id: 108 },
+  { id: 111, name: 'Pigeonhole Principle', level: 3, parent_id: 108 },
+  { id: 112, name: 'Games and Strategies', level: 3, parent_id: 108 },
+  { id: 113, name: 'Combinatorial Geometry', level: 3, parent_id: 108 },
+  { id: 114, name: 'Double Counting', level: 3, parent_id: 24 },
+  { id: 115, name: 'Triangle Centres and Circles', level: 3, parent_id: 14 },
 ];
 
 // Helper functions
