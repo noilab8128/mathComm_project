@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Math Quest 문제 검증 설계안</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&family=Nanum+Myeongjo:wght@700;800&display=swap">
+<style>
+/* Layout: single reading column like an internal design memo on graph paper; tables and the pipeline break out slightly wider. */
+:root {
+  --paper: #f6f8f7;
+  --sheet: #ffffff;
+  --ink: #1b2422;
+  --muted: #5b6764;
+  --rule: #d6dedb;
+  --grid: rgba(31, 95, 115, 0.05);
+  --accent: #1f5f73;
+  --accent-soft: #e3eef1;
+  --ok: #2f7d4f;
+  --ok-soft: #e4f2e9;
+  --warn: #9a6b12;
+  --warn-soft: #f7eed9;
+  --bad: #a3392f;
+  --bad-soft: #f8e6e3;
+  --new: #6b4fa3;
+  --new-soft: #eee9f7;
+  --font-display: "Nanum Myeongjo", "AppleMyungjo", "Batang", serif;
+  --font-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #121816; --sheet: #182120; --ink: #e3ebe8; --muted: #9aa8a4; --rule: #2c3936;
+    --grid: rgba(120, 190, 210, 0.05); --accent: #7cc0d4; --accent-soft: #1d3138;
+    --ok: #7fcf9c; --ok-soft: #1b3326; --warn: #e2b862; --warn-soft: #362c17;
+    --bad: #ef9a8f; --bad-soft: #3a201d;
+    --new: #b9a3e8; --new-soft: #2a2340; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #121816; --sheet: #182120; --ink: #e3ebe8; --muted: #9aa8a4; --rule: #2c3936;
+  --grid: rgba(120, 190, 210, 0.05); --accent: #7cc0d4; --accent-soft: #1d3138;
+  --ok: #7fcf9c; --ok-soft: #1b3326; --warn: #e2b862; --warn-soft: #362c17;
+  --bad: #ef9a8f; --bad-soft: #3a201d;
+  --new: #b9a3e8; --new-soft: #2a2340; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--paper);
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 24px 24px;
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.7;
+  padding-inline: 16px;
+  padding-block: 40px 80px;
+}
+.wrap { max-width: 900px; margin: 0 auto; display: grid; gap: 56px; }
+.prose { max-width: 68ch; }
+h1, h2, h3 { text-wrap: balance; margin: 0; }
+h1 { font-family: var(--font-display); font-size: clamp(30px, 5vw, 42px); line-height: 1.25; font-weight: 800; }
+h2 { font-family: var(--font-display); font-size: 26px; line-height: 1.3; font-weight: 800; }
+h3 { font-size: 17px; font-weight: 700; }
+p { margin: 0; }
+section { display: grid; gap: 18px; }
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+.meta { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 14px; color: var(--muted); }
+.meta b { color: var(--ink); font-weight: 500; }
+header { display: grid; gap: 16px; border-bottom: 2px solid var(--ink); padding-bottom: 28px; }
+.lede { font-size: 18px; max-width: 64ch; }
+code, .mono { font-family: var(--font-mono); font-size: 0.88em; }
+code { background: var(--accent-soft); padding: 1px 5px; border-radius: 3px; overflow-wrap: anywhere; }
+
+.verdict {
+  background: var(--sheet); border: 1px solid var(--rule); border-left: 4px solid var(--accent);
+  padding: 22px 24px; display: grid; gap: 10px;
+}
+.verdict p { font-size: 17px; }
+
+.changes { background: var(--sheet); border: 1px solid var(--rule); padding: 18px 22px; display: grid; gap: 8px; }
+.changes ul { margin: 0; padding-left: 1.1em; display: grid; gap: 4px; font-size: 15px; }
+
+.split { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; }
+.role { background: var(--sheet); border: 1px solid var(--rule); padding: 20px 22px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.role .where { font-family: var(--font-mono); font-size: 13px; color: var(--accent); }
+.role ul { margin: 0; padding-left: 1.1em; display: grid; gap: 4px; font-size: 15px; }
+
+.table-wrap { overflow-x: auto; background: var(--sheet); border: 1px solid var(--rule); }
+table { border-collapse: collapse; width: 100%; min-width: 660px; font-size: 14.5px; line-height: 1.55; }
+th, td { text-align: left; vertical-align: top; padding: 11px 14px; border-bottom: 1px solid var(--rule); }
+th { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 500; background: var(--paper); }
+tr:last-child td { border-bottom: 0; }
+td.lv { font-family: var(--font-mono); font-weight: 500; color: var(--accent); white-space: nowrap; }
+td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.chip { display: inline-block; font-size: 12px; font-weight: 500; padding: 1px 8px; border-radius: 999px; white-space: nowrap; }
+.chip.ok { background: var(--ok-soft); color: var(--ok); }
+.chip.warn { background: var(--warn-soft); color: var(--warn); }
+.chip.bad { background: var(--bad-soft); color: var(--bad); }
+.chip.new { background: var(--new-soft); color: var(--new); }
+.chip.base { background: var(--accent-soft); color: var(--accent); }
+
+/* pipeline */
+.pipe { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; counter-reset: s; }
+.stage { background: var(--sheet); border: 1px solid var(--rule); padding: 14px 14px 16px; display: grid; gap: 6px; align-content: start; min-width: 0; }
+.stage::before { counter-increment: s; content: counter(s); font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.stage b { font-size: 15px; }
+.stage span { font-size: 13.5px; color: var(--muted); line-height: 1.5; }
+.stage.gate { border-color: var(--accent); background: var(--accent-soft); }
+.lane { font-family: var(--font-mono); font-size: 11.5px; letter-spacing: 0.04em; color: var(--accent); }
+
+.callout { display: grid; gap: 8px; padding: 18px 20px; background: var(--ok-soft); border: 1px solid var(--rule); align-content: start; min-width: 0; }
+.callout.warn { background: var(--warn-soft); }
+.callout.bad { background: var(--bad-soft); }
+.callout ul { margin: 0; padding-left: 1.1em; display: grid; gap: 4px; font-size: 14.5px; }
+.stat { font-family: var(--font-mono); font-size: 30px; font-weight: 500; color: var(--ok); line-height: 1.1; font-variant-numeric: tabular-nums; }
+
+.qa { display: grid; gap: 14px; }
+.q { background: var(--sheet); border: 1px solid var(--rule); padding: 18px 22px; display: grid; gap: 8px; }
+.q .ask { font-size: 14px; color: var(--muted); }
+.q .ans { font-size: 17px; font-weight: 700; }
+.q ul { margin: 0; padding-left: 1.1em; display: grid; gap: 4px; font-size: 15px; }
+.q .opts { display: flex; flex-wrap: wrap; gap: 8px; }
+.opt { font-size: 13.5px; border: 1px solid var(--rule); padding: 3px 10px; border-radius: 4px; }
+.opt.rec { border-color: var(--accent); color: var(--accent); font-weight: 500; }
+
+ol.phases { margin: 0; padding-left: 1.3em; display: grid; gap: 10px; }
+ol.phases li::marker { font-family: var(--font-mono); color: var(--accent); }
+pre.schema { margin: 0; overflow-x: auto; background: var(--sheet); border: 1px solid var(--rule); padding: 16px 18px; font-family: var(--font-mono); font-size: 13px; line-height: 1.6; }
+footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--rule); padding-top: 18px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">설계 제안 · 논의용</div>
+    <h1>생성 문제 검증, 어디서 어떻게 할까</h1>
+    <div class="meta">
+      <span>작성 <b>2026-10-14</b></span>
+      <span>대상 <b>Math Quest 사다리 문제 (공개 145문제와 앞으로 만들 문제)</b></span>
+      <span>근거 <b>OPERATING_POLICY, LADDER_RULES_v2, WORKLOG 10-04~10-11, review_v0.3.pdf, verify 스크립트 6개</b></span>
+    </div>
+    <p class="lede">문제는 공식 오픈 뒤에도 배치 단위로 계속 만들어집니다. 두 사람이 따로 일해도 검증은 저절로 돌아가야 하고, 사람은 마지막 승인만 해야 합니다. 이 문서는 검증 절차와 방법, 그것을 만들기 위해 필요한 것, 함께 정해야 할 것을 정리합니다.</p>
+  </header>
+
+  <section>
+    <div class="verdict">
+      <div class="eyebrow">요약</div>
+      <p><b>검증은 GitHub Actions에서 자동으로 실행하고, 결과는 Supabase에 쌓고, admin 페이지에서 사람이 승인합니다. 승인된 문제만 학생에게 보입니다.</b></p>
+    </div>
+    <div class="split">
+      <div class="role">
+        <div class="where">GitHub Actions</div>
+        <h3>검증 실행</h3>
+        <ul>
+          <li>문제 파일이 push되면 자동 실행</li>
+          <li>Python 검사(형식, 검증 스크립트, 정답 대조)</li>
+          <li>Claude를 headless로 실행하는 AI 검사</li>
+          <li>통과하면 숨김 상태로 import</li>
+        </ul>
+      </div>
+      <div class="role">
+        <div class="where">Supabase</div>
+        <h3>결과 보관</h3>
+        <ul>
+          <li>문제별, 단계별 검증 결과와 근거</li>
+          <li>어느 커밋, 어느 실행에서 나온 결과인지</li>
+          <li>공개 후 오답 분포 집계</li>
+        </ul>
+      </div>
+      <div class="role">
+        <div class="where">src/app/admin/problems</div>
+        <h3>사람 승인</h3>
+        <ul>
+          <li>검토 대기열에서 결과를 보고 승인 또는 반려</li>
+          <li>"증명 의존" 문제는 증명을 읽고 판단</li>
+          <li>다시 검증 버튼</li>
+        </ul>
+      </div>
+    </div>
+    <p class="prose">웹 서버(Netlify)에서는 검증을 돌리지 않습니다. Netlify Functions는 JavaScript, TypeScript, Go만 지원해서 Python 스크립트를 실행할 수 없고, 무거운 계산이나 AI가 만든 코드를 학생 요청을 처리하는 서버에서 실행하면 안 됩니다. Supabase Edge Functions도 TypeScript 전용입니다.</p>
+  </section>
+
+  <section>
+    <div class="eyebrow">절차</div>
+    <h2>초안부터 공개까지</h2>
+    <div class="pipe">
+      <div class="stage"><span class="lane">문제 담당</span><b>Markdown과 verify 스크립트 push</b><span>PR 하나에 배치 하나</span></div>
+      <div class="stage"><span class="lane">Actions · Python</span><b>L0 형식, L1 스크립트, 정답 대조</b><span>실패하면 여기서 멈춤</span></div>
+      <div class="stage"><span class="lane">Actions · Claude</span><b>L2–L6 AI 검증</b><span>독립 재계산, 풀이, 애매함, 규칙, 유사도</span></div>
+      <div class="stage"><span class="lane">Actions → Supabase</span><b>숨김 상태로 import, 결과 저장</b><span>학생에게는 아직 안 보임</span></div>
+      <div class="stage gate"><span class="lane">admin</span><b>L7 사람 승인</b><span>승인하면 공개, 반려하면 사유 기록</span></div>
+      <div class="stage"><span class="lane">밤 · SQL</span><b>L8 공개 후 관찰</b><span>이상한 문제를 대기열로 되돌림</span></div>
+    </div>
+    <div class="split">
+      <div class="role">
+        <h3>트리거</h3>
+        <ul>
+          <li><b>문제 파일 PR/push</b> (<code>olympiad/ladders/**</code>): 주 트리거. 문제 담당자는 지금처럼 markdown을 쓰고 push만 합니다.</li>
+          <li><b>매일 밤</b>: "대기" 상태 문제를 다시 확인하고 L8을 집계합니다.</li>
+          <li><b>admin의 다시 검증 버튼</b>: GitHub API(<code>workflow_dispatch</code>)로 같은 workflow를 실행합니다.</li>
+        </ul>
+      </div>
+      <div class="role">
+        <h3>AI 검사의 자동 실행</h3>
+        <ul>
+          <li>Claude Code 스킬은 세션 안에서만 돌기 때문에, Actions에서 Claude Code를 headless로 실행합니다(<code>claude -p</code> 또는 공식 GitHub Action).</li>
+          <li>스킬과 프롬프트는 저장소의 <code>.claude/skills/</code>에 둡니다. 로컬에서 수동으로 돌릴 때와 CI에서 같은 스킬을 씁니다.</li>
+          <li>AI가 만든 코드는 실행할 때마다 새로 뜨는 Actions 가상 머신 안에서만 실행됩니다.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow">방법</div>
+    <h2>검증 단계</h2>
+    <p class="prose"><span class="chip base">기존 규칙</span>은 이미 문서에 있는 기준이고, <span class="chip new">신규 제안</span>은 새로 더하는 방법입니다. <b>차단</b>은 실패하면 import를 멈추고, <b>경고</b>는 기록만 하며 L7에서 사람이 판단합니다. 숫자 검사(L1, L2)는 답이 맞는지만 알려 줍니다. 좋은 문제인지는 L4, L5, L8이 봅니다.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>단계</th><th>내용</th><th>실행</th><th>처리</th><th>구분</th></tr></thead>
+        <tbody>
+          <tr><td class="lv">L0</td><td><b>형식 점검.</b> 정답이 <code>/api/check-answer</code>로 해석되는지, 힌트에 정답이 없는지(<code>import_guides_hints.py</code>의 검사 재사용), "use your answer from step 2" 같은 표현, 난이도 라벨, subdomain, Theory 카드, 같은 사다리 안의 중복 정답</td><td>Python</td><td>차단</td><td><span class="chip new">신규 제안</span></td></tr>
+          <tr><td class="lv">L1</td><td><b>작성자 검증 스크립트</b> 실행, 그리고 markdown 정답과 대조</td><td>Python</td><td>차단</td><td><span class="chip base">기존 규칙</span></td></tr>
+          <tr><td class="lv">L2</td><td><b>독립 재계산.</b> 문제 문장만 받은 별도 AI가 자기 코드를 짜서 답을 비교합니다. 작성자가 문제를 잘못 읽으면 정답과 스크립트가 같은 방향으로 틀리는데, 이것을 잡습니다. 끝까지 셀 수 없는 Challenge는 작은 경우만 확인하고 "증명 의존"으로 표시합니다</td><td>Claude</td><td>차단</td><td><span class="chip new">신규 제안</span></td></tr>
+          <tr><td class="lv">L3</td><td><b>AI 독립 풀이.</b> 정답 없이 여러 번 풀어 일치도를 보고, 애매한 곳을 보고받습니다. AIME 수준은 AI도 자주 틀리므로 신호로만 씁니다</td><td>Claude</td><td>경고</td><td><span class="chip base">기존 규칙</span></td></tr>
+          <tr><td class="lv">L4</td><td><b>애매함 탐지.</b> 가능한 다른 해석(0 포함 여부, 순서 유무 등)마다 답을 계산해서 답이 갈리면 표시</td><td>Claude</td><td>경고</td><td><span class="chip new">신규 제안</span></td></tr>
+          <tr><td class="lv">L5</td><td><b>규칙 평가.</b> LADDER_RULES_v2 §9: 한 단계에 한 수, 숫자가 그 수를 시험하는지, 손으로 풀 수 있는지(5.6), Challenge가 추측으로 풀리지 않는지(4.3)</td><td>Claude</td><td>경고</td><td><span class="chip new">신규 제안</span></td></tr>
+          <tr><td class="lv">L6</td><td><b>원본 유사도와 저작권.</b> 아이디어 카드(Supabase에서 서비스 키로 읽음)와 비교, 변형 포인트 웹 검색 (규칙 2.4)</td><td>Claude</td><td>경고</td><td><span class="chip base">기존 규칙</span></td></tr>
+          <tr><td class="lv">L7</td><td><b>사람 승인.</b> L0–L6 결과와 "증명 의존" 표시를 보고 승인 또는 반려</td><td>admin</td><td>공개 조건</td><td><span class="chip base">기존 규칙</span></td></tr>
+          <tr><td class="lv">L8</td><td><b>공개 후 관찰.</b> 한 오답에 제출이 몰림(정답 오류나 애매함의 신호), 정답률, 그만두는 단계, 신고 버튼</td><td>Supabase SQL</td><td>대기열로 되돌림</td><td><span class="chip new">신규 제안</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow">현재 상태</div>
+    <h2>기존 검증 스크립트 점검</h2>
+    <p class="prose">대상은 <code>pilot_v2/verify_pilot_a2.py</code>, <code>v2/verify_v2_batch1~4.py</code>, <code>v2/verify_v2_older.py</code>입니다. 코드를 읽고 실행하고, markdown 정답 108개와 대조했습니다. 계산이 가능한 Challenge는 다른 방법으로 다시 풀었습니다.</p>
+    <div class="split">
+      <div class="callout">
+        <div class="stat">220 / 220</div>
+        <p><b>모든 검사 통과.</b> WORKLOG에 적힌 수(28, 45, 40, 37, 45, 25)와 같고, 전체 실행은 15초 안팎입니다.</p>
+      </div>
+      <div class="callout">
+        <div class="stat">108 / 108</div>
+        <p><b>markdown 정답과 스크립트 기대값 일치.</b> 99개는 정답 값을 직접 확인하고, 9개는 목록 등으로 간접 확인합니다.</p>
+      </div>
+      <div class="callout">
+        <div class="stat">11 / 11</div>
+        <p><b>Challenge 독립 재계산 일치.</b> P2, P8, P9, P13, P15, P16, P17, P19, P21, 그리고 P18(n = 7, 8로 범위 확장). 예: P17은 GF(2) 계수, P19는 최단 경로, P21은 8개 추를 직접 셈.</p>
+      </div>
+    </div>
+    <p class="prose"><b>지금 공개된 답은 맞습니다. 다만 이 스크립트를 자동 검증의 기반으로 쓰려면 다음을 고쳐야 합니다.</b></p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>심각도</th><th>문제</th><th>영향</th><th>수정</th></tr></thead>
+        <tbody>
+          <tr><td><span class="chip bad">자동화 차단</span></td><td><b>검사가 실패해도 종료 코드가 0.</b> 마지막에 "x/y checks pass"만 출력합니다.</td><td>CI가 실패를 통과로 처리합니다.</td><td>실패가 있으면 <code>sys.exit(1)</code></td></tr>
+          <tr><td><span class="chip bad">자동화 차단</span></td><td><b>스크립트가 markdown을 읽지 않음.</b> 기대값을 코드에 직접 적고, import 스크립트도 verify를 실행하지 않습니다.</td><td>검증 뒤에 markdown 정답만 바뀌어도 그대로 import됩니다.</td><td>정답을 <code>parse()</code>로 읽어 비교하고, 단계마다 검사가 있는지 확인</td></tr>
+          <tr><td><span class="chip warn">검사가 약함</span></td><td><b>P7 Challenge:</b> "128줄이면 8개 보장"을 <code>(128).bit_length() == 8</code>로 확인합니다. 항상 참인 식입니다.</td><td>128 쪽 하한은 증명과 n ≤ 8 전수 검사에만 기댑니다.</td><td>검사 이름을 실제 내용에 맞추고 "증명 의존"으로 표시</td></tr>
+          <tr><td><span class="chip warn">검사가 약함</span></td><td><b>P10 Challenge:</b> <code>max(1, N + j − N)</code>는 j와 같아서 집합 크기가 저절로 2027이 됩니다.</td><td>2027이라는 답 자체를 확인하지 않습니다.</td><td>위와 같음</td></tr>
+          <tr><td><span class="chip warn">설명과 다름</span></td><td><b>P10 풀이:</b> "m, n이 2500까지 모두 확인"이라고 적었지만, 실제로는 1500까지와 일부 표본만 확인합니다.</td><td>학생에게 보이는 풀이 문구가 실제보다 강합니다.</td><td>문구를 실제 범위에 맞춤</td></tr>
+          <tr><td><span class="chip warn">정답 미확인</span></td><td><b>P2 Step 2, P18 Step 2:</b> 값 목록이나 경로만 확인하고 정답(6, 4) 자체는 확인하지 않습니다.</td><td>정답 칸 오타를 놓칩니다.</td><td>정답 값을 직접 확인</td></tr>
+          <tr><td><span class="chip base">한계 근접</span></td><td><b>P15 Challenge:</b> 8쌍(예: 7과 30)은 승수 s가 10,800 근처에서야 나오는데, 탐색 한도가 20,000입니다.</td><td>지금은 맞습니다. 더 큰 수를 쓰는 새 문제에서는 한도에 걸려 실패할 수 있습니다.</td><td>한도를 문제 크기에 맞추고 찾은 s를 기록</td></tr>
+          <tr><td><span class="chip base">사람 확인 필요</span></td><td><b>증명에 기대는 Challenge:</b> P3(n ≤ 7만 전수), P7(n ≤ 8), P10, P18(n ≤ 8), P20(하한은 AM–GM 증명)</td><td>작은 경우가 맞아도 규칙이 깨질 수 있습니다.</td><td>"증명 의존"으로 표시하고 L7에서 증명 확인</td></tr>
+          <tr><td><span class="chip base">형식</span></td><td><b>파일마다 형식이 다름.</b> 파일럿은 검사 이름에 사다리 번호가 없고(<code>"Step 1: …"</code>), <code>check()</code>를 파일마다 새로 정의합니다.</td><td>결과를 문제와 자동으로 연결할 수 없습니다.</td><td>공용 모듈 하나와 이름 규칙(<code>"P1 Step 1"</code>)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow">현재 상태</div>
+    <h2>review_v0.3.pdf에 적용해 본 결과</h2>
+    <div class="split">
+      <div class="callout">
+        <div class="stat">34 / 34</div>
+        <p><b>독립 재계산 일치.</b> I, J, K, M, N, O, Q, S, U, V, W, X, Y, Z, AB 사다리의 단계와 Challenge 답 34개를 PDF 풀이와 작성자 스크립트를 보지 않고 새로 계산했습니다.</p>
+      </div>
+      <div class="callout warn">
+        <p><b>답은 맞지만 L0/L5에 걸릴 만한 것</b></p>
+        <ul>
+          <li>X: Step 1과 Step 5의 정답이 모두 3 (P20 Step 2·4와 같은 유형)</li>
+          <li>M: Step 3의 답 27이 Step 4의 답 27/10에 드러남</li>
+          <li>O 3–5, R 3–5, P 1–3, X 3–4: 풀이가 "computer search"뿐 (규칙 5.6)</li>
+          <li>S, T, U, V, Z: 원본과 가깝다고 PDF가 표시 (규칙 2.4)</li>
+        </ul>
+      </div>
+    </div>
+    <p class="prose">v0.3을 v2 구조로 다시 만들 때 이 항목들을 함께 고치면 됩니다.</p>
+  </section>
+
+  <section>
+    <div class="eyebrow">공유 사항</div>
+    <h2>검증과 함께 알아야 할 것</h2>
+    <div class="qa">
+      <div class="q">
+        <h3>Challenge가 승인 대기열에 나오지 않음</h3>
+        <p>import 스크립트는 단계에 <code>is_generated = true</code>, Challenge에 <code>false</code>를 넣습니다(<code>import_ladders_v2.py</code> 137행). admin의 "Pending AI Review" 필터와 승인 버튼은 <code>is_generated = true</code>인 문제에만 나오므로, <b>Challenge 28개는 지금 승인 화면에 나타나지 않습니다.</b> Challenge도 생성한 문제이므로 플래그 의미를 다시 정해야 합니다.</p>
+      </div>
+      <div class="q">
+        <h3>숨김만으로는 정답이 보호되지 않음</h3>
+        <p><code>solutions</code> 테이블은 공개 키로 읽을 수 있습니다(WORKLOG §10). 승인 전 문제를 화면에서 숨겨도 정답은 그대로 읽힙니다. 숨김 처리와 <code>solutions</code> 읽기 정책 수정을 같이 해야 합니다.</p>
+      </div>
+      <div class="q">
+        <h3>공개 저장소와 Actions 로그</h3>
+        <p>공개 저장소에서는 Actions 로그를 누구나 봅니다. 검증 로그에는 정답과 출처가 찍힙니다. 이미 커밋된 <code>LADDERS_v2_batch*.md</code>와 v0.x 초안에도 정답과 <code>Idea card: SL…</code> 줄이 들어 있어서, 출처를 내부용으로 둔다는 OPERATING_POLICY 2.4와 맞지 않습니다.</p>
+      </div>
+      <div class="q">
+        <h3>검증 범위</h3>
+        <ul>
+          <li><b>먼저:</b> 이미 공개된 145문제. v2 P1–P21(108문제)과 v0.1 사다리 7개(37문제)가 모두 <code>is_reviewed = false</code> 상태로 학생에게 보이고 있습니다.</li>
+          <li><b>v0.1:</b> 단계가 풀이 경로에서 벗어난 곳과, 1단계가 v2 기준보다 낮은 문제가 있습니다(WORKLOG §11-3). 검증 결과로 교체 여부를 정할 수 있습니다.</li>
+          <li><b>파이프라인 밖:</b> 증명 문제(16 + 21)는 숫자 답이 없어 L1–L4가 맞지 않습니다. 사람이 읽는 별도 목록으로 관리합니다. Theory 카드 링크도 주기적으로 확인합니다.</li>
+          <li><b>나중에:</b> 초안 G/H(v0.2), I–AB(v0.3)는 v2로 다시 만들 때 같은 절차를 거칩니다.</li>
+        </ul>
+      </div>
+      <div class="q">
+        <h3>채점기와의 관계</h3>
+        <p>풀이 제출 채점(<code>/api/grade-solution</code>)은 저장된 정답을 쓰지 않고 AI가 직접 풀어 판단합니다. 그래서 어려운 Challenge는 잘못 채점될 수 있습니다(OPERATING_POLICY 3). 검증을 통과한 정답을 채점에도 쓰게 하면 이 한계가 줄어듭니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow">이행</div>
+    <h2>만들기 위해 필요한 것</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>항목</th><th>내용</th><th>담당</th></tr></thead>
+        <tbody>
+          <tr><td><b>verify 스크립트 정비</b></td><td>종료 코드, markdown 정답 대조, 공용 모듈과 이름 규칙, 위 표의 약한 검사 보완. P21 Challenge(8개 추)는 직접 셀 수 있으니 직접 세는 검사 추가</td><td>문제 담당</td></tr>
+          <tr><td><b>검증 스킬</b></td><td>L2–L6 프롬프트와 절차를 <code>.claude/skills/</code>에. 로컬과 CI에서 같은 스킬 사용</td><td>문제 담당</td></tr>
+          <tr><td><b>GitHub Actions workflow</b></td><td>지금 <code>.github/workflows</code>가 없음. PR 검사, 밤 점검, 수동 실행 세 가지</td><td>함께</td></tr>
+          <tr><td><b>GitHub Secrets</b></td><td>Claude API 키, Supabase URL과 서비스 키. 지금은 로컬 <code>olympiad/.env</code>에만 있음</td><td>함께</td></tr>
+          <tr><td><b>결과 테이블</b></td><td><code>problem_verifications</code> (아래 초안)</td><td>앱 담당</td></tr>
+          <tr><td><b>승인 전 숨김</b></td><td>사이트 문제 조회에서 미승인 문제 제외, <code>solutions</code> 읽기 정책 수정, Challenge 플래그 정리</td><td>앱 담당</td></tr>
+          <tr><td><b>admin 대기열</b></td><td>기존 "Pending AI Review"와 승인 버튼을 확장: 단계별 결과, 증명 의존 표시, 반려 사유, 다시 검증 버튼</td><td>앱 담당</td></tr>
+          <tr><td><b>L8 집계</b></td><td>제출 기록에서 오답 분포, 정답률, 그만두는 단계를 매일 계산</td><td>앱 담당</td></tr>
+        </tbody>
+      </table>
+    </div>
+<pre class="schema">problem_verifications
+  id            uuid
+  problem_id    → problems.id
+  layer         'L0' … 'L8'
+  status        'pass' | 'warn' | 'fail'
+  strength      'direct' | 'two_methods' | 'small_cases_plus_proof'   -- 증명 의존 표시
+  details       jsonb      -- 기대값/계산값, 다른 해석, 평가 근거
+  source_file   text       -- 예: ladders/v2/LADDERS_v2_batch1.md
+  commit_sha    text
+  run_url       text       -- GitHub Actions 실행 링크
+  model         text       -- AI 단계일 때
+  reviewer_id   → users.id -- L7일 때
+  created_at    timestamptz</pre>
+    <p class="prose">다른 내부 테이블(<code>idea_cards</code>, <code>ladder_guides</code>)처럼 RLS를 켜고 읽기 정책 없이 서비스 키와 관리자 API로만 접근합니다.</p>
+  </section>
+
+  <section>
+    <div class="eyebrow">결정</div>
+    <h2>함께 정할 것</h2>
+    <div class="qa">
+      <div class="q">
+        <h3>1. 저장소 공개 여부</h3>
+        <p>Actions 로그와 커밋된 문제 파일에 정답과 출처가 남습니다.</p>
+        <div class="opts"><span class="opt rec">저장소를 비공개로 전환 (추천)</span><span class="opt">공개 유지, 문제 파일만 별도 비공개 저장소로</span></div>
+      </div>
+      <div class="q">
+        <h3>2. 승인 전 문제의 공개 여부</h3>
+        <p>자동 검증이 학생을 보호하려면 승인 전 문제가 보이지 않아야 합니다.</p>
+        <div class="opts"><span class="opt rec">승인 전 숨김, 공개된 145문제는 일괄 검증 뒤 승인 (추천)</span><span class="opt">"Beta" 표시 후 공개</span></div>
+      </div>
+      <div class="q">
+        <h3>3. 차단과 경고의 기준</h3>
+        <div class="opts"><span class="opt rec">L0, L1, L2 실패는 차단, L3–L6은 경고 (추천)</span><span class="opt">L3도 차단</span></div>
+      </div>
+      <div class="q">
+        <h3>4. AI 검증 비용 한도</h3>
+        <p>배치마다 L2–L6에 API 비용이 듭니다. L3 샘플 수와 월 한도를 정합니다.</p>
+      </div>
+      <div class="q">
+        <h3>5. 승인 권한</h3>
+        <p>L7 승인을 누가 하는지 정합니다. 문제를 만든 사람이 자기 문제를 승인할 수 있는지, 두 사람 중 한 명이면 되는지.</p>
+      </div>
+      <div class="q">
+        <h3>6. 담당 범위</h3>
+        <p>위 "만들기 위해 필요한 것"의 담당 구분이 맞는지 확인합니다. 특히 결과 테이블 형식은 스킬 출력과 admin 화면이 함께 쓰므로 먼저 맞춥니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow">순서</div>
+    <h2>진행 순서</h2>
+    <ol class="phases prose">
+      <li><b>결정 1, 2, 5.</b> 저장소 공개 여부, 승인 전 숨김, 승인 권한.</li>
+      <li><b>verify 스크립트 정비</b>와 <b>승인 전 숨김 처리</b>(<code>solutions</code> 정책, Challenge 플래그 포함). 서로 독립이라 동시에 진행할 수 있습니다.</li>
+      <li><b>Actions 1단계.</b> PR이 오면 L0, L1을 실행하고 결과를 PR에 표시. AI 비용 없음.</li>
+      <li><b>결과 테이블과 admin 대기열.</b> 공개된 145문제를 일괄 검증하고 승인.</li>
+      <li><b>Actions 2단계.</b> Claude headless로 L2–L6을 실행하고, import도 workflow로 옮김.</li>
+      <li><b>L8 밤 집계.</b></li>
+    </ol>
+  </section>
+
+  <footer>논의용 문서입니다. 정해진 내용은 OPERATING_POLICY에 [결정됨]으로 옮겨 적습니다.</footer>
+</div>
+</body>
+</html>
