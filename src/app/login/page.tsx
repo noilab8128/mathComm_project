@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 
 import Turnstile, { useTurnstile } from "react-turnstile";
+import { isValidPassword, PASSWORD_POLICY_MESSAGE } from "@/lib/credentials";
 
 function LoginContent() {
     const searchParams = useSearchParams();
@@ -73,8 +74,8 @@ function LoginContent() {
             return;
         }
 
-        if (isRegistering && !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/.test(password)) {
-            setErrorMsg("Password must be at least 8 characters with uppercase, lowercase, and a number.");
+        if (isRegistering && !isValidPassword(password)) {
+            setErrorMsg(`${PASSWORD_POLICY_MESSAGE}.`);
             return;
         }
 

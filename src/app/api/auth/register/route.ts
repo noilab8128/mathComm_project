@@ -1,14 +1,21 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import bcrypt from "bcryptjs";
 import { verifyTurnstileToken } from "@/lib/turnstile";
 import { authRateLimiter } from "@/lib/rate-limit";
+import { supabaseAdmin } from "@/lib/supabase-admin";
+import {
+    BCRYPT_ROUNDS,
+    PASSWORD_POLICY_MESSAGE,
+    escapeLike,
+    getClientIp,
+    isValidPassword,
+    normalizeEmail,
+} from "@/lib/credentials";
 
 export async function POST(req: Request) {
     try {
         // Rate Limiting: IP당 15분에 10회까지 허용
-        const forwarded = req.headers.get("x-forwarded-for");
-        const ip = forwarded?.split(",")[0]?.trim() || "unknown";
+        const ip = getClientIp(req.headers);
         const rateLimitResult = authRateLimiter.check(ip);
         if (!rateLimitResult.success) {
             return NextResponse.json(
@@ -17,19 +24,16 @@ export async function POST(req: Request) {
             );
         }
 
-        const { email, password, turnstileToken } = await req.json();
+        const { email: rawEmail, password, turnstileToken } = await req.json();
 
         // 1. Basic validation
+        const email = normalizeEmail(rawEmail);
         if (!email || !password) {
-            return NextResponse.json({ message: "Email and password are required" }, { status: 400 });
+            return NextResponse.json({ message: "A valid email and a password are required" }, { status: 400 });
         }
 
-        // Password policy: min 8 chars, at least 1 uppercase, 1 lowercase, 1 number
-        const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
-        if (!PASSWORD_REGEX.test(password)) {
-            return NextResponse.json({ 
-                message: "Password must be at least 8 characters with uppercase, lowercase, and a number" 
-            }, { status: 400 });
+        if (!isValidPassword(password)) {
+            return NextResponse.json({ message: PASSWORD_POLICY_MESSAGE }, { status: 400 });
         }
         if (!turnstileToken) {
             return NextResponse.json({ message: "Please verify you are human" }, { status: 400 });
@@ -41,31 +45,26 @@ export async function POST(req: Request) {
             return NextResponse.json({ message: "Security verification failed. Please try again." }, { status: 403 });
         }
 
-        // Initialize Admin Supabase Client to access next_auth schema
-        const adminSupabase = createClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL as string,
-            process.env.SUPABASE_SERVICE_ROLE_KEY as string
-        );
-
-        // 2. Check if user already exists in next_auth schema
-        const { data: existingUser } = await adminSupabase
+        // 3. Check if user already exists in next_auth schema (case-insensitive, so A@x.com and a@x.com are one account)
+        // Note: this answer tells a visitor that the email has an account. Removing it needs email verification.
+        const { data: existingUser } = await supabaseAdmin
             .schema("next_auth")
             .from("users")
             .select("id")
-            .eq("email", email)
+            .ilike("email", escapeLike(email))
             .maybeSingle();
 
         if (existingUser) {
             return NextResponse.json({ message: "Email is already registered" }, { status: 409 });
         }
 
-        // 3. Hash the password
-        const hashedPassword = await bcrypt.hash(password, 10);
+        // 4. Hash the password
+        const hashedPassword = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
-        // 4. Create new user in next_auth.users table
+        // 5. Create new user in next_auth.users table
         const id = crypto.randomUUID();
 
-        const { error: createError } = await adminSupabase
+        const { error: createError } = await supabaseAdmin
             .schema("next_auth")
             .from("users")
             .insert([
@@ -76,19 +75,16 @@ export async function POST(req: Request) {
                 }
             ]);
 
+        if (createError?.code === "23505") {
+            // Unique email constraint: the same address was registered at the same moment.
+            return NextResponse.json({ message: "Email is already registered" }, { status: 409 });
+        }
         if (createError) {
-            console.error("Database user creation error:", createError);
-            // Fallback for cache issue explicitly mapped
-            if (createError.code === 'PGRST204') {
-                return NextResponse.json({ message: "Database schema cache needs reloading. Please restart the database or wait a moment." }, { status: 500 });
-            }
+            console.error("Database user creation error:", createError.code, createError.message);
             return NextResponse.json({ message: "Failed to create user account" }, { status: 500 });
         }
 
-        // Construct the expected newUser shape for NextAuth
-        const newUser = { id, email };
-
-        return NextResponse.json({ message: "User created successfully", user: newUser }, { status: 201 });
+        return NextResponse.json({ message: "User created successfully", user: { id, email } }, { status: 201 });
 
     } catch (error) {
         console.error("Registration error:", error);

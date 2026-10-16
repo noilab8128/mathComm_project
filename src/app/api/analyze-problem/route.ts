@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import { requireAdmin } from '@/lib/auth';
 
 // OpenAI 클라이언트 초기화 (서버 사이드에서만 실행)
 const openai = new OpenAI({
@@ -7,6 +8,11 @@ const openai = new OpenAI({
 });
 
 export async function POST(request: NextRequest) {
+  // Admin tool (admin/problems). Without this check anyone on the internet could spend the OpenAI budget.
+  if (!(await requireAdmin())) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+  }
+
   try {
     const { imageBase64, imagesBase64, action, context } = await request.json();
     const images = imagesBase64 || (imageBase64 ? [imageBase64] : []);

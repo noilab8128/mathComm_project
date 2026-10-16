@@ -32,7 +32,7 @@ export async function POST() {
         const userId = userRaw.id;
 
         // 2. Clear onboarding fields in next_auth.users
-        console.log(`[RESET API] Resetting onboarding for email: ${session.user.email}`);
+        console.log(`[RESET API] Resetting onboarding for user: ${userId}`);
 
         const { error: userUpdateError, data } = await adminSupabase
             .schema("next_auth")

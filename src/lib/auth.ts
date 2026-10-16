@@ -1,19 +1,78 @@
-
-import { NextAuthOptions } from "next-auth";
-import { createClient } from "@supabase/supabase-js";
+import { NextAuthOptions, getServerSession } from "next-auth";
+import type { JWT } from "next-auth/jwt";
 import GoogleProvider from "next-auth/providers/google";
 import FacebookProvider from "next-auth/providers/facebook";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { SupabaseAdapter } from "@auth/supabase-adapter";
-import { supabase } from "./supabase";
+import { supabaseAdmin } from "./supabase-admin";
 import { verifyTurnstileToken } from "./turnstile";
-import { authRateLimiter } from "./rate-limit";
+import { loginEmailRateLimiter, loginIpRateLimiter } from "./rate-limit";
+import { escapeLike, getClientIp, normalizeEmail } from "./credentials";
+
+// One message for every failed sign-in, so the form does not reveal which emails have accounts.
+const INVALID_LOGIN = "Invalid email or password";
+
+// Compared against when the email has no password, so a failed login takes about as long either way.
+// Hash (cost 12) of a random value that was thrown away; no password matches it.
+const DUMMY_HASH = "$2b$12$hYMz4QzHfZFk8o2TdvVB7OylgjluCvphE76wDDcLi29OTTkDfm4Um";
+
+// How often the role and profile in the session token are reloaded from the database.
+const CLAIMS_REFRESH_MS = 5 * 60 * 1000;
+
+/**
+ * Role and profile fields kept in the session token. Always read from the database with the service key,
+ * never taken from the browser: `useSession().update(data)` sends `data` from the client.
+ */
+async function loadUserClaims(userId: string) {
+    const [{ data: profile, error: profileError }, { data: roleRow, error: roleError }] = await Promise.all([
+        supabaseAdmin
+            .schema("next_auth")
+            .from("users")
+            .select("nickname, gender, country, language, is_onboarded, image")
+            .eq("id", userId)
+            .maybeSingle(),
+        supabaseAdmin.from("user_roles").select("role").eq("user_id", userId).maybeSingle(),
+    ]);
+    if (profileError) console.error("Error fetching user profile:", profileError.message);
+    if (roleError) console.error("Error fetching user role:", roleError.message);
+
+    return {
+        role: (roleRow as { role?: string } | null)?.role || "user",
+        nickname: profile?.nickname ?? undefined,
+        gender: profile?.gender ?? undefined,
+        country: profile?.country ?? undefined,
+        language: profile?.language ?? undefined,
+        is_onboarded: profile?.is_onboarded === true,
+        image: profile?.image ?? undefined,
+    };
+}
+
+async function refreshClaims(token: JWT): Promise<JWT> {
+    if (!token.sub) return token;
+    try {
+        const claims = await loadUserClaims(token.sub);
+        token.role = claims.role;
+        token.nickname = claims.nickname;
+        token.gender = claims.gender;
+        token.country = claims.country;
+        token.language = claims.language;
+        token.is_onboarded = claims.is_onboarded;
+        if (claims.image !== undefined) token.picture = claims.image;
+        token.claimsCheckedAt = Date.now();
+    } catch (err) {
+        console.error("Error refreshing session claims:", err);
+        // Keep the old values, but never let a failed lookup keep an admin role.
+        token.role = "user";
+    }
+    return token;
+}
 
 export const authOptions: NextAuthOptions = {
     adapter: SupabaseAdapter({
         url: process.env.NEXT_PUBLIC_SUPABASE_URL as string,
-        secret: process.env.SUPABASE_SERVICE_ROLE_KEY as string || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string,
+        // Service key only. The adapter writes to next_auth.*, which the public anon key must never reach.
+        secret: process.env.SUPABASE_SERVICE_ROLE_KEY as string,
     }),
     providers: [
         GoogleProvider({
@@ -36,53 +95,47 @@ export const authOptions: NextAuthOptions = {
                 password: { label: "Password", type: "password" },
                 turnstileToken: { label: "Turnstile Token", type: "text" }
             },
-            async authorize(credentials) {
-                if (!credentials?.email || !credentials?.password) {
-                    throw new Error("Invalid credentials");
+            async authorize(credentials, req) {
+                const email = normalizeEmail(credentials?.email);
+                const password = credentials?.password;
+                if (!email || typeof password !== "string" || !password) {
+                    throw new Error(INVALID_LOGIN);
                 }
 
-                // Rate Limiting: 이메일 기준 15분에 10회까지 허용
-                const rateLimitResult = authRateLimiter.check(credentials.email);
-                if (!rateLimitResult.success) {
+                // Rate limiting: 15 minutes, 30 tries per IP and 10 tries per email.
+                const ip = getClientIp(req?.headers);
+                const byIp = loginIpRateLimiter.check(ip);
+                const byEmail = loginEmailRateLimiter.check(email);
+                if (!byIp.success || !byEmail.success) {
                     throw new Error("Too many login attempts. Please try again later.");
                 }
 
                 // 0. Verify Turnstile Token
-                const isVerified = await verifyTurnstileToken(credentials.turnstileToken || "");
+                const isVerified = await verifyTurnstileToken(credentials?.turnstileToken || "");
                 if (!isVerified) {
                     throw new Error("Security verification failed. Please try again.");
                 }
 
-                // Create a service role client to access next_auth schema
-                const adminSupabase = createClient(
-                    process.env.NEXT_PUBLIC_SUPABASE_URL as string,
-                    process.env.SUPABASE_SERVICE_ROLE_KEY as string
-                );
-
-                // 1. Fetch user by email from next_auth.users
-                const { data: userRaw, error } = await adminSupabase
+                // 1. Fetch user by email from next_auth.users (case-insensitive exact match)
+                const { data: userRaw, error } = await supabaseAdmin
                     .schema("next_auth")
                     .from("users")
-                    .select("*")
-                    .eq("email", credentials.email)
+                    .select("id, name, email, image, password_hash")
+                    .ilike("email", escapeLike(email))
                     .maybeSingle();
 
-                if (error || !userRaw) {
-                    throw new Error("No user found with this email");
+                if (error) {
+                    console.error("Login lookup failed:", error.message);
                 }
 
-                const user = userRaw as { id: string, name?: string, email?: string, image?: string, password_hash?: string };
+                const user = userRaw as { id: string, name?: string, email?: string, image?: string, password_hash?: string } | null;
 
-                if (!user.password_hash) {
-                    // This means they probably signed up with Google/Facebook earlier
-                    throw new Error("Please sign in using your social account or reset your password.");
-                }
+                // 2. Validate password. Unknown emails and social-only accounts get the same answer as a wrong
+                // password, after a comparison of the same cost.
+                const isPasswordValid = await bcrypt.compare(password, user?.password_hash || DUMMY_HASH);
 
-                // 2. Validate password
-                const isPasswordValid = await bcrypt.compare(credentials.password, user.password_hash);
-
-                if (!isPasswordValid) {
-                    throw new Error("Incorrect password");
+                if (!user?.password_hash || !isPasswordValid) {
+                    throw new Error(INVALID_LOGIN);
                 }
 
                 // Any object returned will be saved in `user` property of the JWT
@@ -116,67 +169,42 @@ export const authOptions: NextAuthOptions = {
             }
             return session;
         },
-        async jwt({ token, user, trigger, session }) {
-            // Trigger update to refresh role and profile
-            if (trigger === "update" && session) {
-                if (session.role) token.role = session.role;
-                if (session.nickname !== undefined) token.nickname = session.nickname;
-                if (session.gender !== undefined) token.gender = session.gender;
-                if (session.country !== undefined) token.country = session.country;
-                if (session.language !== undefined) token.language = session.language;
-                if (session.image !== undefined) token.picture = session.image; // NextAuth standard for image
-                if (session.is_onboarded !== undefined) token.is_onboarded = session.is_onboarded;
-            }
-
+        async jwt({ token, user, trigger }) {
             if (user) {
                 token.sub = user.id;
+                return refreshClaims(token);
+            }
 
-                // Create admin client to fetch user profile since they are in next_auth schema
-                const adminSupabase = createClient(
-                    process.env.NEXT_PUBLIC_SUPABASE_URL as string,
-                    process.env.SUPABASE_SERVICE_ROLE_KEY as string
-                );
-
-                try {
-                    // Fetch full user profile from next_auth schema including onboarding status
-                    const { data: profile } = await adminSupabase
-                        .schema("next_auth")
-                        .from('users')
-                        .select('nickname, gender, country, language, is_onboarded')
-                        .eq('id', user.id)
-                        .maybeSingle();
-
-                    if (profile) {
-                        token.nickname = profile.nickname;
-                        token.gender = profile.gender;
-                        token.country = profile.country;
-                        token.language = profile.language;
-                        token.is_onboarded = profile.is_onboarded || false;
-                    }
-                } catch (err) {
-                    console.error("Error fetching user profile:", err);
-                    token.is_onboarded = false;
-                }
-
-                // Fetch user role from public.user_roles on sign in
-                try {
-                    const { data, error } = await supabase
-                        .from('user_roles')
-                        .select('role')
-                        .eq('user_id', user.id)
-                        .maybeSingle();
-
-                    if (data && !error) {
-                        token.role = (data as { role?: string }).role;
-                    } else {
-                        token.role = 'user'; // Default role
-                    }
-                } catch (err) {
-                    console.error("Error fetching user role:", err);
-                    token.role = 'user';
-                }
+            // `update()` from the browser only asks for a refresh: the values it sends are ignored and
+            // everything is read again from the database. The same happens every few minutes, so a removed
+            // admin role or a changed profile reaches the token without signing out.
+            const checkedAt = typeof token.claimsCheckedAt === "number" ? token.claimsCheckedAt : 0;
+            if (trigger === "update" || Date.now() - checkedAt > CLAIMS_REFRESH_MS) {
+                return refreshClaims(token);
             }
             return token;
         },
     },
 };
+
+/**
+ * Session of a signed-in admin, or null. Checks `user_roles` in the database on every call instead of trusting
+ * the role inside the session token. Use it at the top of every admin-only API route.
+ */
+export async function requireAdmin() {
+    const session = await getServerSession(authOptions);
+    const userId = session?.user?.id;
+    if (!userId) return null;
+
+    const { data, error } = await supabaseAdmin
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+    if (error) {
+        console.error("Admin check failed:", error.message);
+        return null;
+    }
+    return (data as { role?: string } | null)?.role === "admin" ? session : null;
+}

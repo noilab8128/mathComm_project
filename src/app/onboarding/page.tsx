@@ -152,7 +152,7 @@ export default function OnboardingPage() {
                 throw new Error("Failed to save onboarding data. Please try again.");
             }
 
-            await update({ is_onboarded: true });
+            await update(); // reloads is_onboarded (now true) from the database
             router.push("/dashboard");
             router.refresh();
         } catch (error) {

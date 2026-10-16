@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { createClient } from "@supabase/supabase-js";
 import bcrypt from "bcryptjs";
+import { BCRYPT_ROUNDS, PASSWORD_POLICY_MESSAGE, isValidPassword } from "@/lib/credentials";
 
 export async function GET() {
     try {
@@ -105,11 +106,21 @@ export async function PUT(req: Request) {
             process.env.SUPABASE_SERVICE_ROLE_KEY as string
         );
 
-        const updateData: Record<string, string> = {};
-        if (nickname !== undefined) updateData.nickname = nickname;
-        if (gender !== undefined) updateData.gender = gender;
-        if (country !== undefined) updateData.country = country;
-        if (language !== undefined) updateData.language = language;
+        const updateData: Record<string, string | boolean> = {};
+
+        // Profile text fields: strings only, trimmed, short. Empty clears the field.
+        const PROFILE_FIELD_MAX = { nickname: 30, gender: 30, country: 60, language: 30 } as const;
+        const profileFields = { nickname, gender, country, language };
+        for (const [field, value] of Object.entries(profileFields) as [keyof typeof PROFILE_FIELD_MAX, unknown][]) {
+            if (value === undefined) continue;
+            if (typeof value !== "string" || value.trim().length > PROFILE_FIELD_MAX[field]) {
+                return NextResponse.json(
+                    { message: `${field} must be text of at most ${PROFILE_FIELD_MAX[field]} characters` },
+                    { status: 400 }
+                );
+            }
+            updateData[field] = value.trim();
+        }
 
         // Handle password change if requested
         if (newPassword) {
@@ -117,12 +128,8 @@ export async function PUT(req: Request) {
                 return NextResponse.json({ message: "Current password is required to set a new password" }, { status: 400 });
             }
 
-            // Server-side password policy: min 8 chars, uppercase, lowercase, number
-            const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
-            if (!PASSWORD_REGEX.test(newPassword)) {
-                return NextResponse.json({ 
-                    message: "Password must be at least 8 characters with uppercase, lowercase, and a number" 
-                }, { status: 400 });
+            if (!isValidPassword(newPassword)) {
+                return NextResponse.json({ message: PASSWORD_POLICY_MESSAGE }, { status: 400 });
             }
 
             const { data: userRaw } = await adminSupabase
@@ -146,11 +153,16 @@ export async function PUT(req: Request) {
             }
 
             // Hash new password
-            updateData.password_hash = await bcrypt.hash(newPassword, 10);
+            updateData.password_hash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
         }
 
         // Handle onboarding data update
-        if (is_onboarded !== undefined) updateData.is_onboarded = is_onboarded;
+        if (is_onboarded !== undefined) {
+            if (typeof is_onboarded !== "boolean") {
+                return NextResponse.json({ message: "is_onboarded must be true or false" }, { status: 400 });
+            }
+            updateData.is_onboarded = is_onboarded;
+        }
         if (onboarding_data) {
             if (onboarding_data.role_type) updateData.role_type = onboarding_data.role_type;
             if (onboarding_data.goals) updateData.goals = onboarding_data.goals;

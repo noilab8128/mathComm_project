@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import { requireAdmin } from '@/lib/auth';
 import fs from 'fs';
 import path from 'path';
 
@@ -19,6 +20,11 @@ try {
 }
 
 export async function POST(request: NextRequest) {
+  // Admin tool (admin/problems). Without this check anyone on the internet could spend the OpenAI budget.
+  if (!(await requireAdmin())) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+  }
+
   try {
     const { problemContent, solutions, category, difficulty } = await request.json();
 

@@ -1,0 +1,51 @@
+-- Auth hardening (2026-10-17). Run in the Supabase SQL editor after the matching code change is deployed:
+-- the session code now reads user_roles with the service key, so the public read policy is no longer needed.
+-- Run part 1 first and look at the results before running part 2.
+
+-- ---------------------------------------------------------------------------------------------------------------
+-- Part 1. Checks (read only)
+-- ---------------------------------------------------------------------------------------------------------------
+
+-- 1a. Can the public roles (anon, authenticated) touch the next_auth tables? Expected: no rows.
+SELECT grantee, table_name, privilege_type
+FROM information_schema.role_table_grants
+WHERE table_schema = 'next_auth' AND grantee IN ('anon', 'authenticated', 'PUBLIC')
+ORDER BY grantee, table_name;
+
+-- 1b. Policies on tables with personal data, answers and roles. Look for USING (true) on SELECT,
+--     and for any INSERT/UPDATE/DELETE policy that anon or authenticated can use.
+SELECT tablename, policyname, cmd, roles, qual, with_check
+FROM pg_policies
+WHERE schemaname = 'public'
+  AND tablename IN ('user_roles', 'problems', 'solutions', 'problem_hierarchies', 'user_stats',
+                    'user_submissions', 'user_category_stats', 'user_category_levels', 'user_category_level_history')
+ORDER BY tablename, cmd;
+
+-- 1c. Tables in public without row level security. Expected: none that hold user data or answers.
+SELECT c.relname AS table_name
+FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+WHERE n.nspname = 'public' AND c.relkind = 'r' AND NOT c.relrowsecurity
+ORDER BY 1;
+
+-- 1d. Emails that differ only by letter case (sign-up now stores lower case; older rows may not).
+SELECT lower(email) AS email_lower, count(*)
+FROM next_auth.users
+WHERE email IS NOT NULL
+GROUP BY lower(email)
+HAVING count(*) > 1;
+
+-- ---------------------------------------------------------------------------------------------------------------
+-- Part 2. Changes
+-- ---------------------------------------------------------------------------------------------------------------
+
+-- 2a. Admin user ids are no longer readable with the public key.
+DROP POLICY IF EXISTS "Enable read access for all users" ON public.user_roles;
+
+-- 2b. nextauth_permissions_fix.sql granted ALL on next_auth to `authenticator`. The app reaches next_auth only
+--     with the service key, so this grant is not needed.
+REVOKE ALL ON ALL TABLES IN SCHEMA next_auth FROM authenticator;
+REVOKE ALL ON ALL SEQUENCES IN SCHEMA next_auth FROM authenticator;
+REVOKE ALL ON ALL TABLES IN SCHEMA next_auth FROM anon, authenticated;
+
+-- 2c. Store existing emails in lower case, only when 1d returned no rows (otherwise merge those accounts first).
+-- UPDATE next_auth.users SET email = lower(trim(email)) WHERE email <> lower(trim(email));

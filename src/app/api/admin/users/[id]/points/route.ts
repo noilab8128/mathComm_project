@@ -1,12 +1,11 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { calculateLevel, calculateTier } from '@/lib/progression';
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
-    const session = await getServerSession(authOptions);
-    if (session?.user?.role !== 'admin') {
+    // Checks user_roles in the database; the role inside the session token is not trusted.
+    if (!(await requireAdmin())) {
         return new NextResponse('Unauthorized', { status: 403 });
     }
 

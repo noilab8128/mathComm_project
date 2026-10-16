@@ -68,13 +68,8 @@ export default function SettingsPage() {
 
             setMessage({ text: "Profile updated successfully!", type: "success" });
 
-            // Force session refresh so header updates
-            await update({
-                nickname,
-                gender,
-                country,
-                language
-            });
+            // Ask the server to reload the session from the database so the header updates
+            await update();
 
         } catch (error: unknown) {
             const err = error as Error;
@@ -146,7 +141,7 @@ export default function SettingsPage() {
             }
 
             // Update session so is_onboarded becomes false contextually
-            await update({ is_onboarded: false });
+            await update(); // reloads is_onboarded (now false) from the database
             
             setMessage({ text: "Onboarding reset successfully! Redirecting...", type: "success" });
             
