@@ -1,7 +1,7 @@
-# Skill Tree and Badge Rules (draft v0.1)
+# Skill Tree and Badge Rules (v0.2)
 
-- Date: 2026-10-09
-- Status: **first version built, not committed yet.** All numbers are starting values and are meant to change;
+- Date: 2026-10-09; updated 2026-10-17 (new layout, more badges: sections 1, 4.6, 6)
+- Status: **v1 live; v0.2 layout and badges built on `develop`.** All numbers are starting values and are meant to change;
   they are collected in [section 7](#7-tunable-numbers) and in `RULES` in `src/lib/skillTree.ts` (keep both in sync).
 - Code: rules and calculation `src/lib/skillTree.ts`; screen `src/components/SkillTree.tsx`; Trailblazer data
   `src/app/api/user/first-solves/route.ts`; subdomain list `olympiad/ladders/subdomains.py`.
@@ -11,8 +11,9 @@
 
 ## 1. Goal
 
-The skill tree shows a student **what they have mastered and what to try next**, topic by topic. Badges reward two
-different things:
+The skill tree shows a student **where they are**: the ladder and step they are on, and its place in the
+three-level category map (field › group › topic). It also shows **what they have mastered and what to try next**,
+topic by topic. Badges reward, above all, two different things:
 
 1. **Depth in one subdomain**: solving many problems in the same small topic (e.g. Congruences).
 2. **Strength in a whole domain**: solving hard problems across a big area (e.g. Number Theory).
@@ -67,6 +68,37 @@ Level 2 (e.g. "Elementary Number Theory") is used only to group subdomains on th
 Only domains that have problems are shown. Today that is Number Theory, Combinatorics, Geometry and Algebra. The
 other six domains (Analysis, Probability & Statistics, Optimization, Numerical Analysis, Cryptography, Game Theory)
 stay hidden until they have at least one complete ladder.
+
+### 2.3 The skill map: 16 core topics (decided 2026-10-17)
+
+The 70 level-3 categories are too many to show, especially on phones. The Skill Tree therefore shows its own short
+**3-level map**: **field (4) › area (2 per field) › core topic (2 per area) = 16 core topics**. Each core topic
+gathers one or more level-3 categories, so the categories and problem tags in the database stay unchanged. Badges
+are earned per core topic (Explorer / Specialist / Virtuoso), per area (Navigator) and per field (Expert / Champion /
+Legend). The map is defined in `src/lib/skillMap.ts`.
+
+| Field | Area | Core topic | Categories gathered (level 3) |
+|---|---|---|---|
+| Algebra | Equations and Inequalities | Inequalities and Optimization | 46 |
+| | | Polynomials and Factoring | 45, 47, 48 |
+| | Functions and Sequences | Sequences, Sums and Floors | 103, 105 |
+| | | Functional Equations | 104 |
+| Number Theory | Divisibility | Primes and Divisors | 81, 106, 84, 85 |
+| | | Congruences | 82 |
+| | Equations and Digits | Diophantine Equations | 83 |
+| | | Digits and Bases | 107 |
+| Combinatorics | Counting | Counting and Probability | 86, 87, 88, 114, 96–99 |
+| | | Graphs | 89–92 |
+| | Combinatorial Reasoning | Invariants and Games | 109, 112 |
+| | | Extremal and Pigeonhole | 110, 111, 113 |
+| Geometry | Triangles and Circles | Triangle Centres and Circles | 115 |
+| | | Congruence and Similarity | 60, 57 |
+| | Measurement | Lengths, Areas and Trigonometry | 59, 58 |
+| | | Coordinates and Vectors | 61, 62, 63 |
+
+- With today's 28 ladders, 11 core topics have ladders; Polynomials, Graphs, Congruence and Similarity, Lengths and
+  Areas, and Coordinates and Vectors show as "coming soon".
+- A category not in this table is not shown on the map. To add a topic, add it to `skillMap.ts` and this table.
 
 ---
 
@@ -125,12 +157,27 @@ of difficulty 7 to 8. This is how the "high XP and 10 high-level problems" idea 
 | **Climber** / **Mountaineer** / **Summiteer** | finish 5 / 20 / 50 ladders |
 | **Trailblazer** | among the first 3 students to solve a Challenge (the site already gives these students +50% RP) |
 
-### 4.5 Naming rules
+### 4.5 Naming rules (see 4.6 for the badges added later)
 
 - Subdomain badges: `<Subdomain> Explorer / Specialist / Virtuoso`.
 - Domain badges: `<Domain> Expert / Champion / Legend`.
 - "Master" is not used for badges, because it is already the top RP tier (15 000 RP), to avoid confusion.
 - Names are in English like the rest of the site; a Korean name can be added later as a second label.
+
+### 4.6 Badges added 2026-10-17 (more kinds of badges, as the team asked)
+
+| Badge | Kind | Rule |
+|---|---|---|
+| **`<Area>` Navigator** | area (middle level of the map, 2.3) | Explorer in 2 core topics of the same area, e.g. "Divisibility Navigator". Fills the missing middle level |
+| **Cartographer** | breadth | problems solved in 5 different areas |
+| **Thorough** | ladder | 3 ladders finished with every step solved, not only the Challenge |
+| **First Try** / **Sharpshooter** | style | 1 / 5 Challenges correct on the first attempt |
+| **Persistent** / **Unstoppable** | style | 1 / 5 problems solved after 3 or more wrong attempts |
+
+- First Try and Persistent come from the attempt record (`user_submissions`: every attempt is saved), read by
+  `/api/user/first-solves` for the signed-in user only.
+- Not built yet, because the data is not recorded: **Independent Solver** (finish a ladder without opening a hint;
+  hint use is not logged) and **streak badges** (the streak never updates, OPERATING_POLICY.md 4).
 
 ---
 
@@ -148,18 +195,27 @@ of difficulty 7 to 8. This is how the "high XP and 10 high-level problems" idea 
 
 ---
 
-## 6. The skill tree screen
+## 6. The skill tree screen (layout of 2026-10-17)
 
-- **Domain view:** one card per domain with its badge tier, domain points and a progress bar to the next domain badge.
-- **Subdomain nodes:** inside a domain, subdomains are grouped by their level-2 category. Each node shows:
-  - solved / total problems in that subdomain,
-  - the current badge tier (none, Bronze, Silver, Gold),
-  - a progress bar to the next tier ("3 more problems, 1 more Challenge").
-- **States:** *not started* (grey), *in progress* (outlined), *Explorer or higher* (filled, badge colour).
-- **Next step:** each node links to the ladders of that subdomain, starting with the one closest to the student's
-  level (same rule as the dashboard recommendations).
-- **Connections (later):** optional "try this next" arrows between subdomains (for example Primes → Congruences →
-  Diophantine Equations). These are suggestions, not locks; nothing is ever locked.
+Decided with the team: a **picture on computers and a list on phones**, showing the 16 core topics of 2.3 (not the
+70 categories). Both use the same data.
+
+1. **You are here** (top card): the ladder and step the student is on (the same choice as the Home page's Continue
+   card), its path `Field › Area › Core topic`, a small step bar, the next badge of that topic with what is missing
+   ("5 more problems solved · 2 more ladders"), and **Continue**. A new student sees how to start instead.
+2. **Your map, computer (768 px and wider):** tabs for the 4 fields (the field holding "you are here" has a pin and
+   opens first). The open field is drawn as a small tree: the field on top, its 2 areas, and its 4 core topics as
+   circles. A circle shows solved / total, and its style shows the state: grey outline = not started, dark outline =
+   in progress, filled with a badge icon = badge earned, dashed "soon" = no ladders yet. "You are here" sits over
+   the current topic. Clicking a circle shows that topic under the picture: what its next badge needs and its
+   ladders with Start / Continue / Review.
+3. **Your map, phone:** the same fields as a list. A field opens to its areas and topics, one line each (state
+   dot, name, badge, solved / total); a topic opens to its ladders. "Coming soon" topics are greyed.
+4. **My badges**: earned badges, then the **closest next badges** (the 3 reachable badges with the most progress),
+   each with its requirement bars.
+5. **How badges work**: the rules, folded.
+
+Every state is read from the solve record; nothing is ever locked.
 
 ---
 
@@ -178,6 +234,11 @@ of difficulty 7 to 8. This is how the "high XP and 10 high-level problems" idea 
 | Universal Mind: domains with an Expert badge | 3 |
 | Climber / Mountaineer / Summiteer: ladders finished | 5 / 20 / 50 |
 | Trailblazer: first solvers of a Challenge | 3 |
+| Navigator: Explorer core topics in one area | 2 |
+| Cartographer: areas with a solved problem | 5 |
+| Thorough: ladders with every step solved | 3 |
+| First Try / Sharpshooter: Challenges right on the first attempt | 1 / 5 |
+| Persistent / Unstoppable: problems solved after 3+ wrong attempts | 1 / 5 |
 | A tier is shown once the subdomain has | 1.5 × the problems it needs |
 
 ---
@@ -192,6 +253,7 @@ of difficulty 7 to 8. This is how the "high XP and 10 high-level problems" idea 
 | 4 | Fix the reward bugs: re-solving a problem adds RP and "solved" again; Streak never updates (OPERATING_POLICY.md 4). The skill tree does not depend on them: it counts each problem once from the solve record | app side |
 | 5 | Badge calculation, computed on the fly from the solve record (no table); a `user_badges` table (badge, tier, earned date) only when badges must be stored, e.g. to show the date earned | done (v1) |
 | 6 | Skill tree screen: badges, domain tabs, subdomain cards with progress to the next tier and their ladders | done (v1) |
+| 7 | Skill map of 16 core topics (2.3), new layout (you are here, picture on computers, list on phones, closest next badges) and 7 new badges (4.6) | built on `develop` (2026-10-17), not committed |
 
 The screen only reads data; it does not change XP, RP or any stats table.
 

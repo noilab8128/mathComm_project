@@ -4,7 +4,7 @@
 // returns every domain, subdomain and badge. Nothing is stored; badges are worked out from the solve record,
 // so the same record always gives the same badges. Change the numbers in RULES (doc section 7) to tune.
 
-import { CATEGORIES_DATA } from "@/lib/categories";
+import { SKILL_MAP, placeOfCategory } from "@/lib/skillMap";
 
 export const RULES = {
   hardDifficulty: 7, // "hard" = difficulty 7 or more
@@ -24,6 +24,19 @@ export const RULES = {
     { name: "Summiteer", ladders: 50 },
   ],
   trailblazerFirstSolvers: 3,
+  // Badges added 2026-10-17 (docs/SKILL_TREE_RULES.md section 4.6)
+  navigator: { explorerSubdomains: 2 }, // area (middle level of lib/skillMap.ts): Explorer in 2 of its core topics
+  cartographer: { groups: 5 }, // solved problems in 5 different areas
+  thorough: { ladders: 3 }, // finished 3 ladders with every step solved, not only the Challenge
+  firstTry: [
+    { name: "First Try", challenges: 1 },
+    { name: "Sharpshooter", challenges: 5 },
+  ], // Challenges correct on the first attempt
+  persistent: [
+    { name: "Persistent", problems: 1 },
+    { name: "Unstoppable", problems: 5 },
+  ], // problems solved after at least `wrongTries` wrong attempts
+  wrongTries: 3,
   /** A tier is shown only when the subdomain has this many times the problems it needs. */
   reachableFactor: 1.5,
 } as const;
@@ -92,7 +105,7 @@ export interface DomainProgress {
   subdomains: SubdomainProgress[];
 }
 
-export type BadgeKind = "subdomain" | "domain" | "breadth" | "ladder";
+export type BadgeKind = "subdomain" | "group" | "domain" | "breadth" | "ladder" | "style";
 
 export interface Badge {
   key: string;
@@ -102,18 +115,27 @@ export interface Badge {
   detail: string;
 }
 
+/** A badge not earned yet, with what it needs; the page shows the closest few. */
+export interface UpcomingBadge {
+  key: string;
+  name: string;
+  requirements: Requirement[];
+  /** share of the requirements done, 0..1 (average over the requirements) */
+  progress: number;
+}
+
 export interface SkillTree {
   domains: DomainProgress[];
   badges: Badge[];
   laddersFinished: number;
+  /** reachable badges not earned yet, closest first */
+  upcoming: UpcomingBadge[];
 }
 
 // ---------------------------------------------------------------------------------------------------------
 // Calculation
 // ---------------------------------------------------------------------------------------------------------
 
-const NAMES = new Map(CATEGORIES_DATA.map((c) => [c.id, c]));
-const nameOf = (id: number | null | undefined) => (id != null ? NAMES.get(id)?.name : undefined);
 
 /** Short display name for a domain ("Combinatorics & Discrete Mathematics" -> "Combinatorics"). */
 export function shortDomainName(name: string) {
@@ -142,13 +164,16 @@ export function computeSkillTree(
   ladders: SkillLadder[],
   problems: Map<string, SkillProblem>,
   solvedIds: Set<string>,
-  trailblazerRootIds: Set<string> = new Set()
+  trailblazerRootIds: Set<string> = new Set(),
+  /** for each solved problem: wrong attempts before the first correct one (from /api/user/first-solves) */
+  wrongBeforeSolve: Map<string, number> = new Map()
 ): SkillTree {
   const hard = (p: SkillProblem) => p.difficulty >= RULES.hardDifficulty;
   const challengeIds = new Set(ladders.map((l) => l.rootId));
 
   // Every problem of a ladder takes the ladder Challenge's categories unless it has its own subdomain.
-  type Entry = { p: SkillProblem; ladder: SkillLadder; l1: number; l2: number | null; l3: number | null };
+  // Each problem is placed on the skill map (field > area > core topic) by its level-3 category (lib/skillMap.ts).
+  type Entry = { p: SkillProblem; ladder: SkillLadder; l1: number; l2: number | null; l3: number | null; topic: number; area: number; field: number };
   const entries: Entry[] = [];
   for (const ladder of ladders) {
     const root = problems.get(ladder.rootId);
@@ -163,22 +188,40 @@ export function computeSkillTree(
         l1: own ? p.category_level1! : root.category_level1,
         l2: own ? p.category_level2 : root.category_level2,
         l3: own ? p.category_level3 : root.category_level3,
+        topic: 0, area: 0, field: 0,
       });
+      const e = entries[entries.length - 1];
+      const place = placeOfCategory(e.l3);
+      if (!place) {
+        entries.pop(); // not on the skill map (e.g. Analysis): not shown
+        continue;
+      }
+      e.topic = place.topic.id;
+      e.area = place.area.id;
+      e.field = place.field.id;
     }
   }
 
   const domains: DomainProgress[] = [];
   const badges: Badge[] = [];
+  const upcoming: UpcomingBadge[] = [];
+  const progressOf = (rs: Requirement[]) => rs.reduce((a, r) => a + Math.min(1, r.have / r.need), 0) / rs.length;
+  const addUpcoming = (key: string, name: string, next: { requirements: Requirement[]; reachable: boolean } | null) => {
+    if (next && next.reachable) upcoming.push({ key, name, requirements: next.requirements, progress: progressOf(next.requirements) });
+  };
 
-  for (const l1 of [...new Set(entries.map((e) => e.l1))].sort((a, b) => a - b)) {
-    const inDomain = entries.filter((e) => e.l1 === l1);
+  for (const fieldDef of SKILL_MAP) {
+    const l1 = fieldDef.id;
+    const inDomain = entries.filter((e) => e.field === l1);
     const solvedInDomain = inDomain.filter((e) => solvedIds.has(e.p.id));
-    const domainName = shortDomainName(nameOf(l1) ?? `Domain ${l1}`);
+    const domainName = fieldDef.name;
 
     // Subdomains
     const subdomains: SubdomainProgress[] = [];
-    for (const l3 of [...new Set(inDomain.map((e) => e.l3).filter((x): x is number => x != null))].sort((a, b) => a - b)) {
-      const inSub = inDomain.filter((e) => e.l3 === l3);
+    // Every core topic of the field is listed, also the ones with no ladders yet ("coming soon")
+    for (const { area, topic } of fieldDef.areas.flatMap((area) => area.topics.map((topic) => ({ area, topic })))) {
+      const l3 = topic.id;
+      const inSub = inDomain.filter((e) => e.topic === l3);
       const solved = inSub.filter((e) => solvedIds.has(e.p.id));
       const ladderMap = new Map<string, { rootId: string; name: string; solved: number; total: number }>();
       for (const e of inSub) {
@@ -200,7 +243,7 @@ export function computeSkillTree(
       const { tier, next } = climb(
         SUBDOMAIN_TIERS,
         [
-          [req("problems solved", solved.length, RULES.explorer.solved), req("different ladders", laddersTouched, RULES.explorer.ladders)],
+          [req("problems solved", solved.length, RULES.explorer.solved), req("ladders", laddersTouched, RULES.explorer.ladders)],
           [req("problems solved", solved.length, RULES.specialist.solved), req(`solved at difficulty ${RULES.specialist.atLeastDifficulty}+`, midSolved, RULES.specialist.count)],
           [req("problems solved", solved.length, RULES.virtuoso.solved), req("hard problems solved", hardSolved, RULES.virtuoso.hard), req("Challenges solved", challengesSolved, RULES.virtuoso.challenges)],
         ],
@@ -211,10 +254,10 @@ export function computeSkillTree(
         ]
       );
 
-      const groupId = NAMES.get(l3)?.parent_id ?? null;
-      const name = nameOf(l3) ?? `Subdomain ${l3}`;
+      const groupId = area.id;
+      const name = topic.name;
       subdomains.push({
-        id: l3, name, groupId, groupName: nameOf(groupId) ?? "Other",
+        id: l3, name, groupId, groupName: area.name,
         total: n, solved: solved.length, hardSolved, challengesSolved, laddersTouched,
         ladders: [...ladderMap.values()], tier, next,
       });
@@ -224,6 +267,7 @@ export function computeSkillTree(
           level: SUBDOMAIN_TIERS.indexOf(tier) + 1, detail: `${solved.length} problems solved in ${name}`,
         });
       }
+      if (solved.length > 0 && next) addUpcoming(`sub-${l3}-next`, `${name} ${next.tier}`, next);
     }
 
     // Domain badge
@@ -253,6 +297,24 @@ export function computeSkillTree(
         level: DOMAIN_TIERS.indexOf(tier) + 1, detail: `${hardSolved} hard problems, ${points} points in ${domainName}`,
       });
     }
+    if (solvedInDomain.length > 0 && next) addUpcoming(`dom-${l1}-next`, `${domainName} ${next.tier}`, next);
+
+    // Group badges (level-2 categories): Navigator = Explorer in 2 subdomains of the group
+    const groupIds = [...new Set(subdomains.map((s) => s.groupId).filter((g): g is number => g != null))];
+    for (const g of groupIds) {
+      const subs = subdomains.filter((s) => s.groupId === g);
+      const explorers = subs.filter((s) => s.tier).length;
+      const groupName = fieldDef.areas.find((a) => a.id === g)?.name ?? "Area";
+      const need = RULES.navigator.explorerSubdomains;
+      if (explorers >= need) {
+        badges.push({ key: `grp-${g}`, name: `${groupName} Navigator`, kind: "group", level: 2, detail: `Explorer in ${explorers} topics of ${groupName}` });
+      } else if (subs.some((s) => s.solved > 0)) {
+        addUpcoming(`grp-${g}-next`, `${groupName} Navigator`, {
+          requirements: [req("Explorer topics in this area", explorers, need)],
+          reachable: subs.filter((s) => s.total > 0).length >= need,
+        });
+      }
+    }
 
     domains.push({
       id: l1, name: domainName, total: inDomain.length, solved: solvedInDomain.length,
@@ -269,6 +331,17 @@ export function computeSkillTree(
   if (withExpert >= RULES.universalMind.domainsWithExpert) {
     badges.push({ key: "universal-mind", name: "Universal Mind", kind: "breadth", level: 3, detail: `Expert badges in ${withExpert} domains` });
   }
+  const allSubs = domains.flatMap((d) => d.subdomains);
+  const groupsTouched = new Set(allSubs.filter((s) => s.solved > 0).map((s) => s.groupId ?? -s.id)).size;
+  const allGroups = new Set(allSubs.filter((s) => s.total > 0).map((s) => s.groupId ?? -s.id)).size;
+  if (groupsTouched >= RULES.cartographer.groups) {
+    badges.push({ key: "cartographer", name: "Cartographer", kind: "breadth", level: 2, detail: `problems solved in ${groupsTouched} areas` });
+  } else if (groupsTouched > 0) {
+    addUpcoming("cartographer-next", "Cartographer", {
+      requirements: [req("areas with a solved problem", groupsTouched, RULES.cartographer.groups)],
+      reachable: allGroups >= RULES.cartographer.groups,
+    });
+  }
 
   // Ladder badges: a ladder is finished when its Challenge is solved
   const laddersFinished = ladders.filter((l) => solvedIds.has(l.rootId)).length;
@@ -277,6 +350,21 @@ export function computeSkillTree(
       badges.push({ key: `ladders-${b.ladders}`, name: b.name, kind: "ladder", level: i + 1, detail: `${laddersFinished} ladders finished` });
     }
   });
+  const nextLadderBadge = RULES.ladderBadges.find((b) => laddersFinished < b.ladders);
+  if (nextLadderBadge && ladders.length >= nextLadderBadge.ladders) {
+    addUpcoming(`ladders-${nextLadderBadge.ladders}-next`, nextLadderBadge.name, {
+      requirements: [req("ladders finished", laddersFinished, nextLadderBadge.ladders)], reachable: true,
+    });
+  }
+  const thorough = ladders.filter((l) => l.problemIds.every((id) => solvedIds.has(id))).length;
+  if (thorough >= RULES.thorough.ladders) {
+    badges.push({ key: "thorough", name: "Thorough", kind: "ladder", level: 2, detail: `${thorough} ladders with every step solved` });
+  } else if (thorough > 0 || laddersFinished > 0) {
+    addUpcoming("thorough-next", "Thorough", {
+      requirements: [req("ladders with every step solved", thorough, RULES.thorough.ladders)],
+      reachable: ladders.length >= RULES.thorough.ladders,
+    });
+  }
   if (trailblazerRootIds.size > 0) {
     badges.push({
       key: "trailblazer", name: "Trailblazer", kind: "ladder", level: 3,
@@ -284,5 +372,20 @@ export function computeSkillTree(
     });
   }
 
-  return { domains, badges, laddersFinished };
+  // Style badges, from the attempt record
+  const firstTry = [...challengeIds].filter((id) => solvedIds.has(id) && wrongBeforeSolve.get(id) === 0).length;
+  RULES.firstTry.forEach((b, i) => {
+    if (firstTry >= b.challenges) {
+      badges.push({ key: `first-try-${b.challenges}`, name: b.name, kind: "style", level: i + 1, detail: `${firstTry} Challenges correct on the first attempt` });
+    }
+  });
+  const persistent = [...solvedIds].filter((id) => (wrongBeforeSolve.get(id) ?? 0) >= RULES.wrongTries).length;
+  RULES.persistent.forEach((b, i) => {
+    if (persistent >= b.problems) {
+      badges.push({ key: `persistent-${b.problems}`, name: b.name, kind: "style", level: i + 1, detail: `${persistent} problems solved after ${RULES.wrongTries}+ wrong tries` });
+    }
+  });
+
+  upcoming.sort((a, b) => b.progress - a.progress);
+  return { domains, badges, laddersFinished, upcoming };
 }

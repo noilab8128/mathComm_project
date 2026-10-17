@@ -6,8 +6,9 @@ import { RULES } from "@/lib/skillTree";
 
 /**
  * GET /api/user/first-solves
- * Problems the user solved among the first few students (RULES.trailblazerFirstSolvers) to solve them.
- * Used by the skill tree for the Trailblazer badge. Read-only.
+ * Problems the user solved among the first few students (RULES.trailblazerFirstSolvers) to solve them, and,
+ * for every problem the user solved, how many wrong attempts came before the first correct one.
+ * Used by the skill tree for the Trailblazer, First Try and Persistent badges. Read-only, own record only.
  */
 export async function GET() {
     try {
@@ -19,13 +20,22 @@ export async function GET() {
 
         const { data: mine, error: mineError } = await supabaseAdmin
             .from("user_submissions")
-            .select("problem_id")
+            .select("problem_id, is_correct, created_at")
             .eq("user_id", userId)
-            .eq("is_correct", true);
+            .order("created_at", { ascending: true });
         if (mineError) throw mineError;
 
-        const problemIds = [...new Set((mine || []).map((s) => s.problem_id))];
-        if (problemIds.length === 0) return NextResponse.json({ problemIds: [] });
+        // Wrong attempts before the first correct one, per solved problem
+        const wrong = new Map<string, number>();
+        const wrongBeforeSolve: Record<string, number> = {};
+        for (const s of mine || []) {
+            if (s.problem_id in wrongBeforeSolve) continue;
+            if (s.is_correct) wrongBeforeSolve[s.problem_id] = wrong.get(s.problem_id) ?? 0;
+            else wrong.set(s.problem_id, (wrong.get(s.problem_id) ?? 0) + 1);
+        }
+
+        const problemIds = Object.keys(wrongBeforeSolve);
+        if (problemIds.length === 0) return NextResponse.json({ problemIds: [], wrongBeforeSolve });
 
         const { data: all, error: allError } = await supabaseAdmin
             .from("user_submissions")
@@ -45,6 +55,7 @@ export async function GET() {
 
         return NextResponse.json({
             problemIds: problemIds.filter((id) => firstSolvers.get(id)?.includes(userId)),
+            wrongBeforeSolve,
         });
     } catch (error) {
         console.error("First solves GET error:", error);
