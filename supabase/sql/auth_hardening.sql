@@ -47,5 +47,13 @@ REVOKE ALL ON ALL TABLES IN SCHEMA next_auth FROM authenticator;
 REVOKE ALL ON ALL SEQUENCES IN SCHEMA next_auth FROM authenticator;
 REVOKE ALL ON ALL TABLES IN SCHEMA next_auth FROM anon, authenticated;
 
+-- 2d. 1c (2026-10-17) found user_likes, user_queue and user_starts without row level security, so anyone with the
+--     public key could read every user's likes, queue and starts, and insert or delete rows. The app reaches these
+--     tables only through API routes with the service key (which ignores RLS). Run after the code change that moved
+--     /api/user/stats to the service key is deployed; with no policy, the public key then sees nothing.
+ALTER TABLE public.user_likes  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_queue  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_starts ENABLE ROW LEVEL SECURITY;
+
 -- 2c. Store existing emails in lower case, only when 1d returned no rows (otherwise merge those accounts first).
 -- UPDATE next_auth.users SET email = lower(trim(email)) WHERE email <> lower(trim(email));

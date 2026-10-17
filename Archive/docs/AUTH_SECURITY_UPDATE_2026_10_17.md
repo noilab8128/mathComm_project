@@ -59,6 +59,7 @@
 | `src/lib/rate-limit.ts` | limiter별 저장소, 로그인용 limiter |
 | `src/app/api/auth/register/route.ts` | 이메일 정규화, 공통 정책, 동시 가입 처리 |
 | `src/app/api/user/profile/route.ts`, `reset-onboarding/route.ts` | 입력 검증, 공통 정책, 로그 |
+| `src/app/api/user/stats/route.ts` | 공개 키 대신 서비스 키로 읽음 (세션 사용자 본인 데이터만) |
 | `src/app/api/admin/*` (4개) | `requireAdmin()` |
 | `src/app/api/analyze-problem`, `generate-solution`, `generate-related-problems` | 관리자 전용 |
 | `src/app/login`, `settings`, `onboarding` 페이지 | 공통 비밀번호 정책, `update()`는 새로고침 요청으로만 사용 |
@@ -77,13 +78,14 @@
 | 우선순위 | 문제 | 해야 할 일 |
 |---|---|---|
 | 1 | **관리자 문제 편집이 브라우저에서 공개(anon) 키로 `problems`·`solutions`를 쓰고 지움** (`problemsAPI`, `src/lib/supabase.ts`). 이것이 동작한다면 RLS가 anon 쓰기를 허용한다는 뜻이고, 누구나 공개 키로 문제와 정답을 고칠 수 있음 | SQL 1b로 정책 확인 → 쓰기를 `requireAdmin()` API로 옮기고 anon 쓰기 정책 제거. 문제 데이터 영역이라 **함께 진행** |
-| 2 | `next_auth` 스키마(비밀번호 해시)가 공개 키로 읽히는지 불확실. 예전 SQL이 `authenticator`에 ALL 권한을 줌 | SQL 1a 확인, 2b로 회수 |
-| 3 | `solutions`를 공개 키로 읽을 수 있음 (WORKLOG 10-04~10-11 §10에서 이미 공유된 항목) | 읽기 정책 제거. 정답 확인 API는 이미 서비스 키를 씀 |
-| 4 | 비밀번호 재설정 기능 없음. 로그인 화면 링크는 `#`인데 FAQ·Contact는 기능이 있다고 안내 | 기능 구현, 또는 그때까지 링크와 안내 문구 수정 |
-| 5 | 가입 시 이메일 인증 없음. 남의 이메일로 가입 가능 | 이메일 인증 도입 (가입 API의 "이미 가입된 이메일" 노출도 이때 함께 해결) |
-| 6 | 횟수 제한이 메모리 기반. Netlify 함수 인스턴스마다 따로 셈 | 오픈 전 Redis(Upstash 등)로 교체 |
-| 7 | 비밀번호를 바꿔도 다른 기기 세션이 7일간 유지됨 | 사용자별 기준 시각을 두고 토큰 발급 시각과 비교 |
-| 8 | 계정 삭제 기능, 관리자 작업 기록, CSP 헤더 없음 | 체크리스트 8.7, 5.6, 7.4 |
+| 2 | **`user_likes`, `user_queue`, `user_starts`에 RLS가 꺼져 있음** (SQL 1c로 확인). 공개 키로 모든 사용자의 기록을 읽고, 쓰고, 지울 수 있음 | `/api/user/stats`를 서비스 키로 바꿈(코드 완료). 배포 후 SQL 2d로 RLS 켜기 |
+| 3 | `next_auth` 스키마(비밀번호 해시)가 공개 키로 읽히는지 불확실. 예전 SQL이 `authenticator`에 ALL 권한을 줌 | SQL 1a 확인, 2b로 회수 |
+| 4 | `solutions`를 공개 키로 읽을 수 있음 (WORKLOG 10-04~10-11 §10에서 이미 공유된 항목) | 읽기 정책 제거. 정답 확인 API는 이미 서비스 키를 씀 |
+| 5 | 비밀번호 재설정 기능 없음. 로그인 화면 링크는 `#`인데 FAQ·Contact는 기능이 있다고 안내 | 기능 구현, 또는 그때까지 링크와 안내 문구 수정 |
+| 6 | 가입 시 이메일 인증 없음. 남의 이메일로 가입 가능 | 이메일 인증 도입 (가입 API의 "이미 가입된 이메일" 노출도 이때 함께 해결) |
+| 7 | 횟수 제한이 메모리 기반. Netlify 함수 인스턴스마다 따로 셈 | 오픈 전 Redis(Upstash 등)로 교체 |
+| 8 | 비밀번호를 바꿔도 다른 기기 세션이 7일간 유지됨 | 사용자별 기준 시각을 두고 토큰 발급 시각과 비교 |
+| 9 | 계정 삭제 기능, 관리자 작업 기록, CSP 헤더 없음 | 체크리스트 8.7, 5.6, 7.4 |
 
 ---
 
@@ -129,6 +131,6 @@
 
 1. 6장 시나리오로 확인 → 커밋·배포
 2. SQL 1부(점검) 실행, 결과 공유
-3. 결과에 따라 3장의 1–3 처리, 그다음 SQL 2부 실행
+3. 결과에 따라 3장의 1–4 처리, 그다음 SQL 2부 실행
 4. 5장 결정 → 처리방침 수정
-5. 3장의 4–8
+5. 3장의 5–9

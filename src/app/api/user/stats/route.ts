@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { supabase } from '@/lib/supabase';
+// Service key: this route reads only the signed-in user's rows, and these tables are not readable with the public key.
+import { supabaseAdmin } from '@/lib/supabase-admin';
 
 // Mock data fallback in case DB tables are empty or missing
 const MOCK_STATS = {
@@ -58,13 +59,13 @@ export async function GET() {
     // and user_category_level_history. If tables don't exist yet, we fall back to mock.
     
     // 1. Fetch Mastery from vw_user_category_levels
-    const { data: masteryData, error: masteryErr } = await supabase
+    const { data: masteryData, error: masteryErr } = await supabaseAdmin
       .from('vw_user_category_levels')
       .select('category_id, level_score, categories(name, level)')
       .eq('user_id', userId);
       
     // 2. Fetch History
-    const { data: historyData, error: historyErr } = await supabase
+    const { data: historyData, error: historyErr } = await supabaseAdmin
       .from('user_category_level_history')
       .select('category_id, new_level_score, created_at, categories(name)')
       .eq('user_id', userId)
@@ -110,7 +111,7 @@ export async function GET() {
     }
 
     // We can also compute activity dates from user_starts / user_likes as a proxy for submissions
-    const { data: startsData } = await supabase
+    const { data: startsData } = await supabaseAdmin
       .from('user_starts')
       .select('created_at')
       .eq('user_id', userId);
