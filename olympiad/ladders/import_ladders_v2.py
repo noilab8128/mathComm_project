@@ -10,13 +10,15 @@ Each ladder in the given markdown file(s) becomes:
                                         -> `ladder_extras` rows (the three buttons after the Challenge)
 
 Categories come from subdomains.py (LADDER_SUBDOMAIN). All problems get source = SOURCE so they can be removed.
-Running --apply again skips ladders already imported, but refreshes their guide and extras.
+Running --apply again skips ladders already imported, but refreshes their guide and extras. Add --update-text to also
+rewrite the problem text and solution of their steps where the markdown changed (answers must stay the same).
 
 Run (from olympiad/):
   python3 ladders/import_ladders_v2.py ladders/pilot_v2/PILOT_A2.md            # preview, writes import_v2_preview.json
   python3 ladders/import_ladders_v2.py ladders/pilot_v2/PILOT_A2.md --apply    # write to Supabase
   python3 ladders/import_ladders_v2.py --remove                                 # delete everything this script added
   option: --only P1,P2
+  option: --update-text   (with --apply) update the wording of ladders that are already live
 
 Credentials: olympiad/.env (SUPABASE_URL, SUPABASE_SECRET_KEY).
 """
@@ -159,7 +161,35 @@ def check(ladders):
         assert lad["guide"]["analysis"] and lad["guide"]["flow"], f"{lad['key']}: missing analysis or flow"
 
 
-def apply(db, ladders):
+def update_text(db, lad, ids):
+    """Rewrite problem content and solution of a live ladder's problems where the markdown changed."""
+    for p in lad["problems"]:
+        pid = ids.get(p["step"])
+        if not pid:
+            print(f"         MISSING {p['problem']['title']}: not live, not updated")
+            continue
+        live = db._check(db.http.get(f"{db.url}/problems", params={"select": "content", "id": f"eq.{pid}"}, timeout=30),
+                         "read problem").json()[0]
+        sols = db._check(db.http.get(f"{db.url}/solutions", params={"select": "id,content", "problem_id": f"eq.{pid}"},
+                                     timeout=30), "read solutions").json()
+        changed = []
+        if live["content"] != p["problem"]["content"]:
+            db._check(db.http.patch(f"{db.url}/problems", params={"id": f"eq.{pid}"},
+                                    data=json.dumps({"content": p["problem"]["content"]}),
+                                    headers={"Prefer": "return=minimal"}, timeout=30), "update problem")
+            changed.append("problem")
+        if len(sols) == 1 and sols[0]["content"] != p["solution"]["content"]:
+            # The answer line must not change: earlier submissions were checked against it
+            assert sols[0]["content"].split("\n")[0] == p["solution"]["content"].split("\n")[0], (lad["key"], p["step"])
+            db._check(db.http.patch(f"{db.url}/solutions", params={"id": f"eq.{sols[0]['id']}"},
+                                    data=json.dumps({"content": p["solution"]["content"]}),
+                                    headers={"Prefer": "return=minimal"}, timeout=30), "update solution")
+            changed.append("solution")
+        if changed:
+            print(f"         updated {p['problem']['title']}: {', '.join(changed)}")
+
+
+def apply(db, ladders, rewrite=False):
     r = db.http.get(f"{db.url}/problems", params={"select": "id,title", "source": f"eq.{SOURCE}"}, timeout=30)
     existing = {row["title"]: row["id"] for row in db._check(r, "read problems").json()}
     for lad in ladders:
@@ -169,6 +199,8 @@ def apply(db, ladders):
             print(f"  skip   Ladder {lad['key']} ({lad['name']}): problems already imported; refreshing guide and extras")
             for p in lad["problems"]:
                 ids[p["step"]] = existing.get(p["problem"]["title"])
+            if rewrite:
+                update_text(db, lad, ids)
         else:
             created = []
             try:
@@ -232,6 +264,7 @@ def main():
     mode.add_argument("--apply", action="store_true", help="write to Supabase")
     mode.add_argument("--remove", action="store_true", help="delete every problem this script added")
     ap.add_argument("--only", help="comma-separated ladder keys, e.g. P1,P2")
+    ap.add_argument("--update-text", action="store_true", help="with --apply: update the wording of live ladders")
     args = ap.parse_args()
 
     if args.remove:
@@ -251,7 +284,7 @@ def main():
               f"{len(lad['extras'])} extras")
     print(f"Preview written to {PREVIEW_JSON.name}")
     if args.apply:
-        apply(Supabase(), ladders)
+        apply(Supabase(), ladders, rewrite=args.update_text)
     else:
         print("Preview only. Run with --apply to write to Supabase.")
 

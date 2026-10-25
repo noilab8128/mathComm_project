@@ -23,10 +23,10 @@ cheapest plan is "take the cheapest extra costs".
 |---|---|---|---|
 | 1 | MATHCOUNTS | Oven 2 already holds 4 loaves. By how many coins does the total cost go up when a 5th loaf is put into oven 2? | **81** |
 | 2 | AMC 8 | Only ovens 0, 1 and 2 may be used, and the baker needs 6 loaves. Inside one oven every new loaf has a larger extra cost than the one before, so the cheapest plan is to add the loaves one at a time, each into the oven where its extra cost is smallest. What is the smallest possible total cost? | **28** |
-| 3 | AMC 8 | The k-th loaf in oven i has extra cost 3ⁱ × (2k − 1). Make a list of these extra costs for every oven i = 0, 1, 2, … and every k = 1, 2, 3, …, keeping repeats. How many times does the number 45 appear in the list? | **3** |
+| 3 | AMC 8 | The k-th loaf in oven i has extra cost 3ⁱ × (2k − 1) (because 3ⁱk² − 3ⁱ(k − 1)² = 3ⁱ(2k − 1)). Make a list of these extra costs for every oven i = 0, 1, 2, … and every k = 1, 2, 3, …, keeping repeats. How many times does the number 45 appear in the list? | **3** |
 | 4 | AMC 10 | In the same list (every 3ⁱ × (2k − 1) with i ≥ 0 and k ≥ 1, repeats kept), how many entries are at most 100? | **76** |
 | 5 | AMC 10 | In the same list, what is the sum of all entries that are at most 30? | **363** |
-| 6 | AMC 10 | The cheapest way to bake n loaves costs the sum of the n smallest entries of the same list (repeats counted). The 76 entries that are at most 100 add up to 3880. What is the smallest total cost for 80 loaves? | **4294** |
+| 6 | AMC 10 | The cheapest way to bake n loaves costs the sum of the n smallest entries of the same list (repeats counted): the extra costs in each oven increase, so the cheapest loaves can always be chosen first. The 76 entries that are at most 100 add up to 3880. What is the smallest total cost for 80 loaves? | **4294** |
 | **Challenge** | AIME | The baker needs exactly 2026 loaves. What is the smallest possible total cost? | **2737260** |
 
 **Problem analysis** *(members only)*

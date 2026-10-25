@@ -21,9 +21,9 @@ the fraction ij/(n + 1) rounded down. Let S(n) be the sum of all n² entries.
 |---|---|---|---|
 | 1 | MATHCOUNTS | What is S(4), the sum of the 16 entries of the table for n = 4? | **12** |
 | 2 | AMC 8 | In the table for n = 6, what is the sum of the 6 entries in column 3? | **6** |
-| 3 | AMC 10 | In the table for n, the entries ij/(n + 1) and (n + 1 − i)j/(n + 1) add up to the whole number j, so their floors add up to j − 1, or to j when both fractions are whole numbers. For n = 12 (where n + 1 = 13 is prime, so no fraction ij/13 is a whole number), what is S(12)? | **396** |
+| 3 | AMC 10 | In the table for n = 12, pair row i with row 13 − i in the same column. The two fractions ij/13 and (13 − i)j/13 add up to j, and neither is a whole number (13 is prime and does not divide ij), so their floors add up to j − 1. What is S(12)? | **396** |
 | 4 | AMC 10 | For n = 11, in how many of the 121 cells (i, j) is ij divisible by 12? | **17** |
-| 5 | AMC 10 | It is known that 4 × S(n) = n²(n − 1) + 2D, where D is the number of cells (i, j) with ij divisible by n + 1. What is S(11)? | **311** |
+| 5 | AMC 10 | Pair row i with row n + 1 − i in every column of the table for n. Each pair of floors adds up to j − 1, or to j when the fractions are whole numbers. Adding over all cells counts every cell twice, so 2S(n) = n(0 + 1 + … + (n − 1)) + D, which gives 4S(n) = n²(n − 1) + 2D, where D is the number of cells (i, j) with ij divisible by n + 1. (When n + 1 is prime, D = 0.) What is S(11)? | **311** |
 | **Challenge** | AIME | What is S(2025)? | **2074917262** |
 
 **Problem analysis** *(members only)*
@@ -42,11 +42,12 @@ the fraction ij/(n + 1) rounded down. Let S(n) be the sum of all n² entries.
    irregularly, so a formula needs an idea.
 2. **Pair rows i and n + 1 − i (Step 2).** In one column, the two fractions add up to j, so the floors add up to
    j − 1, or j when both are whole numbers. *Why:* this turns rounding errors into something exact.
-3. **Add up all the pairs (Step 3).** Over the whole table this gives 2S(n) = n(1 + 2 + … + n − n) + D, that is
-   4S(n) = n²(n − 1) + 2D, where D counts the whole-number entries. If n + 1 is prime, D = 0.
+3. **Add up the pairs when no entry is whole (Step 3).** For n = 12 (13 is prime) every pair in column j adds up
+   to j − 1, so each column gives 6(j − 1). *Why:* it shows the pairing at work in the cleanest case.
 4. **Count the whole-number entries (Step 4).** For each row i, the entry is whole exactly when j is a multiple of
    (n + 1)/gcd(i, n + 1). *Why:* D is the only unknown left.
-5. **Finish with the formula (Step 5).** Put D into 4S(n) = n²(n − 1) + 2D.
+5. **The pairing for any n (Step 5).** Adding over all cells gives 2S(n) = n(0 + 1 + … + (n − 1)) + D, that is
+   4S(n) = n²(n − 1) + 2D, where D counts the whole-number entries (D = 0 when n + 1 is prime). Put D into it.
 
 **Our full solution**
 Pair the cells (i, j) and (n + 1 − i, j). Their fractions add up to j, so their floors add up to j − 1, or to j if
@@ -62,7 +63,7 @@ Computer check: the formula against a direct sum for every n ≤ 60, and D(2025)
 - Step 2: column 3 has ⌊3i/7⌋ for i = 1..6: 0, 0, 1, 1, 2, 2, total 6 (pairs i, 7 − i add up to 2 each).
 - Step 3: each column j has 6 pairs adding up to j − 1, so S(12) = 6 × (0 + 1 + … + 11) = 6 × 66 = 396.
 - Step 4: for each i the entry is whole when j is a multiple of 12/gcd(i, 12); counting over i = 1..11 gives 17.
-- Step 5: 4 × S(11) = 121 × 10 + 34 = 1244, so S(11) = 311.
+- Step 5: D = 17 cells for n = 11 (12 divides ij), so 4 × S(11) = 121 × 10 + 34 = 1244 and S(11) = 311.
 - Challenge: see "Our full solution".
 
 **Similar olympiad problems**

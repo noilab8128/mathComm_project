@@ -68,6 +68,10 @@ has done every move of the Challenge's solution once.
    reason the answer is best, or when the case is small enough to check completely by hand.
 7. **Only earlier moves.** A step may use the facts of earlier moves (stated in its text), never later ones.
 8. Proof versions of a move do not go in the ladder; they go to the *Proof problems* button.
+9. **Give the reason with every fact** (added 2026-10-25). When a step states a general fact (a formula, a
+   recursion, "every grid that … can be solved"), its text also says in a sentence why it is true, or an earlier
+   step builds it. Never "It is known that …" or "It turns out that …". A step may work out one case (e.g. n = 12)
+   and a later step the general version, but the later step must show how the general one comes from the same idea.
 
 ## 6. Rules for the Problem analysis and the Logic flow
 
@@ -104,6 +108,7 @@ script, and skip a card whose solution we do not understand.
 - [ ] Our full solution written; analysis (3–6 observations) and flow (numbered moves with what / why / step)
 - [ ] One step per move, in flow order, each standalone, each labelled AMC 8 / Kangaroo / MATHCOUNTS or higher
 - [ ] Every step's number tests its move; no step needs a later move
+- [ ] Every general fact in a step comes with its reason (rule 5.9); no step shows another step's answer
 - [ ] Verify script: every answer and every numeric claim of the analysis and flow pass; Challenge checked two ways
 - [ ] Links: similar olympiad problems (citations), research (Explore with status), similar site problems
 - [ ] Subdomain set in `subdomains.py`; idea card(s) named (internal only); a Theory card exists for the subdomain

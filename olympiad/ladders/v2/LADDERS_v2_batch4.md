@@ -22,7 +22,7 @@ bottom-left, your choice). The goal is to make every coin show heads.
 |---|---|---|---|
 | 1 | MATHCOUNTS | On a 2 × 3 grid, what is the fewest number of moves that makes every coin heads? | **2** |
 | 2 | AMC 8 | Label each cell of a 4 × 4 grid with the remainder when (row number + column number) is divided by 3. Every move flips exactly one coin of each label. How many cells have the most common label? | **6** |
-| 3 | AMC 10 | Every move flips one coin of each label, so all heads is possible only if the three label classes have sizes of the same parity (all even or all odd). Every grid that passes this test can in fact be solved. Of the grids 2 × 4, 3 × 5, 4 × 5, 5 × 6 and 4 × 7, how many can be made all heads? | **2** |
+| 3 | AMC 10 | Every move flips one coin of each label, so all heads is possible only if the three label classes have sizes of the same parity (all even or all odd). Every grid that passes this test can be solved: a 2 × 3, 3 × 2 or 3 × 3 block can be made all heads, and a grid with a side divisible by 3 can be cut into such blocks. Of the grids 2 × 4, 3 × 5, 4 × 5, 5 × 6 and 4 × 7, how many can be made all heads? | **2** |
 | 4 | AMC 10 | What is the fewest number of moves that makes a 3 × 4 grid all heads? | **4** |
 | **Challenge** | AIME | For how many pairs (m, n) with 2 ≤ m ≤ 20 and 2 ≤ n ≤ 20 can the m × n grid be made all heads? | **192** |
 
@@ -190,7 +190,7 @@ exactly.
 | 1 | MATHCOUNTS | For n = 3 (coins 7, 6, 4), what is the largest amount that cannot be paid? | **9** |
 | 2 | AMC 8 | For n = 4 the coins are 15, 14, 12, 8. The even coins 14, 12, 8 are twice 7, 6, 4. What is the largest even amount that cannot be paid with the coins 14, 12 and 8 only? | **18** |
 | 3 | AMC 10 | For n = 4 (coins 15, 14, 12, 8), what is the largest amount that cannot be paid? | **33** |
-| 4 | AMC 10 | It turns out that f(n) = 2f(n − 1) + 2ⁿ − 1, and f(2) = 1. What is f(7)? | **641** |
+| 4 | AMC 10 | For any n, the only odd coin is 2ⁿ − 1, and the even coins are exactly twice the coins for n − 1. An odd amount uses the odd coin, and the rest is paid with the even coins. This gives f(n) = 2f(n − 1) + 2ⁿ − 1, and f(2) = 1. What is f(7)? | **641** |
 | **Challenge** | AIME | What is f(10)? | **8193** |
 
 **Problem analysis** *(members only)*

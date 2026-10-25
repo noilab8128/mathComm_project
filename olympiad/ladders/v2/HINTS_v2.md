@@ -27,9 +27,9 @@
 **Hints**
 - Step 1: Write the 4 × 4 table of ⌊ij/5⌋ row by row; many small entries are 0.
 - Step 2: Column 3 holds ⌊3i/7⌋ for every row i. Pair row i with row 7 − i.
-- Step 3: Pair row i with row 13 − i in every column: the two fractions add up to the whole number j.
+- Step 3: Column j has 6 pairs, each adding up to j − 1. Add the 12 columns: 6 × (0 + 1 + … + 11).
 - Step 4: For each row i, which columns j make ij a multiple of 12? It depends on the common factor of i and 12.
-- Step 5: Put n = 11 and your count from Step 4 into the formula.
+- Step 5: First count D, the cells (i, j) with ij a multiple of 12; it depends on the common factor of i and 12. Then put n = 11 and D into the formula.
 - Challenge: Use 4S(n) = n²(n − 1) + 2D, where D counts the cells with ij divisible by n + 1 = 2026.
 - Challenge: 2026 = 2 × 1013. In row i the entry is whole when j is a multiple of 2026/gcd(i, 2026); sort the rows by gcd(i, 2026).
 

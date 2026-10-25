@@ -194,8 +194,8 @@ x₁, …, x₈ = 1, −1, 1, 1, 1, −1, −1, −1.) Let Sₙ = x₁ + x₂ + 
 | Step | Level | Problem | Answer |
 |---|---|---|---|
 | 1 | MATHCOUNTS | What is S₆? | **2** |
-| 2 | AMC 10 | Every block x₄ₖ₋₃ + x₄ₖ₋₂ + x₄ₖ₋₁ + x₄ₖ equals 2xₖ, so S₄ₖ = 2Sₖ. What is S₁₆? | **4** |
-| 3 | AMC 10 | Sₙ always has the same parity as n. How many of S₁, S₂, …, S₉ are 0? | **2** |
+| 2 | AMC 10 | From the rules, x₄ₖ₋₃ = x₂ₖ₋₁ and x₄ₖ₋₂ = −x₂ₖ₋₁ cancel, and x₄ₖ₋₁ = x₄ₖ = xₖ. So every block of four x₄ₖ₋₃ + x₄ₖ₋₂ + x₄ₖ₋₁ + x₄ₖ adds up to 2xₖ, and S₄ₖ = 2Sₖ. What is S₁₆? | **4** |
+| 3 | AMC 10 | Sₙ always has the same parity as n (each xᵢ is 1 or −1). How many of S₁, S₂, …, S₉ are 0? | **2** |
 | 4 | AMC 10 | What is S₄₀? | **0** |
 | **Challenge** | AIME | For how many n from 1 to 1000 is Sₙ = 0? | **31** |
 
