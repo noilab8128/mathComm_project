@@ -8,14 +8,16 @@ export interface Rational {
 }
 
 /**
- * Parse a whole number, a fraction or a decimal, allowing spaces, commas and thin spaces as thousands
- * separators and a leading minus sign. Returns null for anything else (words, formulas, two numbers).
+ * Parse a whole number, a fraction (27/10 or \frac{27}{10}) or a decimal, allowing spaces, commas and thin spaces
+ * as thousands separators and a leading minus sign. Returns null for anything else (words, formulas, two numbers).
  */
 export function parseNumber(raw: string): Rational | null {
   const s = raw
     .replace(/[\s   ,]/g, "") // spaces, no-break and thin spaces, commas
     .replace(/[−–]/g, "-") // minus sign and en dash typed as minus
-    .replace(/^\$|\$$/g, ""); // a number typed as $27/10$
+    .replace(/^\$|\$$/g, "") // a number typed as $27/10$
+    // a fraction typed in LaTeX: \frac{27}{10}, \dfrac{27}{10}, -\frac{3}{8} or \frac{-3}{8}
+    .replace(/^(-?)\\[dt]?frac\{(-?)(\d+)\}\{(\d+)\}$/, (_, outer, inner, n, d) => `${outer === inner ? "" : "-"}${n}/${d}`);
   let m = s.match(/^(-?)(\d+)\/(\d+)$/);
   if (m) {
     const den = BigInt(m[3]);

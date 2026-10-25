@@ -9,10 +9,13 @@ import { recordSubmission } from "@/lib/submissions";
 // Enough for honest trying, too few for guessing a number by brute force
 const checkLimiter = rateLimit({ windowMs: 10 * 60 * 1000, maxRequests: 20 });
 
+const MAX_EXPLANATION = 20000;
+
 /**
- * POST /api/check-answer  { problemId, answer }
+ * POST /api/check-answer  { problemId, answer, explanation? }
  * Short-answer check: compares the student's number with the stored answer ("Answer: ..." in the problem's
- * solution). No AI, so no cost. The result is saved like a graded solution (lib/submissions.ts), but XP/RP are
+ * solution). No AI, so no cost. The optional explanation (the student's LaTeX working) is saved with the
+ * submission in grading_result.explanation but not graded (decision 2026-10-25). The result is saved like a graded solution (lib/submissions.ts), but XP/RP are
  * given only for the first correct answer to a problem, and wrong answers give no XP (guessing is free).
  * The stored answer is never sent to the browser.
  */
@@ -32,9 +35,15 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const { problemId, answer } = await request.json();
+        const { problemId, answer, explanation } = await request.json();
         if (!problemId || typeof answer !== "string" || !answer.trim()) {
             return NextResponse.json({ message: "Enter a number first." }, { status: 400 });
+        }
+        if (explanation !== undefined && (typeof explanation !== "string" || explanation.length > MAX_EXPLANATION)) {
+            return NextResponse.json(
+                { message: `The explanation is too long (at most ${MAX_EXPLANATION.toLocaleString("en")} characters).` },
+                { status: 400 }
+            );
         }
 
         const given = parseNumber(answer);
@@ -54,7 +63,7 @@ export async function POST(request: NextRequest) {
         const expected = storedAnswer(solutions || []);
         if (!expected) {
             return NextResponse.json(
-                { message: "This problem has no short answer. Please use the Written solution tab." },
+                { message: "This problem has no number answer. Leave the answer box empty and submit your explanation." },
                 { status: 422 }
             );
         }
@@ -64,7 +73,7 @@ export async function POST(request: NextRequest) {
             userId,
             problemId,
             submittedAnswer: answer.trim(),
-            gradingResult: { mode: "short_answer", isCorrect },
+            gradingResult: { mode: "short_answer", isCorrect, explanation: explanation?.trim() || null },
             totalScore: isCorrect ? 1 : 0,
             isCorrect,
             rewardRepeatSolves: false,

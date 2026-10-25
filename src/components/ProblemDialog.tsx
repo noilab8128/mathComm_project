@@ -1,14 +1,18 @@
 "use client";
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useSession } from "next-auth/react";
 import { DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Send, Loader2, Heart, GitBranch, CheckCircle2, AlertCircle, RefreshCcw } from "lucide-react";
 import MathPreview from "@/components/MathPreview";
 import LadderExtras from "@/components/LadderExtras";
 import LadderGuide from "@/components/LadderGuide";
 import ProblemHelp from "@/components/ProblemHelp";
+import LatexHelp from "@/components/LatexHelp";
+import SavedSolution from "@/components/SavedSolution";
+import { clearDraft, draftKey as makeDraftKey, readDraft, writeDraft, type SavedSubmission, type SavedWork } from "@/lib/savedWork";
 import { DifficultyBadge } from "@/components/DifficultyRating";
 import { getDifficultyLabel, calculateXP, type Problem as SupabaseProblem, problemHierarchiesAPI, problemsAPI } from "@/lib/supabase";
 import { useLikes } from "@/hooks/useUserInteractions";
@@ -99,9 +103,12 @@ function LearningPathItem({
   isCurrent = false,
   isFinal = false,
   isLast = false,
+  isSolved = false,
 }: {
   title: string;
   isCurrent?: boolean;
+  /** The student has solved this problem */
+  isSolved?: boolean;
   /** The top (final) problem of the path */
   isFinal?: boolean;
   /** Last row: no connector line below the marker */
@@ -124,8 +131,11 @@ function LearningPathItem({
           isCurrent ? "bg-white shadow-[0_0_0_1px_rgb(15_23_42)]" : "hover:bg-white"
         }`}
       >
-        <div className={`truncate text-[13px] ${isCurrent ? "font-semibold text-slate-900" : "text-slate-700"}`} title={title}>
-          {title}
+        <div className="flex items-center gap-1.5">
+          <div className={`truncate text-[13px] ${isCurrent ? "font-semibold text-slate-900" : "text-slate-700"}`} title={title}>
+            {title}
+          </div>
+          {isSolved && <CheckCircle2 className="h-3.5 w-3.5 flex-shrink-0 text-emerald-600" aria-label="Solved" />}
         </div>
         {(isCurrent || isFinal) && (
           <div className="mt-0.5 text-[10px] font-medium uppercase tracking-[0.08em] text-slate-500">
@@ -212,10 +222,12 @@ function HierarchyPanel({
   openedProblem,
   currentId,
   onSelect,
+  solvedIds,
 }: {
   openedProblem: ProblemDisplay;
   currentId: string;
   onSelect: (problem: ProblemDisplay) => void;
+  solvedIds: Set<string>;
 }) {
   const [root, setRoot] = useState<ProblemDisplay>(openedProblem);
   const [routes, setRoutes] = useState<LearningPathRoute[]>([]);
@@ -283,7 +295,7 @@ function HierarchyPanel({
 
       <div className="w-full pb-6">
         <button className="block w-full text-left" onClick={() => onSelect(root)}>
-          <LearningPathItem title={root.title} isCurrent={root.id === currentId} isFinal isLast={nodes.length === 0} />
+          <LearningPathItem title={root.title} isCurrent={root.id === currentId} isFinal isLast={nodes.length === 0} isSolved={solvedIds.has(root.id)} />
         </button>
 
         {nodes.length === 0 ? (
@@ -298,7 +310,7 @@ function HierarchyPanel({
               style={{ paddingLeft: `${(depth - 1) * 14}px` }}
               onClick={() => onSelect(problem)}
             >
-              <LearningPathItem title={problem.title} isCurrent={problem.id === currentId} isLast={i === nodes.length - 1} />
+              <LearningPathItem title={problem.title} isCurrent={problem.id === currentId} isLast={i === nodes.length - 1} isSolved={solvedIds.has(problem.id)} />
             </button>
           ))
         )}
@@ -311,10 +323,19 @@ function HierarchyPanel({
 // -------------------------------------------------------
 // Component: ProblemDialog
 // -------------------------------------------------------
-export function ProblemDialog({ problem: initialProblem }: { problem: ProblemDisplay }) {
+// Lists mount one ProblemDialog per row, but only the opened one should load anything: DialogContent renders its
+// children only while the dialog is open, so all state, effects and requests live in ProblemDialogBody.
+export function ProblemDialog({ problem }: { problem: ProblemDisplay }) {
+  return (
+    <DialogContent className="flex h-[90vh] w-[98vw] max-w-none flex-col overflow-hidden rounded-lg border border-slate-200 bg-white p-0 shadow-xl sm:max-w-[1400px]">
+      <ProblemDialogBody problem={problem} />
+    </DialogContent>
+  );
+}
+
+function ProblemDialogBody({ problem: initialProblem }: { problem: ProblemDisplay }) {
   const [currentProblem, setCurrentProblem] = useState<ProblemDisplay>(initialProblem);
 
-  const [tab, setTab] = useState<"write" | "auto">("write");
   const [solutionDraft, setSolutionDraft] = useState("");
   const [previewVisible, setPreviewVisible] = useState(false);
   const [previewStatus, setPreviewStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
@@ -337,6 +358,33 @@ export function ProblemDialog({ problem: initialProblem }: { problem: ProblemDis
     { kind: "correct" | "wrong" | "error"; message: string } | null
   >(null);
 
+  // Saved work (decision 2026-10-25): the student's submissions to this problem, unsent drafts kept in this
+  // browser, and which problems of the path are solved.
+  const { data: session } = useSession();
+  const userId = session?.user?.id;
+  const draftKey = userId ? makeDraftKey(userId, currentProblem.id) : null;
+  const loadedDraftKey = useRef<string | null>(null);
+  const [saved, setSaved] = useState<SavedWork | null>(null);
+  const [solveAgain, setSolveAgain] = useState(false);
+  const [restored, setRestored] = useState<null | "draft" | "last">(null);
+  const [solvedIds, setSolvedIds] = useState<Set<string>>(new Set());
+
+  const recordResult = (entry: SavedSubmission) => {
+    setSaved((prev) => ({
+      solved: !!prev?.solved || entry.isCorrect,
+      attempts: (prev?.attempts ?? 0) + 1,
+      solvedWith: entry.isCorrect ? entry : prev?.solvedWith ?? null,
+      firstSolvedAt: prev?.firstSolvedAt ?? (entry.isCorrect ? entry.createdAt : null),
+      last: entry,
+    }));
+    if (entry.isCorrect) {
+      if (draftKey) clearDraft(draftKey);
+      setRestored(null);
+      setSolveAgain(false);
+      setSolvedIds((ids) => new Set(ids).add(currentProblem.id));
+    }
+  };
+
   // Open another problem of the ladder (used by the Problem analysis flow)
   const openProblemById = async (id: string) => {
     try {
@@ -355,9 +403,22 @@ export function ProblemDialog({ problem: initialProblem }: { problem: ProblemDis
       const res = await fetch("/api/check-answer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ problemId: currentProblem.id, answer: shortAnswer }),
+        body: JSON.stringify({
+          problemId: currentProblem.id,
+          answer: shortAnswer,
+          explanation: solutionDraft.trim() || undefined,
+        }),
       });
       const data = await res.json();
+      if (res.ok) {
+        recordResult({
+          mode: "short_answer",
+          answer: shortAnswer.trim(),
+          explanation: solutionDraft.trim() || null,
+          isCorrect: !!data.isCorrect,
+          createdAt: new Date().toISOString(),
+        });
+      }
       if (!res.ok) {
         setCheckResult({ kind: "error", message: data.message || "The answer could not be checked." });
       } else if (data.isCorrect) {
@@ -431,7 +492,7 @@ export function ProblemDialog({ problem: initialProblem }: { problem: ProblemDis
     }
   }, [solutionDraft]);
 
-  const handleSubmitSolution = useCallback(async () => {
+  const handleSubmitSolution = async () => {
     if (!solutionDraft.trim() || isGrading) return;
 
     try {
@@ -454,13 +515,29 @@ export function ProblemDialog({ problem: initialProblem }: { problem: ProblemDis
 
       setGradingResult(data.gradingResult);
       setShowGradingResult(true);
+      recordResult({
+        mode: "written",
+        answer: null,
+        explanation: solutionDraft.trim(),
+        isCorrect: !!data.gradingResult?.isCorrect,
+        createdAt: new Date().toISOString(),
+      });
     } catch (error) {
       console.error("Grading error:", error);
       // Fallback for UI if needed
     } finally {
       setIsGrading(false);
     }
-  }, [solutionDraft, currentProblem.content, isGrading]);
+  };
+
+  // One Submit button: a filled answer is checked (the explanation is saved with it, not graded);
+  // an empty answer sends the explanation to AI grading, for proof problems.
+  const isBusy = isChecking || isGrading;
+  const submitAll = () => {
+    if (isBusy) return;
+    if (shortAnswer.trim()) checkShortAnswer();
+    else if (solutionDraft.trim()) handleSubmitSolution();
+  };
 
   useEffect(() => {
     const loadProblemContent = async () => {
@@ -505,298 +582,384 @@ export function ProblemDialog({ problem: initialProblem }: { problem: ProblemDis
     setCheckResult(null);
   }, [currentProblem?.id, currentProblem?.content]);
 
+  // Load the student's work on this problem: the unsent draft, else the last wrong attempt; and the saved
+  // submissions. Opening a problem also marks it as started (it then shows as "in progress").
+  useEffect(() => {
+    let cancelled = false;
+    setSaved(null);
+    setSolveAgain(false);
+    setRestored(null);
+    const draft = draftKey ? readDraft(draftKey) : null;
+    if (draft) {
+      setSolutionDraft(draft.explanation);
+      setShortAnswer(draft.answer);
+      setRestored("draft");
+    }
+    loadedDraftKey.current = draftKey;
+    if (!userId) return;
+
+    fetch("/api/user/start", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ problemId: currentProblem.id }),
+    }).catch(() => {});
+
+    fetch(`/api/user/submissions?problemId=${encodeURIComponent(currentProblem.id)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((work: SavedWork | null) => {
+        if (cancelled || !work) return;
+        setSaved(work);
+        if (!draft && !work.solved && work.last) {
+          const last = work.last;
+          setSolutionDraft((d) => d || last.explanation || "");
+          setShortAnswer((a) => a || last.answer || "");
+          setRestored("last");
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentProblem.id, draftKey]);
+
+  // Keep the draft while the student types (only after this problem's draft was loaded)
+  useEffect(() => {
+    if (!draftKey || loadedDraftKey.current !== draftKey) return;
+    const t = setTimeout(() => writeDraft(draftKey, { explanation: solutionDraft, answer: shortAnswer }), 400);
+    return () => clearTimeout(t);
+  }, [draftKey, solutionDraft, shortAnswer]);
+
+  // Solved marks in the learning path
+  useEffect(() => {
+    if (!userId) return;
+    fetch("/api/user/progress")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((p) => p && setSolvedIds(new Set(p.solvedIds || [])))
+      .catch(() => {});
+  }, [userId]);
+
   return (
-    <DialogContent className="flex h-[90vh] w-[98vw] max-w-none flex-col overflow-hidden rounded-lg border border-slate-200 bg-white p-0 shadow-xl sm:max-w-[1400px]">
-      <div className="flex h-full overflow-hidden">
-        {/* Main Problem/Solution Column (Left) */}
-        <div className="flex min-w-0 flex-1 flex-col">
-          <div className="scroll-thin flex-1 overflow-y-auto px-8 py-7">
-              <DialogHeader className="space-y-0 pb-3 pr-8 text-left">
-                {currentProblem.category_path && (
-                  <div className="mb-1.5 text-xs text-slate-500">{currentProblem.category_path.split(" > ").join(" › ")}</div>
-                )}
-                <div className="flex items-start justify-between gap-4">
-                  <DialogTitle className="text-xl font-semibold leading-snug tracking-tight text-slate-900">
-                    {currentProblem.title}
-                  </DialogTitle>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => toggleLike(currentProblem.id)}
-                    aria-pressed={likedIds.has(currentProblem.id)}
-                    className={`h-8 flex-shrink-0 gap-1.5 rounded-md px-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900 ${likedIds.has(currentProblem.id) ? "text-slate-900" : ""}`}
-                  >
-                    <Heart className={`h-4 w-4 ${likedIds.has(currentProblem.id) ? "fill-current" : ""}`} />
-                    <span className="tnum font-mono text-xs">{currentProblem.likes_count ?? 0}</span>
-                  </Button>
-                </div>
-              </DialogHeader>
-
-              <div className="mb-6 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-b border-slate-100 pb-4 text-xs text-slate-500">
-                {currentProblem.difficulty_score !== undefined && <DifficultyBadge difficulty={currentProblem.difficulty_score} />}
-                <span className="tnum font-mono">{currentProblem.xp} XP</span>
-                {currentProblem.source && <span>Source: {currentProblem.source}</span>}
-                {currentProblem.tags && currentProblem.tags.length > 0 && (
-                  <span className="flex flex-wrap gap-1">
-                    {currentProblem.tags.map((t: string, idx: number) => (
-                      <span key={`${currentProblem.id}-tag-${idx}`} className="rounded border border-slate-200 px-1.5 py-px text-[11px] text-slate-500">{t}</span>
-                    ))}
-                  </span>
-                )}
+    <div className="flex h-full overflow-hidden">
+      {/* Main Problem/Solution Column (Left) */}
+      <div className="flex min-w-0 flex-1 flex-col">
+        <div className="scroll-thin flex-1 overflow-y-auto px-8 py-7">
+            <DialogHeader className="space-y-0 pb-3 pr-8 text-left">
+              {currentProblem.category_path && (
+                <div className="mb-1.5 text-xs text-slate-500">{currentProblem.category_path.split(" > ").join(" › ")}</div>
+              )}
+              <div className="flex items-start justify-between gap-4">
+                <DialogTitle className="text-xl font-semibold leading-snug tracking-tight text-slate-900">
+                  {currentProblem.title}
+                </DialogTitle>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => toggleLike(currentProblem.id)}
+                  aria-pressed={likedIds.has(currentProblem.id)}
+                  className={`h-8 flex-shrink-0 gap-1.5 rounded-md px-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900 ${likedIds.has(currentProblem.id) ? "text-slate-900" : ""}`}
+                >
+                  <Heart className={`h-4 w-4 ${likedIds.has(currentProblem.id) ? "fill-current" : ""}`} />
+                  <span className="tnum font-mono text-xs">{currentProblem.likes_count ?? 0}</span>
+                </Button>
               </div>
+            </DialogHeader>
 
-              <section aria-label="Problem statement" className="mb-8 border-l-2 border-slate-900 pl-5">
-                <div className="mb-2 text-[11px] font-medium uppercase tracking-[0.08em] text-slate-500">Problem</div>
-                {problemContentLoading ? (
-                  <div className="flex items-center gap-2 text-slate-400">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span className="text-sm">Rendering…</span>
+            <div className="mb-6 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-b border-slate-100 pb-4 text-xs text-slate-500">
+              {currentProblem.difficulty_score !== undefined && <DifficultyBadge difficulty={currentProblem.difficulty_score} />}
+              <span className="tnum font-mono">{currentProblem.xp} XP</span>
+              {currentProblem.source && <span>Source: {currentProblem.source}</span>}
+              {currentProblem.tags && currentProblem.tags.length > 0 && (
+                <span className="flex flex-wrap gap-1">
+                  {currentProblem.tags.map((t: string, idx: number) => (
+                    <span key={`${currentProblem.id}-tag-${idx}`} className="rounded border border-slate-200 px-1.5 py-px text-[11px] text-slate-500">{t}</span>
+                  ))}
+                </span>
+              )}
+            </div>
+
+            <section aria-label="Problem statement" className="mb-8 border-l-2 border-slate-900 pl-5">
+              <div className="mb-2 text-[11px] font-medium uppercase tracking-[0.08em] text-slate-500">Problem</div>
+              {problemContentLoading ? (
+                <div className="flex items-center gap-2 text-slate-400">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span className="text-sm">Rendering…</span>
+                </div>
+              ) : problemHtml ? (
+                <MathPreview html={problemHtml} className="font-serif text-[17px] leading-[1.7] text-slate-900" />
+              ) : (
+                <div className="italic text-slate-400">No problem content available.</div>
+              )}
+            </section>
+
+            <ProblemHelp problemId={currentProblem.id} subdomainId={currentProblem.subdomain_id} />
+
+            {/* One form: the explanation (LaTeX, saved, not graded) and the answer (checked).
+                With no answer, the explanation goes to AI grading (proof problems). */}
+            <section aria-label="Your solution" className="flex flex-col gap-3">
+              {showGradingResult && gradingResult ? (
+                <div className="rounded-md border border-slate-200">
+                  <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 px-5 py-4">
+                    <div className="max-w-2xl">
+                      <div className="flex items-center gap-2">
+                        {gradingResult.isCorrect ? (
+                          <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                        ) : (
+                          <AlertCircle className="h-4 w-4 text-amber-600" />
+                        )}
+                        <h3 className="text-sm font-semibold text-slate-900">
+                          {gradingResult.isCorrect ? "Correct" : "Not yet correct"}
+                        </h3>
+                      </div>
+                      <p className="mt-1.5 text-sm leading-relaxed text-slate-600">{gradingResult.overallSummary}</p>
+                    </div>
+                    <div className="text-right">
+                      <div className="tnum text-2xl font-semibold text-slate-900">
+                        {gradingResult.totalScore}<span className="text-base text-slate-400"> / {gradingResult.maxScore}</span>
+                      </div>
+                      <div className="text-[11px] text-slate-500">Total score</div>
+                    </div>
                   </div>
-                ) : problemHtml ? (
-                  <MathPreview html={problemHtml} className="font-serif text-[17px] leading-[1.7] text-slate-900" />
-                ) : (
-                  <div className="italic text-slate-400">No problem content available.</div>
-                )}
-              </section>
 
-              <ProblemHelp problemId={currentProblem.id} subdomainId={currentProblem.subdomain_id} />
-
-              <div className="flex flex-col gap-4">
-                <Tabs value={tab} onValueChange={(v) => setTab(v as "write" | "auto")} className="w-full">
-                  <TabsList className="mb-4 h-auto w-full justify-start gap-1 rounded-none border-b border-slate-200 bg-transparent p-0">
-                    <TabsTrigger value="write" className="-mb-px h-auto flex-none rounded-none border-0 border-b-2 border-transparent px-3 py-2 text-sm font-normal text-slate-500 data-[state=active]:border-slate-900 data-[state=active]:bg-transparent data-[state=active]:font-medium data-[state=active]:text-slate-900 data-[state=active]:shadow-none">Written solution</TabsTrigger>
-                    <TabsTrigger value="auto" className="-mb-px h-auto flex-none rounded-none border-0 border-b-2 border-transparent px-3 py-2 text-sm font-normal text-slate-500 data-[state=active]:border-slate-900 data-[state=active]:bg-transparent data-[state=active]:font-medium data-[state=active]:text-slate-900 data-[state=active]:shadow-none">Short answer</TabsTrigger>
-                  </TabsList>
-
-                  <TabsContent value="write" className="mt-0 outline-none">
-                    {showGradingResult && gradingResult ? (
-                      <div className="rounded-md border border-slate-200">
-                        <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 px-5 py-4">
-                          <div className="max-w-2xl">
-                            <div className="flex items-center gap-2">
-                              {gradingResult.isCorrect ? (
-                                <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                              ) : (
-                                <AlertCircle className="h-4 w-4 text-amber-600" />
-                              )}
-                              <h3 className="text-sm font-semibold text-slate-900">
-                                {gradingResult.isCorrect ? "Correct" : "Not yet correct"}
-                              </h3>
+                  <table className="w-full text-sm">
+                    <tbody className="divide-y divide-slate-100">
+                      {Object.entries(gradingResult.scores).map(([key, score]) => (
+                        <tr key={key}>
+                          <td className="px-5 py-2 capitalize text-slate-600">{key.replace(/_/g, " ")}</td>
+                          <td className="w-40 px-5 py-2">
+                            <div className="h-1 bg-slate-100">
+                              <div className="h-1 bg-slate-800" style={{ width: `${Math.max(0, Math.min(10, Number(score))) * 10}%` }} />
                             </div>
-                            <p className="mt-1.5 text-sm leading-relaxed text-slate-600">{gradingResult.overallSummary}</p>
-                          </div>
-                          <div className="text-right">
-                            <div className="tnum text-2xl font-semibold text-slate-900">
-                              {gradingResult.totalScore}<span className="text-base text-slate-400"> / {gradingResult.maxScore}</span>
-                            </div>
-                            <div className="text-[11px] text-slate-500">Total score</div>
-                          </div>
-                        </div>
+                          </td>
+                          <td className="tnum w-16 px-5 py-2 text-right font-mono text-slate-900">{score}<span className="text-slate-400">/10</span></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
 
-                        <table className="w-full text-sm">
-                          <tbody className="divide-y divide-slate-100">
-                            {Object.entries(gradingResult.scores).map(([key, score]) => (
-                              <tr key={key}>
-                                <td className="px-5 py-2 capitalize text-slate-600">{key.replace(/_/g, " ")}</td>
-                                <td className="w-40 px-5 py-2">
-                                  <div className="h-1 bg-slate-100">
-                                    <div className="h-1 bg-slate-800" style={{ width: `${Math.max(0, Math.min(10, Number(score))) * 10}%` }} />
-                                  </div>
-                                </td>
-                                <td className="tnum w-16 px-5 py-2 text-right font-mono text-slate-900">{score}<span className="text-slate-400">/10</span></td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                  {gradingResult.feedback.length > 0 && (
+                    <div className="border-t border-slate-200 px-5 py-4">
+                      <div className="mb-3 text-[11px] font-medium uppercase tracking-[0.08em] text-slate-500">Feedback</div>
+                      <ol className="space-y-4">
+                        {gradingResult.feedback.map((f, idx) => (
+                          <li key={idx} className="text-sm">
+                            <div className="font-medium text-slate-900">{f.criterion}</div>
+                            <p className="mt-0.5 leading-relaxed text-slate-600">{f.comment}</p>
+                            {f.hint && (
+                              <p className="mt-2 border-l-2 border-slate-300 pl-3 text-[13px] leading-relaxed text-slate-600">
+                                <span className="font-medium text-slate-800">Hint. </span>{f.hint}
+                              </p>
+                            )}
+                          </li>
+                        ))}
+                      </ol>
+                    </div>
+                  )}
 
-                        {gradingResult.feedback.length > 0 && (
-                          <div className="border-t border-slate-200 px-5 py-4">
-                            <div className="mb-3 text-[11px] font-medium uppercase tracking-[0.08em] text-slate-500">Feedback</div>
-                            <ol className="space-y-4">
-                              {gradingResult.feedback.map((f, idx) => (
-                                <li key={idx} className="text-sm">
-                                  <div className="font-medium text-slate-900">{f.criterion}</div>
-                                  <p className="mt-0.5 leading-relaxed text-slate-600">{f.comment}</p>
-                                  {f.hint && (
-                                    <p className="mt-2 border-l-2 border-slate-300 pl-3 text-[13px] leading-relaxed text-slate-600">
-                                      <span className="font-medium text-slate-800">Hint. </span>{f.hint}
-                                    </p>
-                                  )}
-                                </li>
-                              ))}
-                            </ol>
+                  <div className="flex justify-end border-t border-slate-200 px-5 py-3">
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowGradingResult(false)}
+                      className="h-9 gap-2 rounded-md border-slate-300 text-slate-700 hover:text-slate-900"
+                    >
+                      <RefreshCcw className="h-4 w-4" /> Back to editor
+                    </Button>
+                  </div>
+                </div>
+              ) : saved?.solved && saved.solvedWith && !solveAgain ? (
+                <SavedSolution
+                  submission={saved.solvedWith}
+                  attempts={saved.attempts}
+                  solvedAt={saved.firstSolvedAt ?? saved.solvedWith.createdAt}
+                  note={checkResult?.kind === "correct" ? checkResult.message : null}
+                  onSolveAgain={() => {
+                    const prev = saved.solvedWith;
+                    setSolutionDraft((d) => d || prev?.explanation || "");
+                    setCheckResult(null);
+                    setSolveAgain(true);
+                  }}
+                />
+              ) : (
+                <>
+                  {restored && (
+                    <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                      <span>
+                        {restored === "draft"
+                          ? "Your unsent work on this problem was restored."
+                          : "Your last attempt is loaded. Change it and submit again."}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSolutionDraft("");
+                          setShortAnswer("");
+                          setCheckResult(null);
+                          setRestored(null);
+                        }}
+                        className="text-slate-500 underline-offset-2 hover:text-slate-900 hover:underline"
+                      >
+                        Start over
+                      </button>
+                    </div>
+                  )}
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 items-stretch">
+                    {/* Editor */}
+                    <div className="flex h-[300px] flex-col overflow-hidden rounded-md border border-slate-200 bg-white transition-colors focus-within:border-slate-400">
+                      <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-3 py-1.5">
+                        <span className="text-xs text-slate-500">Your explanation · LaTeX</span>
+                      </div>
+                      <textarea
+                        className="w-full flex-1 resize-none bg-white p-4 font-mono text-[13px] leading-relaxed text-slate-800 outline-none placeholder:text-slate-400"
+                        placeholder="Explain how you solved it. Use $...$ for math, e.g. $x^2 + 1$."
+                        value={solutionDraft}
+                        onChange={(e) => setSolutionDraft(e.target.value)}
+                      />
+                    </div>
+
+                    {/* Preview */}
+                    <div className="flex h-[300px] flex-col overflow-hidden rounded-md border border-slate-200 bg-white">
+                      <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-3 py-1.5">
+                        <span className="text-xs text-slate-500">Preview</span>
+                        <span className="text-[11px] text-slate-400">{previewHeaderStatus}</span>
+                      </div>
+                      <div className="scroll-thin flex-1 overflow-y-auto p-4 font-serif text-[15px] leading-relaxed text-slate-900">
+                        {previewStatus === "loading" && <div className="flex items-center gap-2 font-sans text-sm text-slate-400"><Loader2 className="h-4 w-4 animate-spin" /> Rendering…</div>}
+                        {previewStatus === "error" && previewError && (
+                          <div className="rounded-md border border-red-200 bg-red-50 p-3 font-sans text-xs text-red-700">{previewError}</div>
+                        )}
+                        {previewStatus === "ready" && (
+                          <>
+                            {previewSource !== solutionDraft && (
+                              <div className="mb-4 font-sans text-[11px] text-amber-700">Edited since last preview — click Preview to update.</div>
+                            )}
+                            <MathPreview html={previewHtml} />
+                          </>
+                        )}
+                        {previewStatus === "idle" && (
+                          <div className="flex h-full items-center justify-center py-10 font-sans text-sm text-slate-400">
+                            Click Preview to render your explanation.
                           </div>
                         )}
-
-                        <div className="flex justify-end border-t border-slate-200 px-5 py-3">
-                          <Button
-                            variant="outline"
-                            onClick={() => setShowGradingResult(false)}
-                            className="h-9 gap-2 rounded-md border-slate-300 text-slate-700 hover:text-slate-900"
-                          >
-                            <RefreshCcw className="h-4 w-4" /> Back to editor
-                          </Button>
-                        </div>
                       </div>
-                    ) : (
-                      <>
-                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 items-stretch">
-                          {/* Editor */}
-                          <div className="flex h-[300px] flex-col overflow-hidden rounded-md border border-slate-200 bg-white transition-colors focus-within:border-slate-400">
-                            <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-3 py-1.5">
-                              <span className="text-xs text-slate-500">Your solution · LaTeX</span>
-                            </div>
-                            <textarea
-                              className="w-full flex-1 resize-none bg-white p-4 font-mono text-[13px] leading-relaxed text-slate-800 outline-none placeholder:text-slate-400"
-                              placeholder="Write your solution. Use $...$ for math, e.g. $x^2 + 1$."
-                              value={solutionDraft}
-                              onChange={(e) => setSolutionDraft(e.target.value)}
-                            />
-                          </div>
-    
-                          {/* Preview */}
-                          <div className="flex h-[300px] flex-col overflow-hidden rounded-md border border-slate-200 bg-white">
-                            <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-3 py-1.5">
-                              <span className="text-xs text-slate-500">Preview</span>
-                              <span className="text-[11px] text-slate-400">{previewHeaderStatus}</span>
-                            </div>
-                            <div className="scroll-thin flex-1 overflow-y-auto p-4 font-serif text-[15px] leading-relaxed text-slate-900">
-                              {previewStatus === "loading" && <div className="flex items-center gap-2 font-sans text-sm text-slate-400"><Loader2 className="h-4 w-4 animate-spin" /> Rendering…</div>}
-                              {previewStatus === "error" && previewError && (
-                                <div className="rounded-md border border-red-200 bg-red-50 p-3 font-sans text-xs text-red-700">{previewError}</div>
-                              )}
-                              {previewStatus === "ready" && (
-                                <>
-                                  {previewSource !== solutionDraft && (
-                                    <div className="mb-4 font-sans text-[11px] text-amber-700">Edited since last preview — click Preview to update.</div>
-                                  )}
-                                  <MathPreview html={previewHtml} />
-                                </>
-                              )}
-                              {previewStatus === "idle" && (
-                                <div className="flex h-full items-center justify-center py-10 font-sans text-sm text-slate-400">
-                                  Click Preview to render your solution.
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-                          <div className="flex gap-3">
-                            <Button 
-                              onClick={handleSubmitSolution}
-                              disabled={isGrading || !solutionDraft.trim()}
-                              className="h-9 min-w-[150px] rounded-md bg-slate-900 px-5 text-sm text-white hover:bg-slate-800"
-                            >
-                              {isGrading ? (
-                                <>
-                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Grading…
-                                </>
-                              ) : (
-                                <>
-                                  Submit solution <Send className="ml-2 h-3.5 w-3.5" />
-                                </>
-                              )}
-                            </Button>
-                            <Button variant="outline" className="h-9 rounded-md border-slate-300 px-4 text-sm text-slate-700 hover:text-slate-900" onClick={handlePreviewClick} disabled={previewStatus === "loading" || isGrading}>
-                              {previewStatus === "loading" ? "Rendering…" : "Preview"}
-                            </Button>
-                          </div>
-                        </div>
-                      </>
-                    )}
-                  </TabsContent>
-
-                  <TabsContent value="auto" className="mt-0">
-                    <div className="max-w-md">
-                      <label className="text-sm font-medium text-slate-900" htmlFor="short-answer">Your answer</label>
-                      <p className="mt-0.5 text-xs text-slate-500">For problems with a single number as the answer.</p>
-                      <form
-                        className="mt-3 flex gap-2"
-                        onSubmit={(e) => {
-                          e.preventDefault();
-                          checkShortAnswer();
-                        }}
-                      >
-                        <Input
-                          id="short-answer"
-                          inputMode="decimal"
-                          autoComplete="off"
-                          placeholder="e.g. 42"
-                          value={shortAnswer}
-                          onChange={(e) => {
-                            setShortAnswer(e.target.value);
-                            setCheckResult(null);
-                          }}
-                          className="tnum h-9 rounded-md border-slate-300 font-mono focus-visible:ring-slate-400"
-                        />
-                        <Button
-                          type="submit"
-                          disabled={isChecking || !shortAnswer.trim()}
-                          className="h-9 rounded-md bg-slate-900 px-4 text-sm text-white hover:bg-slate-800"
-                        >
-                          {isChecking ? <Loader2 className="h-4 w-4 animate-spin" /> : "Check"}
-                        </Button>
-                      </form>
-                      {checkResult && (
-                        <p
-                          role="status"
-                          className={`mt-3 flex items-center gap-1.5 text-sm ${
-                            checkResult.kind === "correct"
-                              ? "text-emerald-700"
-                              : checkResult.kind === "wrong"
-                                ? "text-amber-700"
-                                : "text-red-600"
-                          }`}
-                        >
-                          {checkResult.kind === "correct" ? (
-                            <CheckCircle2 className="h-4 w-4" />
-                          ) : (
-                            <AlertCircle className="h-4 w-4" />
-                          )}
-                          {checkResult.message}
-                        </p>
-                      )}
                     </div>
-                  </TabsContent>
-                </Tabs>
-              </div>
+                  </div>
 
-              <LadderGuide problemId={currentProblem.id} onOpenProblem={openProblemById} />
-              <LadderExtras problemId={currentProblem.id} />
-            </div>
-        </div>
+                  <LatexHelp
+                    onInsert={(example) => setSolutionDraft((d) => (d.trim() ? `${d.trimEnd()}\n\n${example}` : example))}
+                  />
 
-        {/* Learning Path Column (Right) */}
-        <div className="flex min-h-0 w-[340px] flex-shrink-0 flex-col border-l border-slate-200 bg-slate-50">
-          <div className="border-b border-slate-200 px-5 py-4">
-            <h3 className="flex items-center gap-2 text-[13px] font-semibold text-slate-900">
-              <GitBranch className="h-4 w-4 text-slate-400" />
-              Learning path
-            </h3>
-            <p className="mt-0.5 text-xs text-slate-500">From the final problem down to the first step</p>
+                  <form
+                    className="mt-2 flex flex-wrap items-end gap-3"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      submitAll();
+                    }}
+                  >
+                    <div className="w-48">
+                      <label className="text-sm font-medium text-slate-900" htmlFor="short-answer">Answer</label>
+                      <Input
+                        id="short-answer"
+                        inputMode="decimal"
+                        autoComplete="off"
+                        placeholder="e.g. 42 or 3/8"
+                        value={shortAnswer}
+                        onChange={(e) => {
+                          setShortAnswer(e.target.value);
+                          setCheckResult(null);
+                        }}
+                        className="tnum mt-1 h-9 rounded-md border-slate-300 font-mono focus-visible:ring-slate-400"
+                      />
+                    </div>
+                    <Button
+                      type="submit"
+                      disabled={isBusy || (!shortAnswer.trim() && !solutionDraft.trim())}
+                      className="h-9 min-w-[120px] rounded-md bg-slate-900 px-5 text-sm text-white hover:bg-slate-800"
+                    >
+                      {isGrading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Grading…
+                        </>
+                      ) : isChecking ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Checking…
+                        </>
+                      ) : (
+                        <>
+                          Submit <Send className="ml-2 h-3.5 w-3.5" />
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-9 rounded-md border-slate-300 px-4 text-sm text-slate-700 hover:text-slate-900"
+                      onClick={handlePreviewClick}
+                      disabled={previewStatus === "loading" || isBusy}
+                    >
+                      {previewStatus === "loading" ? "Rendering…" : "Preview"}
+                    </Button>
+                  </form>
+                  <p className="text-xs text-slate-500">
+                    The answer is checked right away and your explanation is saved with it. For a proof problem with no
+                    number answer, leave the answer empty: your explanation is then graded instead.
+                  </p>
+                  {checkResult && (
+                    <p
+                      role="status"
+                      className={`flex items-center gap-1.5 text-sm ${
+                        checkResult.kind === "correct"
+                          ? "text-emerald-700"
+                          : checkResult.kind === "wrong"
+                            ? "text-amber-700"
+                            : "text-red-600"
+                      }`}
+                    >
+                      {checkResult.kind === "correct" ? (
+                        <CheckCircle2 className="h-4 w-4" />
+                      ) : (
+                        <AlertCircle className="h-4 w-4" />
+                      )}
+                      {checkResult.message}
+                    </p>
+                  )}
+                </>
+              )}
+            </section>
+
+            <LadderGuide problemId={currentProblem.id} onOpenProblem={openProblemById} />
+            <LadderExtras problemId={currentProblem.id} />
           </div>
-          <div className="scroll-thin flex-1 overflow-y-auto px-4 py-4">
-            <HierarchyPanel
-                openedProblem={initialProblem}
-                currentId={currentProblem.id}
-                onSelect={setCurrentProblem}
-              />
-          </div>
-          <dl className="tnum grid grid-cols-2 border-t border-slate-200 bg-white text-center">
-            <div className="border-r border-slate-200 px-4 py-3">
-              <dt className="text-[11px] text-slate-500">Solved by</dt>
-              <dd className="text-base font-semibold text-slate-900">{currentProblem.completes_count ?? 0}</dd>
-            </div>
-            <div className="px-4 py-3">
-              <dt className="text-[11px] text-slate-500">Attempted by</dt>
-              <dd className="text-base font-semibold text-slate-900">{currentProblem.starts_count ?? 0}</dd>
-            </div>
-          </dl>
-        </div>
-
       </div>
-    </DialogContent>
+
+      {/* Learning Path Column (Right) */}
+      <div className="flex min-h-0 w-[340px] flex-shrink-0 flex-col border-l border-slate-200 bg-slate-50">
+        <div className="border-b border-slate-200 px-5 py-4">
+          <h3 className="flex items-center gap-2 text-[13px] font-semibold text-slate-900">
+            <GitBranch className="h-4 w-4 text-slate-400" />
+            Learning path
+          </h3>
+          <p className="mt-0.5 text-xs text-slate-500">From the final problem down to the first step</p>
+        </div>
+        <div className="scroll-thin flex-1 overflow-y-auto px-4 py-4">
+          <HierarchyPanel
+              openedProblem={initialProblem}
+              currentId={currentProblem.id}
+              onSelect={setCurrentProblem}
+              solvedIds={solvedIds}
+            />
+        </div>
+        <dl className="tnum grid grid-cols-2 border-t border-slate-200 bg-white text-center">
+          <div className="border-r border-slate-200 px-4 py-3">
+            <dt className="text-[11px] text-slate-500">Solved by</dt>
+            <dd className="text-base font-semibold text-slate-900">{currentProblem.completes_count ?? 0}</dd>
+          </div>
+          <div className="px-4 py-3">
+            <dt className="text-[11px] text-slate-500">Attempted by</dt>
+            <dd className="text-base font-semibold text-slate-900">{currentProblem.starts_count ?? 0}</dd>
+          </div>
+        </dl>
+      </div>
+
+    </div>
   );
 }

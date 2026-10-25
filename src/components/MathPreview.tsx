@@ -26,6 +26,11 @@ async function loadMathJax(): Promise<void> {
           inlineMath: [['$', '$'], ['\\(', '\\)']],
           displayMath: [['$$', '$$'], ['\\[', '\\]']],
           processEscapes: true,
+          // Shortcuts students often type: \floor{x} and \ceil{x}
+          macros: {
+            floor: ["\\left\\lfloor #1 \\right\\rfloor", 1],
+            ceil: ["\\left\\lceil #1 \\right\\rceil", 1],
+          },
         },
         options: {
           enableMenu: false,

@@ -2,10 +2,10 @@
 // Features problem filtering, detailed problem view, and solution submission
 
 "use client"
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
-import { Loader2, Heart, Search } from "lucide-react";
+import { Loader2, Heart, Search, CheckCircle2 } from "lucide-react";
 import { useLikes } from "@/hooks/useUserInteractions";
 import { problemsAPI } from "@/lib/supabase";
 import { DifficultyBadge } from "@/components/DifficultyRating";
@@ -25,6 +25,26 @@ export default function Problems() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { likedIds, toggleLike } = useLikes();
+
+  // The user's progress: solved problems, and problems opened or tried but not solved yet ("in progress").
+  // Refreshed when a problem window closes.
+  const [solvedIds, setSolvedIds] = useState<Set<string>>(new Set());
+  const [inProgressIds, setInProgressIds] = useState<Set<string>>(new Set());
+  const refreshProgress = useCallback(() => {
+    fetch("/api/user/progress")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((p) => {
+        if (!p) return;
+        const solved = new Set<string>(p.solvedIds || []);
+        const touched = [...(p.attemptedIds || []), ...(p.recentStarts || []).map((s: { problemId: string }) => s.problemId)];
+        setSolvedIds(solved);
+        setInProgressIds(new Set(touched.filter((id: string) => !solved.has(id))));
+      })
+      .catch(() => {});
+  }, []);
+  useEffect(() => {
+    refreshProgress();
+  }, [refreshProgress]);
 
   // State for filtering
   const [selectedLevel, setSelectedLevel] = useState("All");
@@ -202,12 +222,23 @@ export default function Problems() {
           <ul className="divide-y divide-slate-100">
             {filteredProblems.map((problem, index) => (
               <li key={problem.id} data-problem-id={problem.id}>
-                <Dialog>
+                <Dialog onOpenChange={(open) => !open && refreshProgress()}>
                   <div className="grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-1 px-4 py-3 transition-colors hover:bg-slate-50 md:grid-cols-[48px_1fr_140px_64px_96px]">
                     <span className="tnum hidden font-mono text-xs text-slate-400 md:block">{index + 1}</span>
                     <DialogTrigger asChild>
                       <button className="min-w-0 text-left">
-                        <span className="block truncate font-medium text-slate-900 hover:text-blue-800">{problem.title}</span>
+                        <span className="flex min-w-0 items-center gap-2">
+                          <span className="truncate font-medium text-slate-900 hover:text-blue-800">{problem.title}</span>
+                          {solvedIds.has(problem.id) ? (
+                            <span className="inline-flex flex-shrink-0 items-center gap-1 text-[11px] font-medium text-emerald-700">
+                              <CheckCircle2 className="h-3.5 w-3.5" /> Solved
+                            </span>
+                          ) : inProgressIds.has(problem.id) ? (
+                            <span className="flex-shrink-0 rounded border border-amber-200 bg-amber-50 px-1.5 py-px text-[11px] text-amber-800">
+                              In progress
+                            </span>
+                          ) : null}
+                        </span>
                         <span className="mt-0.5 block truncate text-xs text-slate-500">
                           {problem.category_path ? problem.category_path.split(" > ").join(" › ") : "Uncategorized"}
                         </span>
