@@ -25,7 +25,7 @@ export const RULES = {
   ],
   trailblazerFirstSolvers: 3,
   // Badges added 2026-10-17 (docs/SKILL_TREE_RULES.md section 4.6)
-  navigator: { explorerSubdomains: 2 }, // area (middle level of lib/skillMap.ts): Explorer in 2 of its core topics
+  navigator: { explorerSubdomains: 2 }, // area (category_2): Explorer in 2 of its topics
   cartographer: { groups: 5 }, // solved problems in 5 different areas
   thorough: { ladders: 3 }, // finished 3 ladders with every step solved, not only the Challenge
   firstTry: [

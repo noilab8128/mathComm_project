@@ -69,36 +69,38 @@ Only domains that have problems are shown. Today that is Number Theory, Combinat
 other six domains (Analysis, Probability & Statistics, Optimization, Numerical Analysis, Cryptography, Game Theory)
 stay hidden until they have at least one complete ladder.
 
-### 2.3 The skill map: 16 core topics (decided 2026-10-17)
+### 2.3 The skill map: the category file, competition parts only (decided 2026-10-24)
 
-The 70 level-3 categories are too many to show, especially on phones. The Skill Tree therefore shows its own short
-**3-level map**: **field (4) › area (2 per field) › core topic (2 per area) = 16 core topics**. Each core topic
-gathers one or more level-3 categories, so the categories and problem tags in the database stay unchanged. Badges
-are earned per core topic (Explorer / Specialist / Virtuoso), per area (Navigator) and per field (Expert / Champion /
-Legend). The map is defined in `src/lib/skillMap.ts`.
+The Skill Tree follows the team's category file (`math_Category_Schema.xlsx`, `category_1 › category_2 ›
+category_3`) and **keeps only the parts that appear in competition problems** (Kangaroo, MATHCOUNTS, AMC, AIME,
+olympiads). The 13 olympiad topics added on 2026-10-09 stay in their place under the file's groups. A problem's place
+on the map is its `category_level3`, so nothing is re-tagged. The list is `COMPETITION_TOPIC_IDS` in
+`src/lib/skillMap.ts`. (This replaces the 16 "core topics" of 2026-10-17.)
 
-| Field | Area | Core topic | Categories gathered (level 3) |
-|---|---|---|---|
-| Algebra | Equations and Inequalities | Inequalities and Optimization | 46 |
-| | | Polynomials and Factoring | 45, 47, 48 |
-| | Functions and Sequences | Sequences, Sums and Floors | 103, 105 |
-| | | Functional Equations | 104 |
-| Number Theory | Divisibility | Primes and Divisors | 81, 106, 84, 85 |
-| | | Congruences | 82 |
-| | Equations and Digits | Diophantine Equations | 83 |
-| | | Digits and Bases | 107 |
-| Combinatorics | Counting | Counting and Probability | 86, 87, 88, 114, 96–99 |
-| | | Graphs | 89–92 |
-| | Combinatorial Reasoning | Invariants and Games | 109, 112 |
-| | | Extremal and Pigeonhole | 110, 111, 113 |
-| Geometry | Triangles and Circles | Triangle Centres and Circles | 115 |
-| | | Congruence and Similarity | 60, 57 |
-| | Measurement | Lengths, Areas and Trigonometry | 59, 58 |
-| | | Coordinates and Vectors | 61, 62, 63 |
+**5 fields › 10 areas › 39 topics**
 
-- With today's 28 ladders, 11 core topics have ladders; Polynomials, Graphs, Congruence and Similarity, Lengths and
-  Areas, and Coordinates and Vectors show as "coming soon".
-- A category not in this table is not shown on the map. To add a topic, add it to `skillMap.ts` and this table.
+| Field (category_1) | Area (category_2) | Topics (category_3) |
+|---|---|---|
+| Algebra | Elementary Algebra | Polynomials · Equations and Inequalities · Factorization · Exponents and Logarithms · *Sequences and Recurrences* · *Functional Equations* · *Floor and Fractional Parts* |
+| Geometry | Euclidean Geometry | Plane Figures · Solid Figures · Trigonometry · Congruence and Similarity · *Triangle Centres and Circles* |
+| | Analytic Geometry | Coordinate Systems · Equations of Lines and Planes · Conic Sections |
+| Number Theory | Elementary Number Theory | Primes and Prime Factorization · Congruences · Diophantine Equations · *Divisors and Divisibility* · *Digits and Number Bases* |
+| Combinatorics & Discrete Mathematics | Enumeration | Permutations and Combinations · Generating Functions · Inclusion-Exclusion Principle · *Double Counting* |
+| | Graph Theory | Basic Properties of Graphs · Trees · Paths and Cycles · Graph Coloring |
+| | Logic and Set Theory | Propositional Logic · Set Operations |
+| | *Combinatorial Reasoning* | *Invariants and Processes · Extremal Combinatorics · Pigeonhole Principle · Games and Strategies · Combinatorial Geometry* |
+| Probability & Statistics | Probability | Basic Laws of Probability · Conditional Probability and Independence · Expected Value and Variance |
+| | Statistics | Descriptive Statistics |
+
+*Italic* = the 13 olympiad topics we added (not in the file).
+
+**Left out (not in competition problems):** Analysis (all), Linear Algebra, Abstract Algebra, Differential Geometry,
+Topology, Analytic Number Theory, Predicate Logic, Random Variables and Distributions, Estimation and Hypothesis
+Testing, Regression Analysis, Optimization Theory, Numerical Analysis, Cryptography, Game Theory (combinatorial
+games are under *Games and Strategies*). They stay in the database; they are just not shown.
+
+- With today's 28 ladders, 15 of the 39 topics have problems; the others show as "coming soon".
+- To show or hide a topic, edit `COMPETITION_TOPIC_IDS` and this table.
 
 ---
 
@@ -168,7 +170,7 @@ of difficulty 7 to 8. This is how the "high XP and 10 high-level problems" idea 
 
 | Badge | Kind | Rule |
 |---|---|---|
-| **`<Area>` Navigator** | area (middle level of the map, 2.3) | Explorer in 2 core topics of the same area, e.g. "Divisibility Navigator". Fills the missing middle level |
+| **`<Area>` Navigator** | area (category_2) | Explorer in 2 topics of the same area, e.g. "Elementary Number Theory Navigator". Fills the missing middle level |
 | **Cartographer** | breadth | problems solved in 5 different areas |
 | **Thorough** | ladder | 3 ladders finished with every step solved, not only the Challenge |
 | **First Try** / **Sharpshooter** | style | 1 / 5 Challenges correct on the first attempt |
@@ -197,17 +199,17 @@ of difficulty 7 to 8. This is how the "high XP and 10 high-level problems" idea 
 
 ## 6. The skill tree screen (layout of 2026-10-17)
 
-Decided with the team: a **picture on computers and a list on phones**, showing the 16 core topics of 2.3 (not the
-70 categories). Both use the same data.
+Decided with the team: a **picture on computers and a list on phones**, showing the map of 2.3. Both use the same
+data.
 
 1. **You are here** (top card): the ladder and step the student is on (the same choice as the Home page's Continue
-   card), its path `Field › Area › Core topic`, a small step bar, the next badge of that topic with what is missing
+   card), its path `Field › Area › Topic`, a small step bar, the next badge of that topic with what is missing
    ("5 more problems solved · 2 more ladders"), and **Continue**. A new student sees how to start instead.
-2. **Your map, computer (768 px and wider):** tabs for the 4 fields (the field holding "you are here" has a pin and
-   opens first). The open field is drawn as a small tree: the field on top, its 2 areas, and its 4 core topics as
-   circles. A circle shows solved / total, and its style shows the state: grey outline = not started, dark outline =
-   in progress, filled with a badge icon = badge earned, dashed "soon" = no ladders yet. "You are here" sits over
-   the current topic. Clicking a circle shows that topic under the picture: what its next badge needs and its
+2. **Your map, computer (768 px and wider):** tabs for the 5 fields (the field holding "you are here" has a pin and
+   opens first). The open field is drawn as a tree: the field on top, its areas as columns joined by lines, and each
+   area's topics stacked under it as small nodes. A node's circle shows the state: grey outline = not started, dark
+   outline = in progress, filled with a badge icon = badge earned, dashed = coming soon; a pin marks "you are here".
+   A legend sits under the picture. Clicking a topic shows it under the picture: what its next badge needs and its
    ladders with Start / Continue / Review.
 3. **Your map, phone:** the same fields as a list. A field opens to its areas and topics, one line each (state
    dot, name, badge, solved / total); a topic opens to its ladders. "Coming soon" topics are greyed.
@@ -234,7 +236,7 @@ Every state is read from the solve record; nothing is ever locked.
 | Universal Mind: domains with an Expert badge | 3 |
 | Climber / Mountaineer / Summiteer: ladders finished | 5 / 20 / 50 |
 | Trailblazer: first solvers of a Challenge | 3 |
-| Navigator: Explorer core topics in one area | 2 |
+| Navigator: Explorer topics in one area | 2 |
 | Cartographer: areas with a solved problem | 5 |
 | Thorough: ladders with every step solved | 3 |
 | First Try / Sharpshooter: Challenges right on the first attempt | 1 / 5 |
@@ -253,7 +255,7 @@ Every state is read from the solve record; nothing is ever locked.
 | 4 | Fix the reward bugs: re-solving a problem adds RP and "solved" again; Streak never updates (OPERATING_POLICY.md 4). The skill tree does not depend on them: it counts each problem once from the solve record | app side |
 | 5 | Badge calculation, computed on the fly from the solve record (no table); a `user_badges` table (badge, tier, earned date) only when badges must be stored, e.g. to show the date earned | done (v1) |
 | 6 | Skill tree screen: badges, domain tabs, subdomain cards with progress to the next tier and their ladders | done (v1) |
-| 7 | Skill map of 16 core topics (2.3), new layout (you are here, picture on computers, list on phones, closest next badges) and 7 new badges (4.6) | built on `develop` (2026-10-17), not committed |
+| 7 | Skill map (2.3: file categories, competition parts only, since 2026-10-24), new layout (you are here, picture on computers, list on phones, closest next badges) and 7 new badges (4.6) | built on `develop` (2026-10-17), not committed |
 
 The screen only reads data; it does not change XP, RP or any stats table.
 

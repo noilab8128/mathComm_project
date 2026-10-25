@@ -1,16 +1,18 @@
-// The skill map: the short 3-level list of topics the Skill Tree shows (decided 2026-10-17, docs/SKILL_TREE_RULES.md
-// section 2.3). The 115 categories (src/lib/categories.ts) stay as they are for tagging problems; each core topic
-// here gathers one or more level-3 categories, so no problem has to be re-tagged.
+// The skill map: the categories the Skill Tree shows (decided 2026-10-24, docs/SKILL_TREE_RULES.md section 2.3).
+// It follows the team's category file (math_Category_Schema.xlsx: category_1 > category_2 > category_3) and keeps
+// only the parts that appear in competition problems (Kangaroo, MATHCOUNTS, AMC, AIME, olympiads). The 13 olympiad
+// topics added on 2026-10-09 (ids 103-115) stay in their place under the file's groups.
 //
-//   field (4, the olympiad areas)  >  area (2 per field)  >  core topic (2 per area) = 16 core topics
+//   field (category_1, 5)  >  area (category_2, 10)  >  topic (category_3, 39)
 //
-// Ids are fixed numbers so they can be stored later (badges): fields use their level-1 category id, areas 201..,
-// core topics 301... Categories not listed here (Analysis, Statistics, …) have no ladders and are not shown.
+// Ids are the category ids (src/lib/categories.ts), so a problem's place on the map is simply its category_level3.
+
+import { CATEGORIES_DATA } from "@/lib/categories";
 
 export interface CoreTopic {
   id: number;
   name: string;
-  categoryIds: number[]; // level-3 category ids gathered here
+  categoryIds: number[]; // level-3 category ids gathered here (one each: the topic itself)
 }
 
 export interface MapArea {
@@ -25,96 +27,45 @@ export interface MapField {
   areas: MapArea[];
 }
 
-export const SKILL_MAP: MapField[] = [
-  {
-    id: 1,
-    name: "Algebra",
-    areas: [
-      {
-        id: 201,
-        name: "Equations and Inequalities",
-        topics: [
-          { id: 301, name: "Inequalities and Optimization", categoryIds: [46] },
-          { id: 302, name: "Polynomials and Factoring", categoryIds: [45, 47, 48] },
-        ],
-      },
-      {
-        id: 202,
-        name: "Functions and Sequences",
-        topics: [
-          { id: 303, name: "Sequences, Sums and Floors", categoryIds: [103, 105] },
-          { id: 304, name: "Functional Equations", categoryIds: [104] },
-        ],
-      },
-    ],
-  },
-  {
-    id: 4,
-    name: "Number Theory",
-    areas: [
-      {
-        id: 203,
-        name: "Divisibility",
-        topics: [
-          { id: 305, name: "Primes and Divisors", categoryIds: [81, 106, 84, 85] },
-          { id: 306, name: "Congruences", categoryIds: [82] },
-        ],
-      },
-      {
-        id: 204,
-        name: "Equations and Digits",
-        topics: [
-          { id: 307, name: "Diophantine Equations", categoryIds: [83] },
-          { id: 308, name: "Digits and Bases", categoryIds: [107] },
-        ],
-      },
-    ],
-  },
-  {
-    id: 5,
-    name: "Combinatorics",
-    areas: [
-      {
-        id: 205,
-        name: "Counting",
-        topics: [
-          { id: 309, name: "Counting and Probability", categoryIds: [86, 87, 88, 114, 96, 97, 98, 99] },
-          { id: 310, name: "Graphs", categoryIds: [89, 90, 91, 92] },
-        ],
-      },
-      {
-        id: 206,
-        name: "Combinatorial Reasoning",
-        topics: [
-          { id: 311, name: "Invariants and Games", categoryIds: [109, 112] },
-          { id: 312, name: "Extremal and Pigeonhole", categoryIds: [110, 111, 113] },
-        ],
-      },
-    ],
-  },
-  {
-    id: 2,
-    name: "Geometry",
-    areas: [
-      {
-        id: 207,
-        name: "Triangles and Circles",
-        topics: [
-          { id: 313, name: "Triangle Centres and Circles", categoryIds: [115] },
-          { id: 314, name: "Congruence and Similarity", categoryIds: [60, 57] },
-        ],
-      },
-      {
-        id: 208,
-        name: "Measurement",
-        topics: [
-          { id: 315, name: "Lengths, Areas and Trigonometry", categoryIds: [59, 58] },
-          { id: 316, name: "Coordinates and Vectors", categoryIds: [61, 62, 63] },
-        ],
-      },
-    ],
-  },
+/**
+ * Level-3 categories shown on the map, in display order. Everything else is left out because it does not appear in
+ * competition problems: Analysis, Linear and Abstract Algebra, Differential Geometry, Topology, Analytic Number
+ * Theory, Predicate Logic, Random Variables and Distributions, Estimation and Hypothesis Testing, Regression,
+ * Optimization Theory, Numerical Analysis, Cryptography and Game Theory (combinatorial games are under
+ * "Games and Strategies").
+ */
+export const COMPETITION_TOPIC_IDS = [
+  // Algebra > Elementary Algebra
+  45, 46, 47, 48, 103, 104, 105,
+  // Geometry > Euclidean Geometry, Analytic Geometry
+  57, 58, 59, 60, 115, 61, 62, 63,
+  // Number Theory > Elementary Number Theory
+  81, 82, 83, 106, 107,
+  // Combinatorics & Discrete Mathematics > Enumeration, Graph Theory, Logic and Set Theory, Combinatorial Reasoning
+  86, 87, 88, 114, 89, 90, 91, 92, 93, 95, 109, 110, 111, 112, 113,
+  // Probability & Statistics > Probability, Statistics
+  96, 97, 99, 100,
 ];
+
+const BY_ID = new Map(CATEGORIES_DATA.map((c) => [c.id, c]));
+
+function buildMap(): MapField[] {
+  const fields: MapField[] = [];
+  for (const topicId of COMPETITION_TOPIC_IDS) {
+    const topic = BY_ID.get(topicId);
+    const area = topic?.parent_id != null ? BY_ID.get(topic.parent_id) : undefined;
+    const field = area?.parent_id != null ? BY_ID.get(area.parent_id) : undefined;
+    if (!topic || !area || !field) continue;
+    let f = fields.find((x) => x.id === field.id);
+    if (!f) fields.push((f = { id: field.id, name: field.name, areas: [] }));
+    let a = f.areas.find((x) => x.id === area.id);
+    if (!a) f.areas.push((a = { id: area.id, name: area.name, topics: [] }));
+    a.topics.push({ id: topic.id, name: topic.name, categoryIds: [topic.id] });
+  }
+  return fields;
+}
+
+export const SKILL_MAP: MapField[] = buildMap();
 
 export interface TopicPlace {
   field: MapField;
@@ -123,13 +74,10 @@ export interface TopicPlace {
 }
 
 const PLACE_BY_CATEGORY = new Map<number, TopicPlace>();
-const PLACE_BY_TOPIC = new Map<number, TopicPlace>();
 for (const field of SKILL_MAP) {
   for (const area of field.areas) {
     for (const topic of area.topics) {
-      const place = { field, area, topic };
-      PLACE_BY_TOPIC.set(topic.id, place);
-      for (const c of topic.categoryIds) PLACE_BY_CATEGORY.set(c, place);
+      for (const c of topic.categoryIds) PLACE_BY_CATEGORY.set(c, { field, area, topic });
     }
   }
 }
@@ -137,8 +85,4 @@ for (const field of SKILL_MAP) {
 /** Where a level-3 category sits on the skill map, or null if it is not on the map. */
 export function placeOfCategory(level3Id: number | null | undefined): TopicPlace | null {
   return level3Id != null ? PLACE_BY_CATEGORY.get(level3Id) ?? null : null;
-}
-
-export function placeOfTopic(topicId: number): TopicPlace | null {
-  return PLACE_BY_TOPIC.get(topicId) ?? null;
 }

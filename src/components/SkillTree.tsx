@@ -1,6 +1,6 @@
 "use client"
-// Skill tree: where the student is (current ladder and its place on the skill map), the map of 16 core topics
-// (3 levels: field > area > core topic, lib/skillMap.ts) drawn as a picture on computers and a list on phones, and
+// Skill tree: where the student is (current ladder and its place on the skill map), the map of competition topics
+// (3 levels from the category file: field > area > topic, lib/skillMap.ts) drawn as a picture on computers and a list on phones, and
 // badges (earned + the closest next ones). Layout decided 2026-10-17 (docs/SKILL_TREE_RULES.md sections 2.3, 6).
 // Rules and the calculation are in lib/skillTree.ts. Nothing is stored: badges are worked out from the solve
 // record each time the page loads.
@@ -324,8 +324,9 @@ function TopicDetail({
 }
 
 /**
- * One field drawn as a small tree: the field on top, its areas in the middle, its core topics as circles at the
- * bottom (computer screens; phones get the list). Positions are in percent, so it scales with the width.
+ * One field drawn as a tree (computer screens; phones get the list): the field on top, its areas (category_2) as
+ * columns, and each area's topics (category_3) stacked under it as small nodes. Columns scale with the width, and
+ * an area with many topics just gets a longer column.
  */
 function MapPicture({
   domain,
@@ -338,85 +339,86 @@ function MapPicture({
   selectedTopicId: number | null;
   onSelectTopic: (id: number) => void;
 }) {
-  const topics = domain.subdomains;
-  const x = (i: number) => ((i + 0.5) / topics.length) * 100;
-  const areas = [...new Map(topics.map((t) => [t.groupId, t.groupName])).entries()].map(([id, name]) => {
-    const idx = topics.map((t, i) => (t.groupId === id ? i : -1)).filter((i) => i >= 0);
-    return { id, name, x: idx.reduce((a, i) => a + x(i), 0) / idx.length, idx };
-  });
-  const Y = { field: 13, area: 43, topic: 75 };
+  const areas = useMemo(() => {
+    const m = new Map<number, { id: number; name: string; topics: SubdomainProgress[] }>();
+    for (const t of domain.subdomains) {
+      const key = t.groupId ?? -t.id;
+      if (!m.has(key)) m.set(key, { id: key, name: t.groupName, topics: [] });
+      m.get(key)!.topics.push(t);
+    }
+    return [...m.values()];
+  }, [domain]);
   const level = domain.tier ? DOMAIN_TIERS.indexOf(domain.tier) + 1 : 0;
+  const n = areas.length;
 
   return (
-    <div className="relative h-[320px] w-full">
-      <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden>
-        {areas.map((a) => (
-          <g key={a.id}>
-            <line x1={50} y1={Y.field} x2={a.x} y2={Y.area} stroke="#cbd5e1" strokeWidth={1} vectorEffect="non-scaling-stroke" />
-            {a.idx.map((i) => (
-              <line key={i} x1={a.x} y1={Y.area} x2={x(i)} y2={Y.topic} stroke="#cbd5e1" strokeWidth={1} vectorEffect="non-scaling-stroke" />
-            ))}
-          </g>
-        ))}
-      </svg>
-
+    <div className="pb-2">
       {/* Field */}
-      <div className="absolute -translate-x-1/2 -translate-y-1/2 rounded-md border border-slate-300 bg-white px-4 py-2 text-center shadow-sm" style={{ left: "50%", top: `${Y.field}%` }}>
-        <div className="text-sm font-semibold text-slate-900">{domain.name}</div>
-        <div className="tnum text-[11px] text-slate-500">{domain.solved} of {domain.total} solved</div>
-        {domain.tier && <div className="mt-1"><TierChip name={domain.tier} level={level} /></div>}
-      </div>
-
-      {/* Areas */}
-      {areas.map((a) => (
-        <div
-          key={a.id}
-          className="absolute -translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700"
-          style={{ left: `${a.x}%`, top: `${Y.area}%` }}
-        >
-          {a.name}
+      <div className="flex justify-center">
+        <div className="rounded-md border border-slate-300 bg-white px-4 py-2 text-center shadow-sm">
+          <div className="text-sm font-semibold text-slate-900">{domain.name}</div>
+          <div className="tnum text-[11px] text-slate-500">{domain.solved} of {domain.total} solved</div>
+          {domain.tier && <div className="mt-1"><TierChip name={domain.tier} level={level} /></div>}
         </div>
-      ))}
+      </div>
+      <div className="mx-auto h-5 w-px bg-slate-300" aria-hidden />
 
-      {/* Core topics */}
-      {topics.map((t, i) => {
-        const empty = t.total === 0;
-        const state = empty ? "empty" : t.tier ? "badge" : t.solved > 0 ? "progress" : "new";
-        const selected = t.id === selectedTopicId;
-        const here = t.id === hereTopicId;
-        const tierLevel = t.tier ? SUBDOMAIN_TIERS.indexOf(t.tier) + 1 : 0;
-        return (
-          <button
-            key={t.id}
-            onClick={() => onSelectTopic(t.id)}
-            aria-pressed={selected}
-            title={empty ? `${t.name}: coming soon` : `${t.name}: ${t.solved} of ${t.total} solved`}
-            className="group absolute flex w-40 -translate-x-1/2 -translate-y-[28px] flex-col items-center text-center"
-            style={{ left: `${x(i)}%`, top: `${Y.topic}%` }}
-          >
-            {here && (
-              <span className="absolute -top-6 inline-flex items-center gap-0.5 whitespace-nowrap rounded-full bg-blue-50 px-1.5 py-px text-[10px] font-medium text-blue-800">
-                <MapPin className="h-3 w-3" /> You are here
-              </span>
-            )}
-            <span
-              className={`flex h-14 w-14 items-center justify-center rounded-full text-xs transition-shadow ${
-                state === "badge"
-                  ? "bg-slate-900 text-white"
-                  : state === "progress"
-                    ? "border-2 border-slate-900 bg-white text-slate-900"
-                    : state === "new"
-                      ? "border border-slate-300 bg-white text-slate-600"
-                      : "border border-dashed border-slate-300 bg-slate-50 text-slate-400"
-              } ${selected ? "ring-2 ring-blue-500 ring-offset-2" : "group-hover:ring-2 group-hover:ring-slate-200 group-hover:ring-offset-2"}`}
-            >
-              {state === "badge" ? <Award className="h-5 w-5" /> : empty ? "soon" : <span className="tnum">{t.solved}/{t.total}</span>}
-            </span>
-            <span className={`mt-1.5 line-clamp-2 text-xs leading-tight ${empty ? "text-slate-400" : "font-medium text-slate-800"}`}>{t.name}</span>
-            {t.tier && <span className="mt-1"><TierChip name={t.tier} level={tierLevel} /></span>}
-          </button>
-        );
-      })}
+      {/* Areas as columns, joined by one horizontal line */}
+      <div className={`relative mx-auto grid gap-4 ${n === 1 ? "max-w-xs" : n === 2 ? "max-w-2xl" : ""}`} style={{ gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))` }}>
+        {n > 1 && (
+          <div
+            className="absolute top-0 h-px bg-slate-300"
+            style={{ left: `calc(${50 / n}% )`, right: `calc(${50 / n}% )` }}
+            aria-hidden
+          />
+        )}
+        {areas.map((area) => (
+          <div key={area.id} className="flex min-w-0 flex-col items-center">
+            <div className="h-4 w-px bg-slate-300" aria-hidden />
+            <div className="max-w-full truncate rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700" title={area.name}>
+              {area.name}
+            </div>
+            <ul className="mt-2 w-full space-y-1 border-l border-slate-200 pl-3">
+              {area.topics.map((t) => {
+                const empty = t.total === 0;
+                const state = empty ? "empty" : t.tier ? "badge" : t.solved > 0 ? "progress" : "new";
+                const selected = t.id === selectedTopicId;
+                const here = t.id === hereTopicId;
+                return (
+                  <li key={t.id} className="relative">
+                    <span className="absolute -left-3 top-1/2 h-px w-3 bg-slate-200" aria-hidden />
+                    <button
+                      onClick={() => onSelectTopic(t.id)}
+                      aria-pressed={selected}
+                      title={empty ? `${t.name}: coming soon` : `${t.name}: ${t.solved} of ${t.total} solved`}
+                      className={`flex w-full items-center gap-2 rounded-md px-1.5 py-1 text-left transition-colors ${
+                        selected ? "bg-blue-50 ring-1 ring-blue-300" : "hover:bg-slate-50"
+                      }`}
+                    >
+                      <span
+                        className={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-[10px] ${
+                          state === "badge"
+                            ? "bg-slate-900 text-white"
+                            : state === "progress"
+                              ? "border-2 border-slate-900 bg-white"
+                              : state === "new"
+                                ? "border border-slate-400 bg-white"
+                                : "border border-dashed border-slate-300 bg-slate-50"
+                        }`}
+                      >
+                        {state === "badge" && <Award className="h-3 w-3" />}
+                      </span>
+                      <span className={`line-clamp-2 min-w-0 flex-1 text-xs leading-tight ${empty ? "text-slate-400" : "font-medium text-slate-800"}`}>{t.name}</span>
+                      {here && <MapPin className="h-3.5 w-3.5 flex-shrink-0 text-blue-700" aria-label="You are here" />}
+                      <span className="tnum flex-shrink-0 text-[10px] text-slate-400">{empty ? "soon" : `${t.solved}/${t.total}`}</span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -586,7 +588,7 @@ export default function SkillTree() {
         <section aria-label="Your map" className="hidden md:block">
           <h2 className="mb-2 text-[13px] font-semibold text-slate-900">Your map</h2>
           <div className="rounded-md border border-slate-200 bg-white">
-            <div role="tablist" aria-label="Fields" className="flex gap-1 border-b border-slate-200 px-3">
+            <div role="tablist" aria-label="Fields" className="flex flex-wrap gap-x-1 border-b border-slate-200 px-3">
               {tree.domains.map((d) => (
                 <button
                   key={d.id}
@@ -608,13 +610,20 @@ export default function SkillTree() {
             </div>
             {pictureDomain && (
               <>
-                <div className="px-4 pt-6">
+                <div className="px-4 pb-2 pt-5">
                   <MapPicture
                     domain={pictureDomain}
                     hereTopicId={here?.topic?.id ?? null}
                     selectedTopicId={pictureTopic?.id ?? null}
                     onSelectTopic={(id) => setOpenTopic(id)}
                   />
+                  <p className="mt-3 flex flex-wrap justify-center gap-x-4 gap-y-1 text-[11px] text-slate-500">
+                    <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full border border-slate-400" /> not started</span>
+                    <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full border-2 border-slate-900" /> in progress</span>
+                    <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full bg-slate-900" /> badge earned</span>
+                    <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full border border-dashed border-slate-300" /> coming soon</span>
+                    <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3 text-blue-700" /> you are here</span>
+                  </p>
                 </div>
                 {pictureTopic && (
                   <TopicDetail
