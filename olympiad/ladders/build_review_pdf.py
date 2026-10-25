@@ -126,6 +126,7 @@ def parse(md):
             "similar_olympiad": section(body, "Similar olympiad problems"),
             "similar_site": section(body, "Similar problems on our site"),
             "proof": section(body, "Proof problem"),
+            "level_check": section(body, "Level check"),  # internal: why each step has its level (LEVEL_GUIDE.md)
         })
     return ladders
 
@@ -189,6 +190,8 @@ def build_html(md, title):
             out.append("<h4>Logic flow <span class='tag'>members only</span></h4>" + blocks(l["flow"]))
         if l["full_solution"]:
             out.append("<h4>Our full solution</h4>" + blocks(l["full_solution"]))
+        if l.get("level_check"):
+            out.append("<h4>Level check <span class='tag'>internal</span></h4>" + blocks(l["level_check"]))
         if l["analysis"] or l["flow"]:
             out.append("<h4>Short solutions of the steps</h4>")
         out.append(bullets(l["solutions"]))

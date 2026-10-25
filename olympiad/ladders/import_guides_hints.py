@@ -36,6 +36,7 @@ ALLOWED = {
     ("Every Power of Two", "Step 3"),          # "2, 4, 8, 16": the powers to compute; the answer is an exponent
     ("Equal Divisor Counts", "Step 1"),        # "12 = 2² × 3": the number from the statement
     ("Fibonacci Stairs", "Step 3"),            # "1 + 2 + 3 + 5 + 8": list numbers; the answer is a count
+    ("Climbing Windows", "Step 1"),            # "sums 0, 1, 2" and "the single 1": digits; the answer is a count (1)
 }
 
 

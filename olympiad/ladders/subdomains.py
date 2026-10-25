@@ -9,6 +9,9 @@ Rules (docs/SKILL_TREE_RULES.md): every problem has exactly one subdomain (level
 subdomain of their Challenge.
 """
 
+import re
+from pathlib import Path
+
 # (category_id, name, level, parent_id)
 NEW_CATEGORIES = [
     (103, "Sequences and Recurrences", 3, 11),
@@ -79,17 +82,57 @@ LADDER_SUBDOMAIN = {
     "P19": 83,  # Coins of Powers of Two: which amounts can be paid
     "P20": 46,  # Sheets That Double: AM-GM bound
     "P21": 86,  # Weights of Three: recursive counting
+    # batch 5 (v2/LADDERS_v2_batch5.md): topics that had no ladders
+    "P22": 57,  # Fence Posts: Plane Figures
+    "P23": 46,  # Three in a Row: Equations and Inequalities
+    "P24": 45,  # Power Sums: Polynomials
+    "P25": 47,  # The Cyclic Factor: Factorization
+    "P26": 114, # Red Corners: Double Counting
+    # batch 6 (v2/LADDERS_v2_batch6.md)
+    "P27": 100, # Fair Rounding: Descriptive Statistics
+    "P28": 48,  # Powers That Match: Exponents and Logarithms
+    "P29": 99,  # Sorting Letters: Expected Value and Variance
+    "P30": 111, # Climbing Windows: Pigeonhole Principle
+    "P31": 60,  # Parallel Cuts: Congruence and Similarity
+    # batch 7 (v2/LADDERS_v2_batch7.md)
+    "P32": 112, # Knights and Queens: Games and Strategies
+    "P33": 96,  # Red Hulls: Basic Laws of Probability
+    "P34": 46,  # Shifted Fractions: Equations and Inequalities
+    "P35": 90,  # Fibonacci Gaps: Trees (forest argument)
+    "P36": 81,  # Divisor Chains: Primes and Prime Factorization
+    # batch 8 (v2/LADDERS_v2_batch8.md)
+    "P37": 97,  # No Neighbours: Conditional Probability
+    "P38": 92,  # Two-Coloured Sides: Graph Coloring
+    "P39": 103, # Zero Sums: Sequences and Recurrences
+    "P40": 113, # Cutting Colours: Combinatorial Geometry
+    "P41": 103, # The Average Crossing: Sequences and Recurrences
 }
+
+
+_CATEGORIES_TS = Path(__file__).resolve().parents[2] / "src" / "lib" / "categories.ts"
+
+
+def _all_categories():
+    """{id: (name, parent_id)} for every category in src/lib/categories.ts (the site's copy of the category file)."""
+    out = {}
+    if _CATEGORIES_TS.exists():
+        text = _CATEGORIES_TS.read_text(encoding="utf-8")
+        for cid, name, _, parent in re.findall(
+                r"\{\s*id:\s*(\d+),\s*name:\s*'((?:[^'\\]|\\.)*)',\s*level:\s*(\d),\s*parent_id:\s*(null|\d+)", text):
+            out[int(cid)] = (name.replace("\\'", "'"), None if parent == "null" else int(parent))
+    return out
 
 
 def _names():
     names = dict(EXISTING)
+    names.update({cid: name for cid, (name, _) in _all_categories().items()})
     names.update({cid: name for cid, name, _, _ in NEW_CATEGORIES})
     return names
 
 
 def _parent():
-    parent = {cid: p for cid, _, _, p in NEW_CATEGORIES}
+    parent = {cid: p for cid, (_, p) in _all_categories().items() if p is not None}
+    parent.update({cid: p for cid, _, _, p in NEW_CATEGORIES})
     parent.update({46: 11, 81: 22, 82: 22, 83: 22, 86: 24, 87: 24, 11: 1, 14: 2, 22: 4, 24: 5})
     return parent
 

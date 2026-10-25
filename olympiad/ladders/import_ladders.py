@@ -50,6 +50,7 @@ DIFFICULTY_BY_LEVEL = {
     "amc 8": 5,
     "amc 8–10": 6,
     "amc 10": 6,
+    "amc 12": 7,
     "aime": 8,
     "aime / junior olympiad": 8,
 }
