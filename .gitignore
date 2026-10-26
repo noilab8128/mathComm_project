@@ -57,3 +57,7 @@ next-env.d.ts
 
 # nested git repo (was committed as a submodule without .gitmodules, broke Netlify clone)
 /generated/deploy_unit_01_polynomials/
+
+# Database backups (contain user data) and Supabase CLI local files
+/backups/
+/supabase/.temp/

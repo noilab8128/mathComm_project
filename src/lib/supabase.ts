@@ -20,6 +20,22 @@ export interface Solution {
   sequence_order: number;
 }
 
+/**
+ * Admin problem editor writes go through the server (/api/admin/*), which checks that the user is an admin and
+ * writes with the service key. The browser never writes problems, solutions or hierarchy links with the anon key,
+ * so the database can refuse those writes from the public key. Browser-only: relative URLs.
+ */
+async function adminWrite<T = unknown>(method: 'POST' | 'PATCH' | 'DELETE', url: string, body?: unknown): Promise<T> {
+  const res = await fetch(url, {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json.error || `Request failed (${res.status})`);
+  return json.data as T;
+}
+
 // Helper Functions
 export const problemsAPI = {
   // Get all problems
@@ -144,89 +160,20 @@ export const problemsAPI = {
     return data;
   },
 
-  // Create problem with solutions
+  // Create problem with solutions (server: POST /api/admin/problems)
   async create(problem: Database['public']['Tables']['problems']['Insert'], solutions?: Omit<Database['public']['Tables']['solutions']['Insert'], 'problem_id'>[]) {
-    // 1. Create Problem
-    const { data: problemData, error: problemError } = await supabase
-      .from('problems')
-      // @ts-expect-error - Supabase typing is failing to infer correct insert type
-      .insert([problem])
-      .select()
-      .single();
-
-    if (problemError) throw problemError;
-    if (!problemData) throw new Error('No data returned from create problem');
-
-    // 2. Create Solutions if any
-    if (solutions && solutions.length > 0) {
-      // @ts-expect-error - problemData might be inferred as never due to above suppression
-      const solutionsWithId = solutions.map(s => ({ ...s, problem_id: problemData.id }));
-      const { error: solError } = await supabase
-        .from('solutions')
-        // @ts-expect-error - problem_id is added above
-        .insert(solutionsWithId);
-
-      if (solError) console.error("Error creating solutions", solError);
-      // We generally shouldn't fail the whole operation if solutions fail, but it's bad.
-    }
-
-    return problemData;
+    return adminWrite<Problem>('POST', '/api/admin/problems', { problem, solutions });
   },
 
-  // Update problem
+  // Update problem; when solutions are given they replace the problem's solutions, keeping ids so hierarchy
+  // links stay valid (server: PATCH /api/admin/problems/[id])
   async update(id: string, problem: Database['public']['Tables']['problems']['Update'], solutions?: Omit<Database['public']['Tables']['solutions']['Insert'], 'problem_id'>[]) {
-    // 1. Update Problem
-    const { data, error } = await supabase
-      .from('problems')
-      // @ts-expect-error - Supabase typing is failing to infer correct update type
-      .update({ ...problem, updated_at: new Date().toISOString() })
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    // 2. Replace Solutions (Upsert strategy to preserve hierarchy foreign keys)
-    if (solutions) {
-      // Get existing ones to calculate what to delete
-      const { data: existingSolutions } = await supabase.from('solutions').select('id').eq('problem_id', id);
-      const existingIds = new Set((existingSolutions as any[])?.map(s => s.id) || []);
-
-      const solutionsToUpsert: any[] = [];
-
-      for (const s of solutions) {
-        const solId = (s as any).id;
-        if (solId) {
-            existingIds.delete(solId);
-            solutionsToUpsert.push({ ...s, problem_id: id });
-        } else {
-            // New solution (no id provided, Supabase generates it via DEFAULT)
-            solutionsToUpsert.push({ ...s, problem_id: id });
-        }
-      }
-
-      // Delete the ones missing from the payload
-      if (existingIds.size > 0) {
-        await supabase.from('solutions').delete().in('id', Array.from(existingIds));
-      }
-
-      // Upsert new and remaining
-      if (solutionsToUpsert.length > 0) {
-        await supabase.from('solutions').upsert(solutionsToUpsert as any, { onConflict: 'id' });
-      }
-    }
-
-    return data;
+    return adminWrite<Problem>('PATCH', `/api/admin/problems/${encodeURIComponent(id)}`, { problem, solutions });
   },
 
-  // Delete problem
+  // Delete problem (server: DELETE /api/admin/problems/[id])
   async delete(id: string) {
-    const { error } = await supabase
-      .from('problems')
-      .delete()
-      .eq('id', id);
-
-    if (error) throw error;
+    await adminWrite('DELETE', `/api/admin/problems/${encodeURIComponent(id)}`);
   },
 
   // Get all unique source names
@@ -259,7 +206,7 @@ export const problemHierarchiesAPI = {
     return data;
   },
 
-  // Create link
+  // Create link (server: POST /api/admin/problem-hierarchies)
   async create(
     parentProblemId: string,
     childProblemId: string,
@@ -268,22 +215,9 @@ export const problemHierarchiesAPI = {
     sequenceOrder: number,
     depth: number
   ) {
-    const { data, error } = await supabase
-      .from('problem_hierarchies')
-      // @ts-expect-error - Supabase typing is failing to infer correct insert type
-      .insert([{
-        parent_problem_id: parentProblemId,
-        child_problem_id: childProblemId,
-        parent_solution_id: parentSolutionId,
-        stage_name: stageName,
-        sequence_order: sequenceOrder,
-        depth: depth
-      }])
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
+    return adminWrite<Database['public']['Tables']['problem_hierarchies']['Row']>('POST', '/api/admin/problem-hierarchies', {
+      parentProblemId, childProblemId, parentSolutionId, stageName, sequenceOrder, depth,
+    });
   },
 
   // Get hierarchy chain for a parent/solution
@@ -302,14 +236,9 @@ export const problemHierarchiesAPI = {
     return data;
   },
 
-  // Delete a link (parent -> child)
+  // Delete a link (parent -> child) (server: DELETE /api/admin/problem-hierarchies)
   async delete(parentProblemId: string, childProblemId: string) {
-    const { error } = await supabase
-      .from('problem_hierarchies')
-      .delete()
-      .match({ parent_problem_id: parentProblemId, child_problem_id: childProblemId });
-
-    if (error) throw error;
+    await adminWrite('DELETE', '/api/admin/problem-hierarchies', { parentProblemId, childProblemId });
   },
 
   // Get all parents (ancestors) for a given child problem
