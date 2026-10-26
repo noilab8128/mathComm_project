@@ -57,3 +57,22 @@ ALTER TABLE public.user_starts ENABLE ROW LEVEL SECURITY;
 
 -- 2c. Store existing emails in lower case, only when 1d returned no rows (otherwise merge those accounts first).
 -- UPDATE next_auth.users SET email = lower(trim(email)) WHERE email <> lower(trim(email));
+
+-- ---------------------------------------------------------------------------------------------------------------
+-- Part 3. Problem write policies (B1). Run only AFTER the code that moved the admin editor's writes to
+-- /api/admin/problems and /api/admin/problem-hierarchies is deployed, and the editor was tested on the live site.
+-- ---------------------------------------------------------------------------------------------------------------
+
+-- 3a. Check first: every policy on the three tables. Note any write policy (ALL/INSERT/UPDATE/DELETE) whose
+--     qual or with_check is `true`; on solutions its name may differ from the two below.
+SELECT tablename, policyname, cmd, roles, qual, with_check
+FROM pg_policies
+WHERE schemaname = 'public' AND tablename IN ('problems', 'solutions', 'problem_hierarchies')
+ORDER BY tablename, cmd;
+
+-- 3b. Drop the "write for everyone" policies. Reads (Public read …) and Service Role Bypass All stay.
+DROP POLICY IF EXISTS "Admin write problems"  ON public.problems;
+DROP POLICY IF EXISTS "Admin write hierarchy" ON public.problem_hierarchies;
+-- DROP POLICY IF EXISTS "<name from 3a>" ON public.solutions;
+
+-- 3c. Run 3a again: no write policy with `true` should be left on these tables.
