@@ -61,3 +61,7 @@ next-env.d.ts
 # Database backups (contain user data) and Supabase CLI local files
 /backups/
 /supabase/.temp/
+
+# Python caches
+__pycache__/
+*.pyc
