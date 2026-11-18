@@ -5,7 +5,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Users, BookOpen, Megaphone, Home, LogOut, ChevronLeft, ChevronRight, Menu, X, ShieldAlert, User, Settings, PanelLeftClose, PanelLeftOpen, ClipboardCheck } from "lucide-react";
-import { isAdminRole } from "@/lib/roles";
+import { isAdminRole, isRole, ROLE_LABELS } from "@/lib/roles";
 import { signOut, useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -25,6 +25,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
     // Admins see every page; reviewers see only Reviews (src/lib/roles.ts, enforced again in middleware and APIs).
     const isAdmin = isAdminRole(session?.user?.role);
+    // Shown at the top right: the account's own name (no generic "Admin User") and its real role.
+    const displayName = session?.user?.nickname || session?.user?.name || session?.user?.email?.split("@")[0] || "Account";
+    const roleLabel = isRole(session?.user?.role) ? ROLE_LABELS[session.user.role] : "User";
     const allNavItems = [
         { name: "Overview", href: "/admin", icon: <Home className="w-5 h-5" />, adminOnly: true },
         { name: "Users", href: "/admin/users", icon: <Users className="w-5 h-5" />, adminOnly: true },
@@ -171,8 +174,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     <DropdownMenu>
                         <DropdownMenuTrigger className="flex items-center gap-4 hover:bg-slate-50 p-2 rounded-lg transition-colors outline-none cursor-pointer">
                             <div className="flex flex-col items-end">
-                                <span className="text-sm font-semibold text-slate-900">{session?.user?.name || "Admin User"}</span>
-                                <span className="text-xs text-slate-500">{session?.user?.email || "Super Administrator"}</span>
+                                <span className="text-sm font-semibold text-slate-900">{displayName}</span>
+                                <span className="text-xs text-slate-500">{roleLabel}{session?.user?.email ? ` · ${session.user.email}` : ""}</span>
                             </div>
                             <Avatar className="w-10 h-10 border-2 border-slate-200 shadow-sm">
                                 <AvatarImage src={session?.user?.image || ""} alt="Profile" />
