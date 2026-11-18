@@ -183,6 +183,7 @@ export default function ReviewListPage() {
                                     {r.myDecision === "approve" ? <span className="inline-flex items-center gap-1 text-emerald-700"><CheckCircle2 className="w-4 h-4" />{DECISION_LABEL[r.myDecision]}</span>
                                         : r.myDecision === "reject" ? <span className="inline-flex items-center gap-1 text-red-700"><XCircle className="w-4 h-4" />{DECISION_LABEL[r.myDecision]}</span>
                                         : r.myDecision === "comment" ? <span className="inline-flex items-center gap-1"><MessageSquare className="w-4 h-4" />{DECISION_LABEL[r.myDecision]}</span>
+                                        : r.myDecision === "withdraw" ? <span className="text-slate-500">Withdrew</span>
                                         : r.myDecision ? <span className="inline-flex items-center gap-1 text-amber-700"><Clock className="w-4 h-4" />{DECISION_LABEL[r.myDecision]}</span>
                                         : <span className="text-slate-400">Not yet</span>}
                                 </TableCell>

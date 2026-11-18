@@ -5,8 +5,9 @@ import { createHash } from "crypto";
  * Tables: supabase/sql/problem_verification.sql. The automatic checks run in scripts/verify (Python).
  */
 
-export type ReviewDecision = "approve" | "request_changes" | "reject" | "comment";
-export const REVIEW_DECISIONS: ReviewDecision[] = ["approve", "request_changes", "reject", "comment"];
+// "withdraw" removes the reviewer's current verdict (approve, request_changes or reject); it is kept in the history.
+export type ReviewDecision = "approve" | "request_changes" | "reject" | "comment" | "withdraw";
+export const REVIEW_DECISIONS: ReviewDecision[] = ["approve", "request_changes", "reject", "comment", "withdraw"];
 
 export type ReviewStatus = "pending" | "approved" | "changes_requested" | "rejected" | "needs_recheck";
 
@@ -73,8 +74,9 @@ export interface ReviewRow {
 
 /**
  * Status of a problem from its reviews of the current content. Each reviewer's latest verdict counts
- * (comments are not verdicts). Order: any reject -> rejected; any request_changes -> changes_requested;
- * approvals >= required -> approved; otherwise the previous waiting state (pending or needs_recheck).
+ * (comments are not verdicts; a withdraw leaves that reviewer without a verdict). Order: any reject -> rejected;
+ * any request_changes -> changes_requested; approvals >= required -> approved; otherwise the previous waiting
+ * state (pending or needs_recheck).
  */
 export function computeReviewStatus(
     reviews: ReviewRow[], currentHash: string, required: number, waiting: ReviewStatus = "pending",
@@ -85,7 +87,7 @@ export function computeReviewStatus(
         const prev = latest.get(r.reviewer_id);
         if (!prev || r.created_at > prev.created_at) latest.set(r.reviewer_id, r);
     }
-    const verdicts = [...latest.values()].map((r) => r.decision);
+    const verdicts = [...latest.values()].map((r) => r.decision).filter((d) => d !== "withdraw");
     const approvals = verdicts.filter((d) => d === "approve").length;
     if (verdicts.includes("reject")) return { status: "rejected", approvals };
     if (verdicts.includes("request_changes")) return { status: "changes_requested", approvals };
@@ -95,6 +97,16 @@ export function computeReviewStatus(
 }
 
 /** "Name — Step 3" -> { ladder: "Name", part: "Step 3" }, mirrors ladder_part() in scripts/verify/checks.py. */
+/** The reviewer's current verdict on this content (approve, request_changes, reject), or null. */
+export function currentVerdict(reviews: ReviewRow[], reviewerId: string, currentHash: string): ReviewDecision | null {
+    let last: ReviewRow | null = null;
+    for (const r of reviews) {
+        if (r.reviewer_id !== reviewerId || r.content_hash !== currentHash || r.decision === "comment") continue;
+        if (!last || r.created_at > last.created_at) last = r;
+    }
+    return last && last.decision !== "withdraw" ? last.decision : null;
+}
+
 export function ladderPart(title: string | null): { ladder: string | null; part: string | null } {
     if (!title || !title.includes(" — ")) return { ladder: null, part: null };
     const i = title.lastIndexOf(" — ");

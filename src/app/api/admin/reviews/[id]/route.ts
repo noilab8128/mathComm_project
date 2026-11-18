@@ -2,12 +2,13 @@ import { NextResponse } from 'next/server';
 import { requireReviewer } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import {
-    REVIEW_DECISIONS, computeReviewStatus, contentHash, contestLabel, ladderPart,
+    REVIEW_DECISIONS, computeReviewStatus, contentHash, contestLabel, currentVerdict, ladderPart,
     type ReviewDecision, type ReviewRow, type ReviewStatus,
 } from '@/lib/verification';
 
 // GET  /api/admin/reviews/[id] -> problem, automatic check results, and the full review history
 // POST /api/admin/reviews/[id] { decision, comment?, acknowledgeFailed? } -> add a review (never edited or deleted)
+//      decision: approve | request_changes | reject | comment | withdraw (removes your current verdict)
 // Admins and reviewers only. Plan: Archive/docs/PROBLEM_VERIFICATION_PLAN_v2.md §3 and §6.
 
 const MAX_COMMENT = 5000;
@@ -124,7 +125,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         const acknowledgeFailed = body?.acknowledgeFailed === true;
 
         if (!REVIEW_DECISIONS.includes(decision)) {
-            return NextResponse.json({ error: 'decision must be approve, request_changes, reject or comment' }, { status: 400 });
+            return NextResponse.json({ error: 'decision must be approve, request_changes, reject, comment or withdraw' }, { status: 400 });
         }
         if (comment.length > MAX_COMMENT) {
             return NextResponse.json({ error: `The comment is too long (at most ${MAX_COMMENT} characters).` }, { status: 400 });
@@ -137,6 +138,16 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         if (!loaded) return NextResponse.json({ error: 'Problem not found' }, { status: 404 });
         const { status, hash } = loaded;
         const stale = !!status && status.content_hash !== hash;
+
+        if (decision === 'withdraw') {
+            // Only a verdict this reviewer gave on the current content can be withdrawn.
+            const { data: mine, error: mineError } = await supabaseAdmin.from('problem_reviews')
+                .select('reviewer_id, decision, content_hash, created_at').eq('problem_id', id).eq('reviewer_id', who.userId);
+            if (mineError) throw mineError;
+            if (!currentVerdict((mine || []) as ReviewRow[], who.userId, hash)) {
+                return NextResponse.json({ error: 'You have no decision on this version of the problem to withdraw.' }, { status: 400 });
+            }
+        }
 
         if (decision === 'approve') {
             // Approve only what the automatic checks have seen (decision 3; plan §3.4)
@@ -190,13 +201,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         }
 
         // Visibility (decision 2 and 3): approved -> shown; rejected -> hidden. Other states keep the current value,
-        // so a published problem stays visible while changes are requested.
+        // so a published problem stays visible while changes are requested. Withdrawing the approval that made a
+        // problem approved hides it again (it was approved by mistake).
         // Who approved is kept in problem_reviews. problems.reviewer_id is not set: older schema notes link it to
         // auth.users, while accounts here live in next_auth.users.
         if (reviewStatus === 'approved') {
             const { error } = await supabaseAdmin.from('problems').update({ is_reviewed: true }).eq('id', id);
             if (error) throw error;
-        } else if (reviewStatus === 'rejected') {
+        } else if (reviewStatus === 'rejected' || (decision === 'withdraw' && status?.review_status === 'approved')) {
             const { error } = await supabaseAdmin.from('problems').update({ is_reviewed: false }).eq('id', id);
             if (error) throw error;
         }

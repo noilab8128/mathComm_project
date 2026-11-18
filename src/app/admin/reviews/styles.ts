@@ -17,6 +17,7 @@ export const REVIEW_STYLE: Record<string, { label: string; className: string }> 
 
 export const DECISION_LABEL: Record<string, string> = {
     approve: "Approved", request_changes: "Requested changes", reject: "Rejected", comment: "Commented",
+    withdraw: "Withdrew their decision",
 };
 
 export const DECISION_STYLE: Record<string, string> = {
@@ -24,4 +25,5 @@ export const DECISION_STYLE: Record<string, string> = {
     request_changes: "bg-amber-50 text-amber-800 border-amber-200",
     reject: "bg-red-50 text-red-700 border-red-200",
     comment: "bg-slate-50 text-slate-700 border-slate-200",
+    withdraw: "bg-white text-slate-600 border-dashed border-slate-300",
 };

@@ -56,12 +56,12 @@ CREATE TABLE IF NOT EXISTS public.problem_reviews (
     id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     problem_id   uuid        NOT NULL REFERENCES public.problems(id) ON DELETE CASCADE,
     reviewer_id  uuid        REFERENCES next_auth.users(id) ON DELETE SET NULL,  -- kept if the account is removed
-    decision     text        NOT NULL CHECK (decision IN ('approve', 'request_changes', 'reject', 'comment')),
+    decision     text        NOT NULL CHECK (decision IN ('approve', 'request_changes', 'reject', 'comment', 'withdraw')),
     comment      text,
     content_hash text        NOT NULL,   -- the version of the problem this review is about
     auto_status  text,                   -- automatic result shown to the reviewer at that time
     created_at   timestamptz NOT NULL DEFAULT now(),
-    -- request_changes, reject and comment need a comment; approve does not (the API also requires one
+    -- request_changes, reject, comment and withdraw need a comment; approve does not (the API also requires one
     -- when approving a problem whose automatic check failed)
     CONSTRAINT problem_reviews_comment_required
         CHECK (decision = 'approve' OR (comment IS NOT NULL AND length(btrim(comment)) > 0))
@@ -126,3 +126,12 @@ WHERE required_approvals <> 1;
 -- UPDATE public.problem_verification_status s SET required_approvals = 2, updated_at = now()
 -- FROM public.problems p
 -- WHERE p.id = s.problem_id AND p.title LIKE '% — Challenge';
+
+-- ---------------------------------------------------------------------------------------------------------------
+-- 8. "Withdraw my decision" (2026-11-18). Run once on a database created before this date.
+--    A withdraw review removes the reviewer's current verdict; like every review it needs a comment and is kept.
+-- ---------------------------------------------------------------------------------------------------------------
+ALTER TABLE public.problem_reviews DROP CONSTRAINT IF EXISTS problem_reviews_decision_check;
+ALTER TABLE public.problem_reviews ADD CONSTRAINT problem_reviews_decision_check
+    CHECK (decision IN ('approve', 'request_changes', 'reject', 'comment', 'withdraw'));
+

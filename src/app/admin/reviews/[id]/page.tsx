@@ -47,6 +47,7 @@ const DECISIONS = [
     { key: "request_changes", label: "Request changes", hint: "Fix and review again (a comment is required)." },
     { key: "reject", label: "Reject", hint: "Do not use this problem (a comment is required)." },
     { key: "comment", label: "Comment only", hint: "A note or question without a decision." },
+    { key: "withdraw", label: "Withdraw my decision", hint: "Remove your current decision (a comment is required)." },
 ] as const;
 
 /** Problem text as safe HTML for MathPreview: escape tags, keep line breaks; MathJax still renders $…$. */
@@ -95,7 +96,10 @@ export default function ReviewDetailPage() {
     const notChecked = !v || v.autoStatus === "unverified";
     const stale = !!v?.stale;
     const failedIssues = layers.filter((l) => l.forCurrentContent).flatMap((l) => l.issues.filter((i) => i.severity === "fail").map((i) => ({ ...i, layer: l.layer })));
-    const myLatest = [...reviews].reverse().find((r) => r.reviewerId === data.me.id && r.forCurrentContent && r.decision !== "comment");
+    // My current verdict on this content; a withdraw leaves me without one
+    const myLast = [...reviews].reverse().find((r) => r.reviewerId === data.me.id && r.forCurrentContent && r.decision !== "comment");
+    const myLatest = myLast && myLast.decision !== "withdraw" ? myLast : undefined;
+    const decisionOptions = DECISIONS.filter((d) => d.key !== "withdraw" || !!myLatest);
 
     const approveBlocked = decision === "approve" && (notChecked || stale);
     const needsComment = decision !== "approve" || autoFailed;
@@ -117,6 +121,7 @@ export default function ReviewDetailPage() {
             setSaved(`Saved. Status: ${REVIEW_STYLE[json.reviewStatus]?.label ?? json.reviewStatus} (${json.approvals}/${json.requiredApprovals} approvals).`);
             setComment("");
             setAcknowledged(false);
+            setDecision("approve"); // a withdraw option may disappear after saving
             await load();
         } catch (e) {
             setSaveError(e instanceof Error ? e.message : "Failed to save");
@@ -248,12 +253,12 @@ export default function ReviewDetailPage() {
                 <div>
                     <h2 className="font-semibold text-slate-900">Your review</h2>
                     <p className="text-sm text-slate-500 mt-1">
-                        {myLatest ? `Your last decision on this version: ${DECISION_LABEL[myLatest.decision]}. A new review replaces it in the count; both stay in the history.`
+                        {myLatest ? `Your current decision on this version: ${DECISION_LABEL[myLatest.decision]}. A new decision replaces it in the count, or withdraw it; everything stays in the history.`
                             : "Reviews cannot be edited or deleted. To change your decision, add a new review."}
                     </p>
                 </div>
                 <div className="grid gap-2 sm:grid-cols-2">
-                    {DECISIONS.map((d) => (
+                    {decisionOptions.map((d) => (
                         <label key={d.key} className={`flex cursor-pointer gap-3 rounded-md border p-3 ${decision === d.key ? "border-slate-900 bg-slate-50" : "border-slate-200"}`}>
                             <input id={`decision-${d.key}`} type="radio" name="decision" value={d.key} checked={decision === d.key} onChange={() => setDecision(d.key)} className="mt-1" />
                             <span><span className="font-medium text-slate-900">{d.label}</span><span className="block text-xs text-slate-500">{d.hint}</span></span>
