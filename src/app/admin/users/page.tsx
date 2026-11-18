@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Search, Shield, ShieldOff, MoreHorizontal, Loader2 } from "lucide-react";
+import { Search, Shield, ShieldOff, MoreHorizontal, Loader2, ClipboardCheck } from "lucide-react";
+import { ROLES, ROLE_LABELS, type Role } from "@/lib/roles";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -22,7 +23,7 @@ interface UserDisplay {
     name: string;
     email: string;
     image: string;
-    role: "admin" | "user";
+    role: Role;
     createdAt: string;
     level: number;
     xp: number;
@@ -85,10 +86,11 @@ export default function UsersManagementPage() {
         fetchUsers();
     }, []);
 
-    const handleToggleRole = async (userId: string, currentRole: string) => {
-        const newRole = currentRole === "admin" ? "user" : "admin";
+    // Roles: admin (everything), reviewer (problem reviews only), user. See src/lib/roles.ts.
+    const handleSetRole = async (userId: string, currentRole: Role, newRole: Role) => {
+        if (newRole === currentRole) return;
         // Optimistic update
-        setUsers(users.map(u => u.id === userId ? { ...u, role: newRole as "admin" | "user" } : u));
+        setUsers(users.map(u => u.id === userId ? { ...u, role: newRole } : u));
 
         try {
             const res = await fetch('/api/admin/users', {
@@ -97,12 +99,14 @@ export default function UsersManagementPage() {
                 body: JSON.stringify({ userId, newRole })
             });
             if (!res.ok) {
-                throw new Error("Failed to update role");
+                const data = await res.json().catch(() => ({}));
+                throw new Error(data.error || "Failed to update role");
             }
         } catch (error) {
             console.error(error);
+            alert(error instanceof Error ? error.message : "Failed to update role");
             // Revert on failure
-            setUsers(users.map(u => u.id === userId ? { ...u, role: currentRole as "admin" | "user" } : u));
+            setUsers(users.map(u => u.id === userId ? { ...u, role: currentRole } : u));
         }
     };
 
@@ -170,7 +174,7 @@ export default function UsersManagementPage() {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-lg border border-slate-200 shadow-sm">
                 <div>
                     <h2 className="text-xl font-bold text-slate-900">User Management</h2>
-                    <p className="text-sm text-slate-500 mt-1">Manage user accounts and administrative roles.</p>
+                    <p className="text-sm text-slate-500 mt-1">Manage user accounts and roles: Admin (everything), Reviewer (problem reviews only), User.</p>
                 </div>
             </div>
 
@@ -230,9 +234,14 @@ export default function UsersManagementPage() {
                                             </div>
                                         </TableCell>
                                         <TableCell>
-                                            <Badge variant={user.role === 'admin' ? "default" : "secondary"} className={user.role === 'admin' ? 'bg-slate-100 text-slate-900 hover:bg-slate-100' : 'bg-slate-100 text-slate-600'}>
+                                            <Badge variant={user.role === 'user' ? "secondary" : "default"} className={
+                                                user.role === 'admin' ? 'bg-slate-100 text-slate-900 hover:bg-slate-100'
+                                                    : user.role === 'reviewer' ? 'bg-indigo-50 text-indigo-700 hover:bg-indigo-50'
+                                                    : 'bg-slate-100 text-slate-600'}>
                                                 {user.role === 'admin' ? (
                                                     <Shield className="w-3 h-3 mr-1" />
+                                                ) : user.role === 'reviewer' ? (
+                                                    <ClipboardCheck className="w-3 h-3 mr-1" />
                                                 ) : null}
                                                 {user.role.toUpperCase()}
                                             </Badge>
@@ -267,16 +276,20 @@ export default function UsersManagementPage() {
                                                     >
                                                         View Details
                                                     </DropdownMenuItem>
-                                                    <DropdownMenuItem
-                                                        onClick={() => handleToggleRole(user.id, user.role)}
-                                                        className="cursor-pointer"
-                                                    >
-                                                        {user.role === 'admin' ? (
-                                                            <><ShieldOff className="w-4 h-4 mr-2" /> Remove Admin</>
-                                                        ) : (
-                                                            <><Shield className="w-4 h-4 mr-2" /> Make Admin</>
-                                                        )}
-                                                    </DropdownMenuItem>
+                                                    <DropdownMenuSeparator />
+                                                    <DropdownMenuLabel className="text-xs text-slate-500">Role</DropdownMenuLabel>
+                                                    {ROLES.filter(r => r !== user.role).map(r => (
+                                                        <DropdownMenuItem
+                                                            key={r}
+                                                            onClick={() => handleSetRole(user.id, user.role, r)}
+                                                            className="cursor-pointer"
+                                                        >
+                                                            {r === 'admin' ? <Shield className="w-4 h-4 mr-2" />
+                                                                : r === 'reviewer' ? <ClipboardCheck className="w-4 h-4 mr-2" />
+                                                                : <ShieldOff className="w-4 h-4 mr-2" />}
+                                                            Set as {ROLE_LABELS[r]}
+                                                        </DropdownMenuItem>
+                                                    ))}
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         </TableCell>

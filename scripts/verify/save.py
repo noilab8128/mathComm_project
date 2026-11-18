@@ -23,9 +23,14 @@ AUTO_STATUS = {"pass": "passed", "warn": "warning", "fail": "failed"}
 CHUNK = 500
 
 
+# Plan §8 decision 4 (2026-11-18): 1 approval for every problem for now. Later Challenges will need 2: set
+# CHALLENGE_APPROVALS = 2 and update existing rows (SQL in supabase/sql/problem_verification.sql, section 7).
+DEFAULT_APPROVALS = 1
+CHALLENGE_APPROVALS = 1
+
+
 def required_approvals(result):
-    """Plan §8 decision 4 (recommended): Challenges need 2 approvals, everything else 1."""
-    return 2 if result.get("part") == "Challenge" else 1
+    return CHALLENGE_APPROVALS if result.get("part") == "Challenge" else DEFAULT_APPROVALS
 
 
 def layer_status(issues):

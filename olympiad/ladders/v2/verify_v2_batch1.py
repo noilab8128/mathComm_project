@@ -121,7 +121,8 @@ def triples_from_squares(cmax=40):
 
 check("P5 example 6, 19, 30", (6 + 19, 6 + 30, 19 + 30), (25, 36, 49))
 check("P5 Step 1", [z for z in range(20, 50) if 6 + z in SQ and 19 + z in SQ], [30])
-check("P5 Step 2", ((49 + 64 - 81) // 2, (49 + 81 - 64) // 2, (64 + 81 - 49) // 2), (16, 33, 48))
+check("P5 Step 2", ((64 + 100 - 144) // 2, (64 + 144 - 100) // 2, (100 + 144 - 64) // 2), (10, 54, 90))
+check("P5 Step 2 gives a square triple", (10 + 54, 10 + 90, 54 + 90) == (64, 100, 144) and all(v in SQ for v in (64, 100, 144)), True)
 k = 5
 check("P5 Step 3", (2 * k * k - 4 * k) + (2 * k * k + 1) + (2 * k * k + 4 * k), 151)
 check("P5 Step 3 family works for k = 3..50", all(

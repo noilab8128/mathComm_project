@@ -121,7 +121,9 @@ def build(md):
             is_ch = r["step"] == "Challenge"
             difficulty = DIFFICULTY_BY_LEVEL[r["level"].lower()]
             content = (f"Setup: {plain(ladder['setup'])}\n\n" if ladder["setup"] else "") + plain(r["problem"])
-            content += "\n\nAnswer with a single number."
+            # One answer sentence that also covers fractions (work log 2026-10-25 §8.2: problems that ask for a
+            # fraction used to get a second, conflicting sentence).
+            content += "\n\nAnswer with a single number, such as 42 or 3/8."
             answer = r["answer"].replace(" ", "")
             explanation = plain(full) if is_ch and full else sols.get(r["step"], "")
             problems.append({

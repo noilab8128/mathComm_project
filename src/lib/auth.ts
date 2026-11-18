@@ -9,6 +9,7 @@ import { supabaseAdmin } from "./supabase-admin";
 import { verifyTurnstileToken } from "./turnstile";
 import { loginEmailRateLimiter, loginIpRateLimiter } from "./rate-limit";
 import { escapeLike, getClientIp, normalizeEmail } from "./credentials";
+import { canReview, isAdminRole } from "./roles";
 
 // One message for every failed sign-in, so the form does not reveal which emails have accounts.
 const INVALID_LOGIN = "Invalid email or password";
@@ -187,11 +188,8 @@ export const authOptions: NextAuthOptions = {
     },
 };
 
-/**
- * Session of a signed-in admin, or null. Checks `user_roles` in the database on every call instead of trusting
- * the role inside the session token. Use it at the top of every admin-only API route.
- */
-export async function requireAdmin() {
+/** The signed-in user's session and current role, read from `user_roles` in the database (not from the token). */
+async function sessionWithRole() {
     const session = await getServerSession(authOptions);
     const userId = session?.user?.id;
     if (!userId) return null;
@@ -203,8 +201,26 @@ export async function requireAdmin() {
         .maybeSingle();
 
     if (error) {
-        console.error("Admin check failed:", error.message);
+        console.error("Role check failed:", error.message);
         return null;
     }
-    return (data as { role?: string } | null)?.role === "admin" ? session : null;
+    return { session, userId, role: (data as { role?: string } | null)?.role || "user" };
+}
+
+/**
+ * Session of a signed-in admin, or null. Checks `user_roles` in the database on every call instead of trusting
+ * the role inside the session token. Use it at the top of every admin-only API route.
+ */
+export async function requireAdmin() {
+    const found = await sessionWithRole();
+    return found && isAdminRole(found.role) ? found.session : null;
+}
+
+/**
+ * { session, userId, role } of a signed-in admin or reviewer, or null. Checked in the database on every call.
+ * Use it at the top of every problem-review API route (src/lib/roles.ts).
+ */
+export async function requireReviewer() {
+    const found = await sessionWithRole();
+    return found && canReview(found.role) ? found : null;
 }

@@ -1,6 +1,7 @@
 
 import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
+import { canReview, isAdminRole, reviewerMayOpen } from "@/lib/roles";
 
 export default withAuth(
     function middleware(req) {
@@ -16,12 +17,14 @@ export default withAuth(
             return NextResponse.redirect(url);
         }
 
-        // Protect admin routes
+        // Protect admin routes: admins see everything; reviewers only the problem-review pages (src/lib/roles.ts).
+        // This only steers the browser; every admin API checks the role in the database again.
         const isAdminRoute = url.pathname.startsWith("/admin");
         if (isAdminRoute) {
             const userRole = req.nextauth.token?.role;
-            if (userRole !== "admin") {
-                url.pathname = "/dashboard";
+            const allowed = isAdminRole(userRole) || (canReview(userRole) && reviewerMayOpen(url.pathname));
+            if (!allowed) {
+                url.pathname = canReview(userRole) ? "/admin/reviews" : "/dashboard";
                 return NextResponse.redirect(url);
             }
         }

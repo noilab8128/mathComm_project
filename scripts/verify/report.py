@@ -50,7 +50,7 @@ RULE_TITLES = {
     "EMPTY_TEXT": "제목·본문 비어 있음", "DIFFICULTY_RANGE": "난이도 범위", "NO_SOLUTION": "풀이 없음",
     "ANSWER_UNPARSEABLE": "정답을 숫자로 읽을 수 없음", "NO_NUMBER_ANSWER": "숫자 정답 없음",
     "CONTEST_LABEL_MISSING": "대회 라벨 없음", "LABEL_DIFFICULTY": "라벨과 난이도 불일치",
-    "AIME_RANGE": "AIME 정답 범위(0–999)", "KNOWN_THAT": "'It is known that' (규칙 5.9)",
+"KNOWN_THAT": "'It is known that' (규칙 5.9)",
     "STEP_REFERENCE": "다른 단계 답 참조 (규칙 5.4)", "ANSWER_SENTENCE": "정답 안내 문장 중복",
     "CATEGORY_MISSING": "세부 카테고리 없음", "HINT_LEAK": "힌트에 정답", "BROKEN_LINK": "끊어진 사다리 연결",
     "STEP_ORDER_DUPLICATE": "사다리 순서 번호 중복",

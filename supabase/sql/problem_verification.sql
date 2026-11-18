@@ -111,3 +111,18 @@ SELECT c.relname AS table_name, c.relrowsecurity AS rls_on,
 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
 WHERE n.nspname = 'public'
   AND c.relname IN ('problem_verification_status', 'problem_verifications', 'problem_reviews');
+
+-- ---------------------------------------------------------------------------------------------------------------
+-- 6. Required approvals (decision 4, 2026-11-18): 1 for every problem for now.
+--    Run once if report.py --save already wrote 2 for Challenges (the first version did).
+-- ---------------------------------------------------------------------------------------------------------------
+UPDATE public.problem_verification_status SET required_approvals = 1, updated_at = now()
+WHERE required_approvals <> 1;
+
+-- ---------------------------------------------------------------------------------------------------------------
+-- 7. Later: Challenges need 2 approvals. Also set CHALLENGE_APPROVALS = 2 in scripts/verify/save.py.
+--    Already approved Challenges stay approved until their content changes or someone reviews them again.
+-- ---------------------------------------------------------------------------------------------------------------
+-- UPDATE public.problem_verification_status s SET required_approvals = 2, updated_at = now()
+-- FROM public.problems p
+-- WHERE p.id = s.problem_id AND p.title LIKE '% — Challenge';
