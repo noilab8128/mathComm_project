@@ -61,6 +61,8 @@ export default function ProblemManagementPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [showLinkManagerDialog, setShowLinkManagerDialog] = useState(false);
   const [showLinkDialog, setShowLinkDialog] = useState(false);
+  // The link chosen by a drop. Kept apart from the drag state, which the browser's dragend clears right after the drop.
+  const [pendingLink, setPendingLink] = useState<{ parentId: string; childId: string } | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<{ isOpen: boolean; title: string; message: string; onConfirm: () => void }>({
     isOpen: false,
     title: "",
@@ -817,47 +819,33 @@ export default function ProblemManagementPage() {
     const sourceId = e.dataTransfer.getData("text/plain");
 
     if (sourceId && sourceId !== targetProblemId) {
-      setDraggedProblemId(sourceId);
-      setDropTargetId(targetProblemId);
+      setPendingLink({ parentId: sourceId, childId: targetProblemId });
       setShowLinkDialog(true);
-    } else {
-      setDraggedProblemId(null);
-      setDropTargetId(null);
     }
+    setDraggedProblemId(null);
+    setDropTargetId(null);
+  };
+
+  const closeLinkDialog = () => {
+    setShowLinkDialog(false);
+    setPendingLink(null);
+    setLinkConcept("");
   };
 
   const handleCreateLink = async () => {
-    if (!draggedProblemId || !dropTargetId) return;
+    if (!pendingLink) return;
+    const { parentId, childId } = pendingLink;
 
     try {
-      // 1. Update local state
-      const sourceProblem = problems.find(p => p.id === draggedProblemId);
-      if (sourceProblem) {
-        const updatedSource = {
-          ...sourceProblem,
-          linkedProblems: [...(sourceProblem.linkedProblems || []), dropTargetId]
-        };
-        setProblems(prev => prev.map(p => p.id === draggedProblemId ? updatedSource : p));
-
-        // If it's a derived/prerequisite relationship, update parent pointer locally for UI
-        const targetProblem = problems.find(p => p.id === dropTargetId);
-        if (targetProblem) {
-          // Update local state only to reflect hierarchy in UI if needed
-          const updatedTarget = { ...targetProblem, parentProblemId: draggedProblemId };
-          setProblems(prev => prev.map(p => p.id === dropTargetId ? updatedTarget : p));
-        }
-      }
-
-      // 2. Save link to DB using Hierarchy
+      // 1. Save the link (problem_hierarchies) first, so the list only changes when the database did.
       if (isDbConnected) {
-        // We need depth and sequence. 
         // Default: 1st child, depth = parent depth + 1
-        const parent = problems.find(p => p.id === draggedProblemId);
+        const parent = problems.find(p => p.id === parentId);
         const parentDepth = parent?.hierarchyInfo?.depth || 1;
 
         await problemHierarchiesAPI.create(
-          draggedProblemId,
-          dropTargetId,
+          parentId,
+          childId,
           null, // parent_solution_id
           linkConcept || "Linked", // stage_name
           1, // sequence_order (TODO: calculate properly)
@@ -865,15 +853,19 @@ export default function ProblemManagementPage() {
         );
       }
 
+      // 2. Show it in the list
+      setProblems(prev => prev.map(p => {
+        if (p.id === parentId) return { ...p, linkedProblems: [...(p.linkedProblems || []), childId] };
+        if (p.id === childId) return { ...p, parentProblemId: parentId };
+        return p;
+      }));
+
       showToast("Link created successfully!", "success");
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to create link:', error);
-      showToast("Failed to create link", "error");
+      showToast(`Failed to create link: ${error?.message || "unknown error"}`, "error");
     } finally {
-      setShowLinkDialog(false);
-      setDraggedProblemId(null);
-      setDropTargetId(null);
-      setLinkConcept("");
+      closeLinkDialog();
     }
   };
 
@@ -1142,16 +1134,16 @@ export default function ProblemManagementPage() {
 
       <CreateLinkDialog
         isOpen={showLinkDialog}
-        onOpenChange={setShowLinkDialog}
-        draggedProblemId={draggedProblemId}
-        dropTargetId={dropTargetId}
+        onOpenChange={(open) => (open ? setShowLinkDialog(true) : closeLinkDialog())}
+        draggedProblemId={pendingLink?.parentId ?? null}
+        dropTargetId={pendingLink?.childId ?? null}
         problems={problems}
         linkType={linkType}
         setLinkType={setLinkType}
         linkConcept={linkConcept}
         setLinkConcept={setLinkConcept}
         onCreateLink={handleCreateLink}
-        onCancel={() => setShowLinkDialog(false)}
+        onCancel={closeLinkDialog}
       />
 
       {/* Global Toast */}
