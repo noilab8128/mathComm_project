@@ -2,12 +2,15 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { Menu, Home, Settings, HelpCircle, LogOut, X, Search, Heart, ShieldAlert } from "lucide-react";
+import { Menu, Home, Settings, HelpCircle, LogOut, X, Search, Heart, ShieldAlert, ClipboardCheck } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
+import { canReview, isAdminRole } from "@/lib/roles";
 
 const Header = () => {
     const { data: session } = useSession();
-    const isAdmin = session?.user?.role === "admin";
+    const isAdmin = isAdminRole(session?.user?.role);
+    // Reviewers (not admins) only get the problem-review pages (src/lib/roles.ts)
+    const isReviewerOnly = !isAdmin && canReview(session?.user?.role);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const firstName = session?.user?.name?.split(" ")[0];
 
@@ -123,6 +126,16 @@ const Header = () => {
                                             >
                                                 <ShieldAlert className="mr-3 h-4 w-4 text-slate-400 group-hover:text-slate-500" />
                                                 Admin Dashboard
+                                            </Link>
+                                        )}
+                                        {isReviewerOnly && (
+                                            <Link
+                                                href="/admin/reviews"
+                                                className="group flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-slate-900 border-t border-slate-100"
+                                                onClick={() => setIsMenuOpen(false)}
+                                            >
+                                                <ClipboardCheck className="mr-3 h-4 w-4 text-slate-400 group-hover:text-slate-500" />
+                                                Problem Reviews
                                             </Link>
                                         )}
                                     </div>
