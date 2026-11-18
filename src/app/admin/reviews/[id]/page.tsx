@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import MathPreview from "@/components/MathPreview";
-import { AlertTriangle, ArrowLeft, Loader2, RefreshCw, Info } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Loader2, RefreshCw, Info, Wrench } from "lucide-react";
 import { AUTO_STYLE, REVIEW_STYLE, DECISION_LABEL, DECISION_STYLE } from "../styles";
 
 // Problem reviews: one problem. Admins and reviewers. Plan: Archive/docs/PROBLEM_VERIFICATION_PLAN_v2.md §3 and §6.
@@ -55,6 +55,39 @@ function textToHtml(text: string) {
     return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br/>");
 }
 
+/**
+ * How to fix a problem, by where it comes from. Ladder problems have a markdown source that must stay the same as
+ * the database; editing only the database would be undone by the next import.
+ */
+function FixSteps({ source, ladder, isAdmin }: { source: string | null; ladder: string | null; isAdmin: boolean }) {
+    const recheck = <li>Run the automatic check again: <code>python3 scripts/verify/report.py --save</code> (from the repository root). The changed problem goes back to <b>Waiting for review</b>; the earlier requests stay in the history as an earlier version. Ask the reviewer to look again.</li>;
+    if (source?.endsWith("Ladders v2")) {
+        return (
+            <ol className="list-decimal space-y-1 pl-5">
+                <li>Edit the ladder in its markdown source: search for <code>— {ladder ?? "<ladder name>"}</code> in <code>olympiad/ladders/v2/LADDERS_v2_batch*.md</code> (or <code>pilot_v2/PILOT_A2.md</code>). Update its hints in <code>HINTS_v2.md</code> if they change.</li>
+                <li>Run that batch&apos;s verify script, e.g. <code>python3 ladders/v2/verify_v2_batch1.py</code> (from <code>olympiad/</code>), and fix it until every check passes.</li>
+                <li>Update the live problem: <code>python3 ladders/import_ladders_v2.py ladders/v2/LADDERS_v2_batchN.md --apply --update-text --only PNN</code>. If the <b>answer</b> changes, <code>--update-text</code> refuses on purpose: change it with a guarded SQL like <code>supabase/sql/ladder_step_fixes_2026_11.sql</code> first.</li>
+                {recheck}
+            </ol>
+        );
+    }
+    if (source?.endsWith("Ladders v0.1")) {
+        return (
+            <ol className="list-decimal space-y-1 pl-5">
+                <li>Older ladder: its importer cannot update live wording. Edit the problem in the admin <b>Problems</b> editor{isAdmin ? <> (<Link href="/admin/problems" className="underline">open</Link>)</> : " (admins)"}.</li>
+                <li>Make the same change in the source <code>olympiad/ladders/LADDERS_v0.1.md</code>, so the source and the database stay the same.</li>
+                {recheck}
+            </ol>
+        );
+    }
+    return (
+        <ol className="list-decimal space-y-1 pl-5">
+            <li>Edit the problem in the admin <b>Problems</b> editor{isAdmin ? <> (<Link href="/admin/problems" className="underline">open</Link>)</> : " (admins)"}.</li>
+            {recheck}
+        </ol>
+    );
+}
+
 function when(iso: string | null) {
     return iso ? new Date(iso).toLocaleString() : "-";
 }
@@ -100,6 +133,14 @@ export default function ReviewDetailPage() {
     const myLast = [...reviews].reverse().find((r) => r.reviewerId === data.me.id && r.forCurrentContent && r.decision !== "comment");
     const myLatest = myLast && myLast.decision !== "withdraw" ? myLast : undefined;
     const decisionOptions = DECISIONS.filter((d) => d.key !== "withdraw" || !!myLatest);
+    // Open requests: each reviewer's current verdict on this content that asks for a change or rejects it
+    const latestByReviewer = new Map<string, Review>();
+    for (const r of reviews) {
+        if (!r.forCurrentContent || !r.reviewerId || r.decision === "comment") continue;
+        latestByReviewer.set(r.reviewerId, r); // reviews come oldest first
+    }
+    const openRequests = [...latestByReviewer.values()].filter((r) => r.decision === "request_changes" || r.decision === "reject");
+    const isAdmin = data.me.role === "admin";
 
     const approveBlocked = decision === "approve" && (notChecked || stale);
     const needsComment = decision !== "approve" || autoFailed;
@@ -179,6 +220,32 @@ export default function ReviewDetailPage() {
                             : <li>See the automatic check results below.</li>}
                     </ul>
                     <p className="mt-2 text-sm text-red-800">You can still approve it if this is a false alarm: confirm below and explain in the comment.</p>
+                </div>
+            )}
+
+            {/* What has to change, and how (open requests and rejections on the current content) */}
+            {openRequests.length > 0 && (
+                <div className="rounded-lg border-2 border-amber-300 bg-amber-50 p-4 space-y-3 text-sm text-amber-900">
+                    <div className="flex items-center gap-2 font-semibold">
+                        <Wrench className="w-5 h-5" />
+                        {v?.reviewStatus === "rejected" ? "Rejected: hidden from students" : "Changes requested"}
+                    </div>
+                    <ul className="space-y-2">
+                        {openRequests.map((r) => (
+                            <li key={r.id} className="rounded-md border border-amber-200 bg-white p-3">
+                                <div className="text-xs text-amber-800"><span className="font-semibold">{r.reviewerName}</span> · {DECISION_LABEL[r.decision]} · {when(r.createdAt)}</div>
+                                {r.comment && <p className="mt-1 whitespace-pre-wrap text-slate-800">{r.comment}</p>}
+                            </li>
+                        ))}
+                    </ul>
+                    <div>
+                        <div className="font-semibold">How to fix it</div>
+                        <div className="mt-1"><FixSteps source={problem.source} ladder={problem.ladder} isAdmin={isAdmin} /></div>
+                        {v?.reviewStatus === "rejected" && (
+                            <p className="mt-2">To use the problem again after fixing it, the reviewer who rejected it approves it or withdraws the rejection.</p>
+                        )}
+                        {!isAdmin && <p className="mt-2 text-amber-800">Fixing needs admin access or the problem owner. As a reviewer you can leave this to them.</p>}
+                    </div>
                 </div>
             )}
 
