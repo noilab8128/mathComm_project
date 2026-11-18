@@ -5,9 +5,10 @@ Pure functions, no database or network access, so they can be tested on their ow
 Every check returns Issue(rule, severity, message). Severity: "fail" (must be fixed before approval),
 "warn" (a reviewer should look), "info" (for the report only).
 
-Rules come from: OPERATING_POLICY 2.3 (categories), LADDER_RULES_v2 5.4 (standalone steps) and 5.9 (every fact
-with its reason), olympiad/ladders/LEVEL_GUIDE.md (contest labels; AIME answers are whole numbers 0-999), and
-Mookwon's work log 2026-10-25 §8.2 (two answer sentences).
+Rules come from: OPERATING_POLICY 2.3 (categories), LADDER_RULES_v2 4.3 (Challenge not guessable from steps), 5.4
+(standalone steps) and 5.9 (every fact with its reason), olympiad/ladders/LEVEL_GUIDE.md (contest labels and their
+difficulty), and Mookwon's work log 2026-10-25 §8.2 (two answer sentences).
+The AIME "answer 0-999" rule was dropped on 2026-11-18: the site does not reuse AIME problems as they are.
 """
 
 import hashlib
@@ -30,9 +31,6 @@ CONTEST_DIFFICULTY = {
     "aime": 8,
     "aime / junior olympiad": 8,
 }
-
-# The AIME rule (LEVEL_GUIDE) was introduced on 2026-10-24; problems created before are only warned.
-AIME_RULE_SINCE = "2026-10-24"
 
 
 @dataclass
@@ -127,7 +125,9 @@ KNOWN_THAT = re.compile(r"\bit is (?:well[- ])?known that\b", re.I)
 STEP_REFERENCE = re.compile(
     r"\b(?:your|the) answer (?:from|to|in|of) (?:step|the previous step|part)\b|\bfrom step \d+\b|\bin step \d+ you\b",
     re.I)
-SINGLE_NUMBER = re.compile(r"answer with a single number", re.I)
+# The old importer sentence. Since 2026-11-18 it reads "Answer with a single number, such as 42 or 3/8.", which
+# also covers fractions and is not counted here.
+SINGLE_NUMBER = re.compile(r"answer with a single number(?!, such as)", re.I)
 AS_FRACTION = re.compile(r"(?:give|write|express) (?:your|the) answer as a fraction", re.I)
 
 
@@ -164,12 +164,6 @@ def check_problem(problem, solutions, hints=None):
         if difficulty != expected:
             issues.append(Issue("LABEL_DIFFICULTY", "warn",
                                 f"라벨 {label}의 난이도는 {expected}인데 저장된 난이도는 {difficulty}"))
-    if label is not None and label.lower().startswith("aime") and value is not None:
-        if value.denominator != 1 or not 0 <= value.numerator <= 999:
-            new = (problem.get("created_at") or "") >= AIME_RULE_SINCE
-            issues.append(Issue("AIME_RANGE", "fail" if new else "warn",
-                                f"AIME 라벨인데 정답이 0–999 정수가 아님: {show(value)}"
-                                + ("" if new else " (규칙 도입 전 문제)")))
 
     if KNOWN_THAT.search(content):
         issues.append(Issue("KNOWN_THAT", "warn", "'It is known that' 표현: 이유를 함께 제시해야 함 (규칙 5.9)"))

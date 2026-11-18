@@ -27,7 +27,7 @@ python3 scripts/verify/report.py --no-l1    # DB 검사만 (markdown 대조와 �
   `problems`, `solutions`, `problem_reviews`는 건드리지 않고, `is_reviewed`(공개 여부)도 그대로입니다.
 - 문제 내용(제목·본문·난이도·라벨·풀이)이 바뀌면 그 문제의 승인 수는 0으로 돌아가고, 승인됐던 문제는 `needs_recheck`가 됩니다.
 - 검사 기록은 내용이나 결과가 바뀐 경우에만 추가되므로, 여러 번 실행해도 쌓이지 않습니다.
-- 필요 승인 수: Challenge 2, 그 밖 1 (계획서 8장 결정 4의 추천값. 결정이 바뀌면 `save.py`의 `required_approvals`만 고침)
+- 필요 승인 수: 지금은 모든 문제 1명 (2026-11-18 결정). 나중에 Challenge를 2명으로 바꿀 때는 `save.py`의 `CHALLENGE_APPROVALS = 2`와 `supabase/sql/problem_verification.sql` 7번 SQL로 기존 행을 고침
 
 ## 결과 파일
 
@@ -44,11 +44,10 @@ python3 scripts/verify/report.py --no-l1    # DB 검사만 (markdown 대조와 �
 | `EMPTY_TEXT`, `DIFFICULTY_RANGE`, `NO_SOLUTION` | 실패 | 제목·본문, 난이도 1–10, 풀이 존재 |
 | `ANSWER_UNPARSEABLE` | 실패 | `Answer:` 줄을 사이트의 Check 버튼과 같은 방식으로 읽을 수 없음 (`src/lib/answers.ts`와 동일한 해석) |
 | `NO_NUMBER_ANSWER` | 사다리는 실패, 그 밖은 경고 | 풀이 첫 줄에 `Answer: 숫자`가 없음 |
-| `AIME_RANGE` | 10-24 이후 문제는 실패, 이전 문제는 경고 | AIME 라벨인데 정답이 0–999 정수가 아님 (LEVEL_GUIDE) |
 | `CONTEST_LABEL_MISSING`, `LABEL_DIFFICULTY` | 경고 | 대회 라벨 태그가 없거나 라벨과 난이도가 맞지 않음 |
 | `KNOWN_THAT` | 경고 | "It is known that" (규칙 5.9) |
 | `STEP_REFERENCE` | 경고 | 다른 단계의 답을 가리킴 (규칙 5.4) |
-| `ANSWER_SENTENCE` | 경고 | 정답 안내 문장이 두 번 나옴 (10-25 §8.2) |
+| `ANSWER_SENTENCE` | 경고 | 예전 안내 문장("Answer with a single number.")이 분수 요청과 함께 나오거나 두 번 나옴 (10-25 §8.2). 새 문장 "…, such as 42 or 3/8."은 해당 없음 |
 | `CATEGORY_MISSING` | 경고 | 세부 카테고리 없음 (운영 정책 2.3) |
 | `HINT_LEAK` | 경고 | 힌트에 정답이 그대로 있음 (힌트 테이블이 생긴 뒤) |
 | `BROKEN_LINK` | 실패 | 사다리 연결이 없는 문제를 가리킴 |
