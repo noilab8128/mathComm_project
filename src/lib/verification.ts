@@ -125,3 +125,19 @@ export function contestLabel(tags: string[] | null): string | null {
     }
     return null;
 }
+
+/**
+ * Message for an API error. Supabase errors are plain objects ({ message, code }), not Error instances, so
+ * `e instanceof Error` alone hid them behind a generic text.
+ */
+export function apiErrorMessage(e: unknown, fallback: string): string {
+    if (e && typeof e === "object") {
+        const { message, code } = e as { message?: unknown; code?: unknown };
+        if (code === "23514" && typeof message === "string" && message.includes("problem_reviews_decision_check")) {
+            return "The database does not accept this decision yet. Run section 8 of supabase/sql/problem_verification.sql once.";
+        }
+        if (typeof message === "string" && message) return code ? `${message} (${code})` : message;
+    }
+    return fallback;
+}
+

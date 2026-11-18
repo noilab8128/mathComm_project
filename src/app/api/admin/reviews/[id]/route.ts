@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { requireReviewer } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import {
-    REVIEW_DECISIONS, computeReviewStatus, contentHash, contestLabel, currentVerdict, ladderPart,
+    REVIEW_DECISIONS, apiErrorMessage, computeReviewStatus, contentHash, contestLabel, currentVerdict, ladderPart,
     type ReviewDecision, type ReviewRow, type ReviewStatus,
 } from '@/lib/verification';
 
@@ -109,7 +109,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
         });
     } catch (e) {
         console.error('Review detail failed:', e);
-        return NextResponse.json({ error: e instanceof Error ? e.message : 'Failed to load the problem' }, { status: 500 });
+        return NextResponse.json({ error: apiErrorMessage(e, 'Failed to load the problem') }, { status: 500 });
     }
 }
 
@@ -216,6 +216,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         return NextResponse.json({ reviewStatus, approvals, requiredApprovals: required });
     } catch (e) {
         console.error('Review save failed:', e);
-        return NextResponse.json({ error: e instanceof Error ? e.message : 'Failed to save the review' }, { status: 500 });
+        return NextResponse.json({ error: apiErrorMessage(e, 'Failed to save the review') }, { status: 500 });
     }
 }

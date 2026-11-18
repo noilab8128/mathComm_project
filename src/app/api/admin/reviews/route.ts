@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireReviewer } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { contentHash, contestLabel, ladderPart, type HashSolution } from '@/lib/verification';
+import { apiErrorMessage, contentHash, contestLabel, ladderPart, type HashSolution } from '@/lib/verification';
 
 // GET /api/admin/reviews -> every problem with its verification and review state (admins and reviewers).
 // Reads with the service key; problem_verification_status and problem_reviews have no public access.
@@ -72,6 +72,6 @@ export async function GET() {
         return NextResponse.json({ me: { id: who.userId, role: who.role }, problems: rows });
     } catch (e) {
         console.error('Review list failed:', e);
-        return NextResponse.json({ error: e instanceof Error ? e.message : 'Failed to load reviews' }, { status: 500 });
+        return NextResponse.json({ error: apiErrorMessage(e, 'Failed to load reviews') }, { status: 500 });
     }
 }
