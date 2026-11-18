@@ -73,6 +73,6 @@ ORDER BY tablename, cmd;
 -- 3b. Drop the "write for everyone" policies. Reads (Public read …) and Service Role Bypass All stay.
 DROP POLICY IF EXISTS "Admin write problems"  ON public.problems;
 DROP POLICY IF EXISTS "Admin write hierarchy" ON public.problem_hierarchies;
--- DROP POLICY IF EXISTS "<name from 3a>" ON public.solutions;
+DROP POLICY IF EXISTS "Admin write solutions" ON public.solutions;   -- name seen in 3a on the live DB (2026-11-18)
 
 -- 3c. Run 3a again: no write policy with `true` should be left on these tables.

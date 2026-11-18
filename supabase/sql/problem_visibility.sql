@@ -42,7 +42,9 @@ GRANT EXECUTE ON FUNCTION public.problem_is_visible(uuid) TO anon, authenticated
 -- ---------------------------------------------------------------------------------------------------------------
 -- 2. Public read policies use the rule (old "read everything" policies are replaced)
 -- ---------------------------------------------------------------------------------------------------------------
+-- Both old "read everything" policies must go (the live DB has two); one left behind would keep every row readable.
 DROP POLICY IF EXISTS "Public read problems" ON public.problems;
+DROP POLICY IF EXISTS "Anyone can view problems" ON public.problems;
 DROP POLICY IF EXISTS "Visible problems are readable" ON public.problems;
 CREATE POLICY "Visible problems are readable" ON public.problems
     FOR SELECT USING (public.problem_is_visible(id));
@@ -54,7 +56,8 @@ CREATE POLICY "Links between visible problems are readable" ON public.problem_hi
     FOR SELECT USING (public.problem_is_visible(parent_problem_id) AND public.problem_is_visible(child_problem_id));
 
 -- ---------------------------------------------------------------------------------------------------------------
--- 3. Check: counts as the public key sees them (expected now: 238 visible, 5 hidden)
+-- 3. Check: counts as the public key sees them (expected now: 238 visible, 5 hidden). In the policy list, the only
+--    SELECT policies on the two tables must be the two created above (plus "Service Role Bypass All", which is ALL).
 -- ---------------------------------------------------------------------------------------------------------------
 SELECT public.problem_is_visible(id) AS visible, count(*) FROM public.problems GROUP BY 1 ORDER BY 1;
 SELECT tablename, policyname, cmd, qual FROM pg_policies
@@ -76,7 +79,8 @@ WHERE schemaname = 'public' AND tablename IN ('problems', 'problem_hierarchies')
 -- $body$;
 
 -- ---------------------------------------------------------------------------------------------------------------
--- Undo (only if something breaks): read everything again
+-- Undo (only if something breaks): read everything again. Copies of the old policies:
+-- ~/mathquest-backups/<stamp>/policies_before_part3.csv
 -- ---------------------------------------------------------------------------------------------------------------
 -- DROP POLICY IF EXISTS "Visible problems are readable" ON public.problems;
 -- CREATE POLICY "Public read problems" ON public.problems FOR SELECT USING (true);
