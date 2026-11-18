@@ -25,7 +25,11 @@ export function asSolutions(value: unknown): Row[] | undefined {
     return value as Row[];
 }
 
-/** Columns the editor may not set: the row id, and the problem a solution belongs to (set here). */
+/**
+ * Columns the editor may not set: the row id, the problem a solution belongs to (set here), and `is_reviewed`,
+ * which only the review workflow changes (/api/admin/reviews/[id], plan: PROBLEM_VERIFICATION_PLAN_v2.md).
+ */
+const REVIEW_ONLY = ["is_reviewed"];
 function withoutKeys(row: Row, keys: string[]): Row {
     const copy = { ...row };
     for (const key of keys) delete copy[key];
@@ -35,7 +39,7 @@ function withoutKeys(row: Row, keys: string[]): Row {
 export async function createProblem(problem: Row, solutions?: Row[]) {
     const { data: created, error } = await supabaseAdmin
         .from("problems")
-        .insert([withoutKeys(problem, ["id"])])
+        .insert([withoutKeys(problem, ["id", ...REVIEW_ONLY])])
         .select()
         .single();
     if (error) throw error;
@@ -59,7 +63,7 @@ export async function createProblem(problem: Row, solutions?: Row[]) {
 export async function updateProblem(id: string, problem: Row, solutions?: Row[]) {
     const { data: updated, error } = await supabaseAdmin
         .from("problems")
-        .update({ ...withoutKeys(problem, ["id"]), updated_at: new Date().toISOString() })
+        .update({ ...withoutKeys(problem, ["id", ...REVIEW_ONLY]), updated_at: new Date().toISOString() })
         .eq("id", id)
         .select()
         .single();

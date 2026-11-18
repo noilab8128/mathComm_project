@@ -45,7 +45,6 @@ export default function ProblemManagementPage() {
     loadProblemsFromSupabase,
     saveProblemToSupabase,
     deleteProblem,
-    approveProblem,
     handleExportCSV,
     selectedProblemIds,
     toggleProblemSelection,
@@ -1026,7 +1025,6 @@ export default function ProblemManagementPage() {
           clearSelection={clearSelection}
           sortBy={sortBy}
           onSortChange={setSortBy}
-          onApproveProblem={approveProblem}
         />
       </div>
 

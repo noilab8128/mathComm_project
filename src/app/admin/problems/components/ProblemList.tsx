@@ -1,6 +1,7 @@
 /* eslint-disable */
 // @ts-nocheck
 import React from "react";
+import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
@@ -52,7 +53,6 @@ interface ProblemListProps {
     clearSelection: () => void;
     sortBy: "newest" | "oldest" | "difficulty_asc" | "difficulty_desc";
     onSortChange: (sort: "newest" | "oldest" | "difficulty_asc" | "difficulty_desc") => void;
-    onApproveProblem?: (id: string) => void;
 }
 
 export function ProblemList({
@@ -90,7 +90,6 @@ export function ProblemList({
     clearSelection,
     sortBy,
     onSortChange,
-    onApproveProblem
 }: ProblemListProps) {
 
     const getDifficultyColor = (diff: number) => {
@@ -229,7 +228,19 @@ export function ProblemList({
                                                     const rows: React.ReactNode[] = [
                                                         <TableRow
                                                             key={problem.id}
-                                                            className={`cursor-pointer ${isSelected ? "bg-slate-50" : ""} hover:bg-slate-50`}
+                                                            // Drag a row onto another row to link them: the dragged problem becomes the
+                                                            // parent and the row it is dropped on the child (CreateLinkDialog in page.tsx).
+                                                            draggable
+                                                            onDragStart={(e) => { e.stopPropagation(); onDragStart(e, problem.id); }}
+                                                            onDragEnd={onDragEnd}
+                                                            onDragOver={(e) => { e.stopPropagation(); onDragOver(e, problem.id); }}
+                                                            onDragLeave={(e) => onDragLeave(e, problem.id)}
+                                                            onDrop={(e) => { e.stopPropagation(); onDrop(e, problem.id); }}
+                                                            className={`cursor-pointer ${isSelected ? "bg-slate-50" : ""} hover:bg-slate-50 ${
+                                                                dropTargetId === problem.id && draggedProblemId !== problem.id
+                                                                    ? "outline-2 outline-dashed outline-green-500 bg-green-50"
+                                                                    : ""
+                                                            }`}
                                                             onClick={() => onSelectProblem(problem)}
                                                         >
                                                             <TableCell onClick={(e) => e.stopPropagation()} className="w-[50px]">
@@ -303,17 +314,17 @@ export function ProblemList({
                                                                 {new Date(problem.createdAt).toLocaleDateString()}
                                                             </TableCell>
                                                             <TableCell className="text-right">
-                                                                {problem.isGenerated && !problem.isReviewed && onApproveProblem && (
+                                                                {/* Approval goes through the review workflow (reviews, history, required approvals). */}
+                                                                {problem.isGenerated && !problem.isReviewed && (
                                                                     <Button
+                                                                        asChild
                                                                         variant="ghost"
                                                                         size="sm"
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            onApproveProblem(problem.id);
-                                                                        }}
                                                                         className="text-green-600 hover:text-green-800 hover:bg-green-50 mr-2"
                                                                     >
-                                                                        Approve
+                                                                        <Link href={`/admin/reviews/${problem.id}`} onClick={(e) => e.stopPropagation()}>
+                                                                            Review
+                                                                        </Link>
                                                                     </Button>
                                                                 )}
                                                                 <Button

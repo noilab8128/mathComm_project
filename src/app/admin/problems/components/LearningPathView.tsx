@@ -9,11 +9,10 @@ import ReactFlow, {
     Background,
     useNodesState,
     useEdgesState,
-    addEdge,
-    Connection,
     MarkerType,
     Panel,
     Position,
+    Handle,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import dagre from 'dagre';
@@ -48,6 +47,9 @@ function ProblemNode({ data }: { data: any }) {
                 }`}
             onClick={() => data.onSelect(problem)}
         >
+            {/* Anchor points for the arrows only; links are made in the list view (drag a row onto another). */}
+            <Handle type="target" position={Position.Top} isConnectable={false} style={{ opacity: 0 }} />
+            <Handle type="source" position={Position.Bottom} isConnectable={false} style={{ opacity: 0 }} />
             <div className="flex items-start gap-2 mb-2">
                 <span className="text-xl flex-shrink-0">
                     {problem.parentProblemId ? '🌱' : '🔒'}
@@ -206,16 +208,8 @@ export function LearningPathView({
     const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
     const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
-    const onConnect = useCallback(
-        (params: Connection) => {
-            // When user connects two nodes, update the parent relationship
-            if (params.source && params.target) {
-                onChangeLinkParent(params.target);
-            }
-            setEdges((eds) => addEdge(params, eds));
-        },
-        [setEdges, onChangeLinkParent]
-    );
+    // Connecting nodes here is turned off: it wrote problems.parent_problem_id, a column that no longer exists.
+    // Links live in problem_hierarchies; create them in the list view.
 
     const onLayout = useCallback(
         (direction: string) => {
@@ -238,7 +232,7 @@ export function LearningPathView({
                 edges={edges}
                 onNodesChange={onNodesChange}
                 onEdgesChange={onEdgesChange}
-                onConnect={onConnect}
+                nodesConnectable={false}
                 nodeTypes={nodeTypes}
                 fitView
                 attributionPosition="bottom-left"

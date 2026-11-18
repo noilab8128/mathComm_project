@@ -272,6 +272,7 @@ console.anthropic.com에서 API 키를 만들고 **월 사용 한도**를 설정
 | `src/app/admin/reviews` | 리뷰 목록(필터: 리뷰할 것, 자동 검사 실패, 수정 요청 등, "내가 아직 리뷰하지 않은 문제")과 상세 화면 |
 | `supabase/sql/problem_visibility.sql` | 학생에게 보일 문제를 DB에서 판단 (결정 2·3). 문제 화면 코드는 그대로 |
 | `supabase/sql/ladder_step_fixes_2026_11.sql` | 11.1의 세 단계 정답 변경 (운영 DB) |
+| `src/app/admin/problems`, `src/lib/adminProblemWrites.ts` | 관리자 문제 편집 화면의 예전 **Approve** 버튼을 **Review**(해당 문제의 리뷰 화면으로 이동)로 바꿈. 편집 API는 `is_reviewed`를 받지 않음 → 공개 여부는 리뷰 절차로만 바뀜 |
 
 **판정 철회 (Withdraw my decision)**
 - 현재 내용에 대한 내 판정이 있을 때만 선택할 수 있음. 코멘트 필수, 철회 기록도 영구 보관
@@ -298,6 +299,7 @@ console.anthropic.com에서 API 키를 만들고 **월 사용 한도**를 설정
 - 결정 6은 문제를 만든 사람을 알아야 하는데 `problems`에 작성자 기록이 없음. Challenge를 2명 기준으로 올리기 전에 작성자 기록을 추가해야 함
 - 승인자는 `problem_reviews`에 기록. `problems.reviewer_id`는 예전 문서상 `auth.users`를 가리켜 쓰지 않음
 - 예전 관리자 문제 편집 화면(`/admin/problems`)은 공개 키로 읽기 때문에, `problem_visibility.sql` 이후에는 숨겨진 문제가 목록에 나오지 않음. 모든 문제는 Reviews 화면에서 보임
+- 관리자 문제 편집 화면의 사다리 연결: 목록에서 **부모가 될 문제 행을 끌어 자식 문제 행 위에 놓기**(2026-11-18 복구). Learning Path 보기에서 노드를 잇는 기능은 없어진 열(`problems.parent_problem_id`)에 쓰던 코드라 막아 둠
 
 **문제 담당에게 생기는 변화**
 - `problem_visibility.sql` 실행 이후 새로 import한 문제는 **승인할 때까지 학생에게 보이지 않음**. import 후 `report.py --save` → Reviews 화면에서 승인

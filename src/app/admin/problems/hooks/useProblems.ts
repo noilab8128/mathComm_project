@@ -298,19 +298,8 @@ export function useProblems() {
         }
     };
 
-    const approveProblem = async (id: string) => {
-        try {
-            if (isDbConnected && !id.startsWith('temp-')) {
-                // @ts-expect-error - update accepts partial
-                await problemsAPI.update(id, { is_reviewed: true });
-                setProblems(prev => prev.map(p => p.id === id ? { ...p, isReviewed: true } : p));
-                showToast("✅ Problem approved successfully!", "success");
-            }
-        } catch (error: any) {
-            console.error('❌ Failed to approve problem:', error);
-            showToast(`❌ Failed to approve: ${error.message}`, "error");
-        }
-    };
+    // No direct "approve" here: problems are approved on /admin/reviews/<id>, which records the review
+    // and applies the required approvals (src/app/api/admin/reviews/[id]/route.ts).
 
     const handleExportCSV = () => {
         try {
@@ -353,7 +342,6 @@ export function useProblems() {
         loadProblemsFromSupabase,
         saveProblemToSupabase,
         deleteProblem,
-        approveProblem,
         handleExportCSV,
         selectedProblemIds,
         toggleProblemSelection,
