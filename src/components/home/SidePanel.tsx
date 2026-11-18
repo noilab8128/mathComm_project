@@ -3,7 +3,9 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle2, Circle, Flame, Heart, Loader2, Lock, Trophy, X } from "lucide-react";
+import { CheckCircle2, Circle, ClipboardCheck, Flame, Heart, Loader2, Lock, Trophy, X } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { canReview } from "@/lib/roles";
 import type { CategoryStat, UserStage, UserStats } from "./useHomeData";
 
 const card = "rounded-md border border-slate-200 bg-white p-4";
@@ -197,6 +199,9 @@ export function LeaderboardCard() {
 }
 
 export function SupportCard({ isAdmin }: { isAdmin: boolean }) {
+  // Reviewers (not admins) only get the problem-review pages (src/lib/roles.ts)
+  const { data: session } = useSession();
+  const isReviewerOnly = !isAdmin && canReview(session?.user?.role);
   return (
     <div className="space-y-2 px-1 text-xs text-slate-500">
       <a
@@ -211,6 +216,13 @@ export function SupportCard({ isAdmin }: { isAdmin: boolean }) {
         <Link href="/admin/problems">
           <Button size="sm" variant="ghost" className="h-7 gap-1 px-0 text-xs text-slate-500 hover:bg-transparent hover:text-slate-900">
             <Lock className="h-3.5 w-3.5" /> Admin
+          </Button>
+        </Link>
+      )}
+      {isReviewerOnly && (
+        <Link href="/admin/reviews">
+          <Button size="sm" variant="ghost" className="h-7 gap-1 px-0 text-xs text-slate-500 hover:bg-transparent hover:text-slate-900">
+            <ClipboardCheck className="h-3.5 w-3.5" /> Reviews
           </Button>
         </Link>
       )}

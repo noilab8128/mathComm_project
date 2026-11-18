@@ -2,7 +2,8 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Network, Users, BookOpen, Home, LineChart, ShieldAlert } from "lucide-react";
+import { Network, Users, BookOpen, Home, LineChart, ShieldAlert, ClipboardCheck } from "lucide-react";
+import { canReview } from "@/lib/roles";
 import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -65,6 +66,16 @@ export default function SideNav({ active, onChange, isAdmin }: { active: string;
           >
             <ShieldAlert className="h-4 w-4 text-slate-400" />
             <span>Admin</span>
+          </Link>
+        )}
+        {/* Reviewers (not admins) only get the problem-review pages (src/lib/roles.ts) */}
+        {!isAdmin && canReview(session?.user?.role) && (
+          <Link
+            href="/admin/reviews"
+            className="mt-3 flex w-full items-center gap-2.5 rounded-md border-t border-slate-100 px-2.5 pb-1.5 pt-3 text-sm text-slate-600 hover:text-slate-900"
+          >
+            <ClipboardCheck className="h-4 w-4 text-slate-400" />
+            <span>Reviews</span>
           </Link>
         )}
       </div>
