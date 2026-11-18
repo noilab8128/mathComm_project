@@ -1,9 +1,28 @@
 import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth';
 import { BadRequest, asObject, asSolutions, createProblem, errorMessage } from '@/lib/adminProblemWrites';
+import { listProblems, parseListQuery } from '@/lib/adminProblemReads';
 
+// GET  /api/admin/problems?page&pageSize&difficulty=1,2,3&category&isGenerated&isReviewed&search&sortBy
+//      -> { problems, children, hierarchies, count, sources, hiddenIds }   (admin problem editor list)
 // POST /api/admin/problems  { problem, solutions? } -> { data: created problem }
 // Used by problemsAPI.create (admin problem editor).
+
+export async function GET(req: Request) {
+    // Checks user_roles in the database; the role inside the session token is not trusted.
+    if (!(await requireAdmin())) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+
+    try {
+        const data = await listProblems(parseListQuery(new URL(req.url).searchParams));
+        return NextResponse.json(data);
+    } catch (e) {
+        console.error('Admin list problems failed:', e);
+        return NextResponse.json({ error: errorMessage(e) }, { status: 500 });
+    }
+}
+
 export async function POST(req: Request) {
     // Checks user_roles in the database; the role inside the session token is not trusted.
     if (!(await requireAdmin())) {

@@ -294,6 +294,12 @@ export function ProblemList({
                                                                         {problem.title}
                                                                     </span>
 
+                                                                    {problem.isHidden && (
+                                                                        <Badge variant="secondary" className="text-xs bg-slate-200 text-slate-700" title="Students cannot see this problem until it is approved on the Reviews page.">
+                                                                            Hidden
+                                                                        </Badge>
+                                                                    )}
+
                                                                     {inLoop(problem) && (
                                                                         <Badge variant="secondary" className="text-xs bg-red-100 text-red-700" title="This problem's parent links form a loop. Remove one link in Manage Links.">
                                                                             Link loop
@@ -343,7 +349,7 @@ export function ProblemList({
                                                             </TableCell>
                                                             <TableCell className="text-right">
                                                                 {/* Approval goes through the review workflow (reviews, history, required approvals). */}
-                                                                {problem.isGenerated && !problem.isReviewed && (
+                                                                {(problem.isHidden || (problem.isGenerated && !problem.isReviewed)) && (
                                                                     <Button
                                                                         asChild
                                                                         variant="ghost"

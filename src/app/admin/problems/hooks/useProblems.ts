@@ -74,45 +74,28 @@ export function useProblems() {
             else if (filterDifficulty === "hard") difficultyFilter = [7, 8, 9];
             else if (filterDifficulty === "olympic") difficultyFilter = [10];
 
-            // 1. Fetch paginated root problems
-            const { data: roots, count } = await problemsAPI.getPaginated(currentPage, pageSize, {
-                category: filterCategory === 'all' ? undefined : filterCategory,
-                difficulty: difficultyFilter,
-                isGenerated: filterStatus === "pending-review" ? true : undefined,
-                isReviewed: filterStatus === "pending-review" ? false : undefined,
-                search: searchQuery,
-                onlyRoots: true, // This filter needs to be implemented correctly in supabase.ts or refined
-                sortBy: sortBy
-            });
+            // 1. One admin-only server call (service key): the page of problems, their children, all hierarchy
+            //    links, known sources and which problems students cannot see. Before 2026-11-19 this read with the
+            //    public key, so problems hidden by problem_visibility.sql (e.g. new, unapproved ones) were missing.
+            const params = new URLSearchParams({ page: String(currentPage), pageSize: String(pageSize), sortBy });
+            if (filterCategory !== 'all') params.set('category', filterCategory);
+            if (difficultyFilter) params.set('difficulty', difficultyFilter.join(','));
+            if (filterStatus === "pending-review") { params.set('isGenerated', 'true'); params.set('isReviewed', 'false'); }
+            if (searchQuery) params.set('search', searchQuery);
+
+            const res = await fetch(`/api/admin/problems?${params}`);
+            const body = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(body.error || `Request failed (${res.status})`);
+            const { problems: roots, children, hierarchies, count, sources, hiddenIds } = body;
 
             setTotalCount(count);
-
-            // 2. Fetch children for these roots (if needed, or maybe just load roots for list view?)
-            // The logic here seems to want to load children to show hierarchy or just simple list.
-            // If the UI is a flat list, we might not need children batch unless we want to show "Has X subproblems"
-            // For now, let's keep it simple and just show roots or all problems as returned.
-            // Actually, if we want to show a tree, we need children.
-            // The original code fetched children. Let's keep it if possible, or simplify.
-            // Let's assume getChildrenBatch works or returns empty.
-
-            const rootIds = roots.map((p: any) => p.id);
-            const children = await problemsAPI.getChildrenBatch(rootIds);
-
-            // 2.1 Fetch all hierarchy links to map relationships
-            const hierarchies = await problemHierarchiesAPI.getAll();
             const hierarchyMap = new Map(hierarchies?.map((h: any) => [h.child_problem_id, h]));
+            const hidden = new Set<string>(hiddenIds || []);
 
-            // 3. Combine and convert
-            // Avoid duplicates if getPaginated already returned children (e.g. if onlyRoots logic is weak)
+            // 2. Combine: the page's problems, then children not already on the page
             const allFetched = [...roots];
-            // Add children that are not already in roots
-            // @ts-ignore
-            children.forEach(child => {
-                // @ts-ignore
-                if (!allFetched.find(p => p.id === child.id)) {
-                    // @ts-ignore
-                    allFetched.push(child);
-                }
+            children.forEach((child: any) => {
+                if (!allFetched.find(p => p.id === child.id)) allFetched.push(child);
             });
 
             // Convert Supabase format to local format
@@ -144,6 +127,8 @@ export function useProblems() {
                     linkedProblems: sp.linked_problem_ids || [],
                     isGenerated: sp.is_generated,
                     isReviewed: sp.is_reviewed,
+                    // Hidden from students (problem_visibility.sql); null hiddenIds = could not be checked
+                    isHidden: hidden.has(sp.id),
                     reviewerId: sp.reviewer_id,
                     parentProblemId: hierarchyLink?.parent_problem_id,
                     hierarchyInfo: hierarchyLink ? {
@@ -157,13 +142,8 @@ export function useProblems() {
                 };
             }) as Problem[];
 
-            // 4. Load unique sources for suggestions
-            try {
-                const sources = await problemsAPI.getUniqueSources();
-                setUniqueSources(sources);
-            } catch (err) {
-                console.error('Failed to load unique sources:', err);
-            }
+            // 3. Known sources for suggestions
+            setUniqueSources(sources || []);
 
             setProblems(convertedProblems);
             setIsDbConnected(true);
@@ -171,7 +151,7 @@ export function useProblems() {
             console.error('Failed to load from Supabase:', error);
             setIsDbConnected(false);
             setProblems([]);
-            showToast("⚠️ Database not connected. No problems loaded.", "error");
+            showToast(`⚠️ Could not load problems: ${error?.message || "unknown error"}`, "error");
         } finally {
             setIsLoadingFromDb(false);
         }

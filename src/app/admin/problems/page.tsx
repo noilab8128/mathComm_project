@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useProblems } from "./hooks/useProblems";
-import { problemsAPI, problemHierarchiesAPI, getDifficultyLabel, categoryToTags, supabase } from "@/lib/supabase";
+import { problemsAPI, problemHierarchiesAPI, getDifficultyLabel, categoryToTags } from "@/lib/supabase";
 import { ProblemHeader } from "./components/ProblemHeader";
 import { ProblemStats } from "./components/ProblemStats";
 import { ProblemFilters } from "./components/ProblemFilters";
@@ -322,12 +322,11 @@ export default function ProblemManagementPage() {
         // Fetch the generated solutions of the parent to map solutionIndex to solution.id
         let parentSolutions: any[] = [];
         try {
-          const { data } = await supabase
-            .from('solutions')
-            .select('id, sequence_order')
-            .eq('problem_id', saved.id)
-            .order('sequence_order', { ascending: true });
-          if (data) parentSolutions = data;
+          // Admin-only server read (the public key cannot read problems that are still hidden from students)
+          const res = await fetch(`/api/admin/problems/${encodeURIComponent(saved.id)}`);
+          const body = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(body.error || `Request failed (${res.status})`);
+          parentSolutions = body.data?.solutions || [];
         } catch (err) {
           console.error("Failed to fetch parent solutions for mapping.", err);
         }

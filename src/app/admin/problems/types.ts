@@ -32,6 +32,7 @@ export interface Problem {
     diagramImageUrl?: string;
     source?: string;
     isReviewed?: boolean;
+    isHidden?: boolean;     // students cannot see it (not approved yet, or rejected); see problem_visibility.sql
     reviewerId?: string;
 
     // Analytics (New)

@@ -298,7 +298,7 @@ console.anthropic.com에서 API 키를 만들고 **월 사용 한도**를 설정
 **알려진 한계**
 - 결정 6은 문제를 만든 사람을 알아야 하는데 `problems`에 작성자 기록이 없음. Challenge를 2명 기준으로 올리기 전에 작성자 기록을 추가해야 함
 - 승인자는 `problem_reviews`에 기록. `problems.reviewer_id`는 예전 문서상 `auth.users`를 가리켜 쓰지 않음
-- 예전 관리자 문제 편집 화면(`/admin/problems`)은 공개 키로 읽기 때문에, `problem_visibility.sql` 이후에는 숨겨진 문제가 목록에 나오지 않음. 모든 문제는 Reviews 화면에서 보임
+- 관리자 문제 편집 화면(`/admin/problems`)은 2026-11-19부터 관리자 전용 서버 API(`GET /api/admin/problems`, 서버 키)로 읽음. 숨겨진 문제도 목록에 나오고 **Hidden** 표시와 Review 버튼이 붙음. (그 전에는 공개 키로 읽어서, 새로 만든 문제가 저장 직후 목록에서 사라졌음)
 - 관리자 문제 편집 화면의 사다리 연결: 목록에서 **부모가 될 문제 행을 끌어 자식 문제 행 위에 놓기**(2026-11-18 복구). Learning Path 보기에서 노드를 잇는 기능은 없어진 열(`problems.parent_problem_id`)에 쓰던 코드라 막아 둠
 
 **문제 담당에게 생기는 변화**
