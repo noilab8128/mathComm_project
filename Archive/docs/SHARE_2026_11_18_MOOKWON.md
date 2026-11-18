@@ -23,7 +23,7 @@
 
 **정답을 바꾼 이유**: Challenge 문제의 정답이 단계 문제 정답에 그대로 나와 있어서, 단계만 풀면 Challenge 답을 맞힐 수 있었습니다. Challenge 문제 자체는 바꾸지 않았습니다.
 
-세 단계의 새 정답은 **운영 DB에 이미 반영했습니다** (`supabase/sql/ladder_step_fixes_2026_11.sql`). 세 문제 모두 학생 제출 기록이 없었습니다. 답 안내 문장 변경(`--update-text`)은 Osang이 다음 작업 때 실행할 예정입니다.
+세 단계의 새 정답은 **운영 DB에 이미 반영했습니다** (`supabase/sql/ladder_step_fixes_2026_11.sql`). 세 문제 모두 학생 제출 기록이 없었습니다. 답 안내 문장 변경도 `import_ladders_v2.py --apply --update-text`로 v2 사다리 41개(문제 201개)에 반영했습니다. 그 뒤 `report.py --save`로 검사 결과도 다시 저장했습니다(fail 0).
 
 ## 3. 앞으로 문제를 넣을 때 달라지는 점
 
