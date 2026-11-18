@@ -92,8 +92,8 @@ p** if, after some point, every digit equals the digit p places later; the perio
 |---|---|---|---|
 | 1 | MATHCOUNTS | x = 1/7 = 0.142857142857…. What are the first four digits of y? Give them as one four-digit number. | **4848** |
 | 2 | AMC 8 | The digits of 1/41 = 0.0243902439… repeat with period 5. What is the remainder when 2¹⁰ is divided by 5? | **4** |
-| 3 | AMC 10 | What is the smallest k ≥ 1 with 2ᵏ leaving remainder 1 when divided by 17? | **8** |
-| 4 | AMC 10 | The digits of 1/103 repeat with period 34. What is the period of the remainders of 2, 4, 8, 16, … when divided by 34 (from the start)? | **8** |
+| 3 | AMC 10 | What is the smallest k ≥ 1 with 2ᵏ leaving remainder 1 when divided by 13? | **12** |
+| 4 | AMC 10 | The digits of 1/23 repeat with period 22. What is the period of the remainders of 2, 4, 8, 16, … when divided by 22 (from the start)? | **10** |
 | **Challenge** | AIME | For x = 1/103, the decimal y eventually repeats. What is its period? | **8** |
 
 **Problem analysis** *(members only)*
@@ -124,8 +124,8 @@ The (2ⁿ)-th digit depends only on 2ⁿ modulo 34. Since 2ⁿ is even and 2ⁿ�
 **Short solutions**
 - Step 1: the 2nd, 4th, 8th and 16th digits of 0.142857142857… are 4, 8, 4, 8.
 - Step 2: 2¹⁰ = 1024 = 204 × 5 + 4.
-- Step 3: 2, 4, 8, 16, 15, 13, 9, 1 modulo 17: k = 8.
-- Step 4: 2, 4, 8, 16, 32, 30, 26, 18, 2, … modulo 34: period 8.
+- Step 3: 2, 4, 8, 3, 6, 12, 11, 9, 5, 10, 7, 1 modulo 13: k = 12.
+- Step 4: 2, 4, 8, 16, 10, 20, 18, 14, 6, 12, 2, … modulo 22: period 10 (22 = 2 × 11, and the order of 2 modulo 11 is 10).
 - Challenge: see "Our full solution".
 
 **Similar olympiad problems**

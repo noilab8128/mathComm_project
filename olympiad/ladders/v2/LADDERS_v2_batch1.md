@@ -259,7 +259,7 @@ all perfect squares. For example 6, 19, 30 is a square triple: 25, 36 and 49 are
 | Step | Level | Problem | Answer |
 |---|---|---|---|
 | 1 | MATHCOUNTS | Find the whole number z with 19 < z < 50 such that 6 + z and 19 + z are both perfect squares. | **30** |
-| 2 | AMC 8 | Three numbers x < y < z satisfy x + y = 49, x + z = 64 and y + z = 81. What is x? | **16** |
+| 2 | AMC 8 | Three numbers x < y < z satisfy x + y = 64, x + z = 100 and y + z = 144. What is x? | **10** |
 | 3 | AMC 8 | For each k ≥ 3 the numbers 2k² − 4k, 2k² + 1 and 2k² + 4k form a square triple (their sums are (2k − 1)², (2k)², (2k + 1)²). For k = 5, what is x + y + z? | **151** |
 | 4 | AMC 10 | How many square triples have all three pairwise sums at most 100? | **7** |
 | **Challenge** | AIME | How many square triples have z ≤ 100? | **16** |
@@ -292,7 +292,7 @@ every x < y < z ≤ 100.
 
 **Short solutions**
 - Step 1: 6 + z and 19 + z are squares that differ by 13 = 49 − 36, so 6 + z = 36 and z = 30.
-- Step 2: x = (49 + 64 − 81)/2 = 16 (then y = 33 and z = 48).
+- Step 2: x = (64 + 100 − 144)/2 = 10 (then y = 54 and z = 90).
 - Step 3: for k = 5 the numbers are 30, 51, 70, with sum 151 (in general 6k² + 1).
 - Step 4: list squares a < b < c ≤ 100 (c ≤ 10) with a² + b² + c² even and a² + b² > c²: 7 triples.
 - Challenge: see "Our full solution".

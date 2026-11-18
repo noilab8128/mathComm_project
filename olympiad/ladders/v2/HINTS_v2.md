@@ -160,10 +160,10 @@
 **Hints**
 - Step 1: The digits of 1/7 repeat every 6 places. Find the 2nd, 4th, 8th and 16th digits.
 - Step 2: Compute 2¹⁰ = 1024 and divide by 5.
-- Step 3: Compute 2, 4, 8, 16, 32, … modulo 17 until you reach 1.
-- Step 4: Write out 2ⁿ modulo 34 for n = 1, 2, 3, … until a value repeats.
+- Step 3: Compute 2, 4, 8, 16, 32, … modulo 13 until you reach 1.
+- Step 4: Write out 2ⁿ modulo 22 for n = 1, 2, 3, … until a value repeats.
 - Challenge: The (2ⁿ)-th digit of 1/103 depends only on 2ⁿ modulo 34, the period of 1/103.
-- Challenge: Find when the powers of 2 modulo 34 start repeating (Step 4), then check that no shorter period works for the digits.
+- Challenge: Find when the powers of 2 modulo 34 start repeating (as in Step 4), then check that no shorter period works for the digits.
 
 ---
 
