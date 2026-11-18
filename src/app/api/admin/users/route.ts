@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth';
+import { isRole } from '@/lib/roles';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 
 export async function GET() {
@@ -47,26 +48,32 @@ export async function GET() {
 
 export async function POST(req: Request) {
     // Checks user_roles in the database; the role inside the session token is not trusted.
-    if (!(await requireAdmin())) {
+    const session = await requireAdmin();
+    if (!session) {
         return new NextResponse('Unauthorized', { status: 403 });
     }
 
     try {
+        // Roles: admin (everything), reviewer (problem reviews only), user (no row). See src/lib/roles.ts.
         const { userId, newRole } = await req.json();
-        if (typeof userId !== 'string' || !userId || (newRole !== 'admin' && newRole !== 'user')) {
-            return NextResponse.json({ error: 'userId and newRole ("admin" or "user") are required' }, { status: 400 });
+        if (typeof userId !== 'string' || !userId || !isRole(newRole)) {
+            return NextResponse.json({ error: 'userId and newRole ("admin", "reviewer" or "user") are required' }, { status: 400 });
+        }
+        // An admin cannot lower their own role, so the site never ends up without the admin who made the change.
+        if (userId === session.user?.id && newRole !== 'admin') {
+            return NextResponse.json({ error: 'You cannot remove your own admin role. Ask another admin.' }, { status: 400 });
         }
 
-        if (newRole === 'admin') {
-            const { error } = await supabaseAdmin
-                .from('user_roles')
-                .upsert({ user_id: userId, role: 'admin' }, { onConflict: 'user_id' });
-            if (error) throw error;
-        } else {
+        if (newRole === 'user') {
             const { error } = await supabaseAdmin
                 .from('user_roles')
                 .delete()
                 .eq('user_id', userId);
+            if (error) throw error;
+        } else {
+            const { error } = await supabaseAdmin
+                .from('user_roles')
+                .upsert({ user_id: userId, role: newRole }, { onConflict: 'user_id' });
             if (error) throw error;
         }
 

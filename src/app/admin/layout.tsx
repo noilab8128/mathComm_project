@@ -4,7 +4,8 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Users, BookOpen, Megaphone, Home, LogOut, ChevronLeft, ChevronRight, Menu, X, ShieldAlert, User, Settings, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { Users, BookOpen, Megaphone, Home, LogOut, ChevronLeft, ChevronRight, Menu, X, ShieldAlert, User, Settings, PanelLeftClose, PanelLeftOpen, ClipboardCheck } from "lucide-react";
+import { isAdminRole } from "@/lib/roles";
 import { signOut, useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -22,12 +23,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isDesktopCollapsed, setIsDesktopCollapsed] = useState(false);
 
-    const navItems = [
-        { name: "Overview", href: "/admin", icon: <Home className="w-5 h-5" /> },
-        { name: "Users", href: "/admin/users", icon: <Users className="w-5 h-5" /> },
-        { name: "Problems", href: "/admin/problems", icon: <BookOpen className="w-5 h-5" /> },
-        { name: "Notices", href: "/admin/notices", icon: <Megaphone className="w-5 h-5" /> },
+    // Admins see every page; reviewers see only Reviews (src/lib/roles.ts, enforced again in middleware and APIs).
+    const isAdmin = isAdminRole(session?.user?.role);
+    const allNavItems = [
+        { name: "Overview", href: "/admin", icon: <Home className="w-5 h-5" />, adminOnly: true },
+        { name: "Users", href: "/admin/users", icon: <Users className="w-5 h-5" />, adminOnly: true },
+        { name: "Problems", href: "/admin/problems", icon: <BookOpen className="w-5 h-5" />, adminOnly: true },
+        { name: "Reviews", href: "/admin/reviews", icon: <ClipboardCheck className="w-5 h-5" />, adminOnly: false },
+        { name: "Notices", href: "/admin/notices", icon: <Megaphone className="w-5 h-5" />, adminOnly: true },
     ];
+    const navItems = allNavItems.filter(item => isAdmin || !item.adminOnly);
+    const isActiveItem = (href: string) => href === "/admin" ? pathname === "/admin" : pathname === href || pathname.startsWith(href + "/");
 
     return (
         <div className="flex h-screen bg-slate-50 overflow-hidden font-sans">
@@ -56,7 +62,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
                 <nav className="flex-1 px-3 py-8 space-y-2 overflow-y-auto">
                     {navItems.map((item) => {
-                        const isActive = pathname === item.href;
+                        const isActive = isActiveItem(item.href);
                         return (
                             <Link
                                 key={item.name}
@@ -120,7 +126,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                 key={item.name}
                                 href={item.href}
                                 onClick={() => setIsMobileMenuOpen(false)}
-                                className={`flex items-center gap-3 px-4 py-4 rounded-lg ${pathname === item.href
+                                className={`flex items-center gap-3 px-4 py-4 rounded-lg ${isActiveItem(item.href)
                                     ? "bg-slate-900 text-white"
                                     : "text-slate-300 hover:bg-slate-800"
                                     }`}
@@ -160,7 +166,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 {/* Top Header Bar for Content Area */}
                 <header className="hidden md:flex h-16 bg-white border-b border-slate-200 items-center justify-between px-8 shadow-sm z-10">
                     <h1 className="text-xl font-bold tracking-tight text-slate-800 capitalize">
-                        {navItems.find(item => item.href === pathname)?.name || "Dashboard"}
+                        {navItems.find(item => isActiveItem(item.href))?.name || "Dashboard"}
                     </h1>
                     <DropdownMenu>
                         <DropdownMenuTrigger className="flex items-center gap-4 hover:bg-slate-50 p-2 rounded-lg transition-colors outline-none cursor-pointer">
