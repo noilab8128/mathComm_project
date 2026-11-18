@@ -3,7 +3,6 @@
 import React from "react";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -121,7 +120,8 @@ export function ProblemList({
         <div className="w-full">
             <Card className="bg-white rounded-lg shadow-sm border border-slate-200">
                 <CardContent className="p-0">
-                    <ScrollArea className="h-[600px]">
+                    {/* No fixed-height inner scroll box: the list grows with the page, so there is only one scrollbar. */}
+                    <div>
                         <div className={viewMode === "learning-path" ? "p-6" : "space-y-2 p-4"}>
                             {topLevel.length === 0 ? (
                                 <div className="text-center text-slate-500 py-8">
@@ -344,17 +344,18 @@ export function ProblemList({
                                                                     <span className="text-slate-400">-</span>
                                                                 )}
                                                             </TableCell>
-                                                            <TableCell className="text-slate-500 text-xs">
+                                                            <TableCell className="text-slate-500 text-xs whitespace-nowrap">
                                                                 {new Date(problem.createdAt).toLocaleDateString()}
                                                             </TableCell>
                                                             <TableCell className="text-right">
+                                                                <div className="flex items-center justify-end gap-1 whitespace-nowrap">
                                                                 {/* Approval goes through the review workflow (reviews, history, required approvals). */}
                                                                 {(problem.isHidden || (problem.isGenerated && !problem.isReviewed)) && (
                                                                     <Button
                                                                         asChild
                                                                         variant="ghost"
                                                                         size="sm"
-                                                                        className="text-green-600 hover:text-green-800 hover:bg-green-50 mr-2"
+                                                                        className="text-green-600 hover:text-green-800 hover:bg-green-50"
                                                                     >
                                                                         <Link href={`/admin/reviews/${problem.id}`} onClick={(e) => e.stopPropagation()}>
                                                                             Review
@@ -372,6 +373,7 @@ export function ProblemList({
                                                                 >
                                                                     Delete
                                                                 </Button>
+                                                                </div>
                                                             </TableCell>
                                                         </TableRow>
                                                     ];
@@ -411,7 +413,7 @@ export function ProblemList({
                                 </div>
                             )}
                         </div>
-                    </ScrollArea>
+                    </div>
 
                     {/* Pagination Controls */}
                     <div className="flex items-center justify-between p-4 border-t bg-slate-50">
