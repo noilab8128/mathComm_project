@@ -49,6 +49,18 @@ function matches(row: ReviewRow, key: FilterKey): boolean {
     }
 }
 
+// Bulk approval takes only problems whose automatic check passed on their current content, that wait for review,
+// and that I have not approved yet (the server checks the same: /api/admin/reviews/bulk).
+function bulkEligible(row: ReviewRow): boolean {
+    return row.autoStatus === "passed" && !row.stale
+        && (row.reviewStatus === "pending" || row.reviewStatus === "needs_recheck")
+        && row.myDecision !== "approve";
+}
+
+const BULK_BATCH = 10; // problems per request (hosting time limit)
+
+interface BulkOutcome { id: string; title: string | null; outcome: "approved" | "skipped" | "error"; reason?: string }
+
 function sortKey(row: ReviewRow) {
     const auto = { failed: 0, warning: 1, unverified: 2, passed: 3 }[row.autoStatus] ?? 4;
     return `${auto}-${row.ladder ?? "~"}-${row.part === "Challenge" ? "~" : row.part ?? ""}-${row.title}`;
@@ -62,6 +74,12 @@ export default function ReviewListPage() {
     const [onlyMine, setOnlyMine] = useState(false);
     const [source, setSource] = useState("all");
     const [query, setQuery] = useState("");
+    const [selected, setSelected] = useState<Set<string>>(new Set());
+    const [confirming, setConfirming] = useState(false);
+    const [bulkComment, setBulkComment] = useState("");
+    const [bulkRead, setBulkRead] = useState(false);
+    const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+    const [bulkResults, setBulkResults] = useState<BulkOutcome[] | null>(null);
 
     const load = async () => {
         setLoading(true);
@@ -91,6 +109,49 @@ export default function ReviewListPage() {
             .filter((r) => !q || r.title.toLowerCase().includes(q))
             .sort((a, b) => sortKey(a).localeCompare(sortKey(b)));
     }, [rows, filter, onlyMine, source, query]);
+
+    // A changed filter or reload starts a new selection, so nothing hidden from view stays selected.
+    useEffect(() => { setSelected(new Set()); setConfirming(false); }, [rows, filter, onlyMine, source, query]);
+
+    const eligibleShown = useMemo(() => shown.filter(bulkEligible), [shown]);
+    const allEligibleSelected = eligibleShown.length > 0 && eligibleShown.every((r) => selected.has(r.id));
+    const toggle = (id: string) => setSelected((prev) => {
+        const next = new Set(prev);
+        if (next.has(id)) next.delete(id); else next.add(id);
+        return next;
+    });
+    const toggleAll = () => setSelected(allEligibleSelected ? new Set() : new Set(eligibleShown.map((r) => r.id)));
+
+    const runBulk = async () => {
+        const ids = [...selected];
+        const results: BulkOutcome[] = [];
+        setProgress({ done: 0, total: ids.length });
+        setBulkResults(null);
+        for (let i = 0; i < ids.length; i += BULK_BATCH) {
+            const batch = ids.slice(i, i + BULK_BATCH);
+            try {
+                const res = await fetch("/api/admin/reviews/bulk", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ problemIds: batch, comment: bulkComment }),
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+                results.push(...(data.results as BulkOutcome[]));
+            } catch (e) {
+                const reason = e instanceof Error ? e.message : "Request failed";
+                const titleOf = (id: string) => rows.find((r) => r.id === id)?.title ?? null;
+                results.push(...batch.map((id) => ({ id, title: titleOf(id), outcome: "error" as const, reason })));
+            }
+            setProgress({ done: Math.min(i + BULK_BATCH, ids.length), total: ids.length });
+        }
+        setBulkResults(results);
+        setProgress(null);
+        setConfirming(false);
+        setBulkComment("");
+        setBulkRead(false);
+        await load();
+    };
 
     return (
         <div className="space-y-6">
@@ -143,10 +204,80 @@ export default function ReviewListPage() {
 
             {error && <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
 
+            {bulkResults && (() => {
+                const approved = bulkResults.filter((r) => r.outcome === "approved").length;
+                const others = bulkResults.filter((r) => r.outcome !== "approved");
+                return (
+                    <div className={`rounded-md border p-3 text-sm ${others.length ? "border-amber-200 bg-amber-50 text-amber-900" : "border-emerald-200 bg-emerald-50 text-emerald-900"}`}>
+                        <div className="flex items-center justify-between gap-2">
+                            <span>Bulk approval: {approved} approved{others.length ? `, ${others.length} not approved` : ""}.</span>
+                            <button onClick={() => setBulkResults(null)} className="text-xs underline">Close</button>
+                        </div>
+                        {others.length > 0 && (
+                            <ul className="mt-2 list-disc pl-5 space-y-0.5">
+                                {others.map((r) => <li key={r.id}>{r.title || r.id}: {r.reason}</li>)}
+                            </ul>
+                        )}
+                    </div>
+                );
+            })()}
+
+            {selected.size > 0 && (
+                <div className="rounded-md border border-slate-300 bg-slate-50 p-3 space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="text-sm font-medium text-slate-900">{selected.size} selected</span>
+                        <div className="flex gap-2">
+                            <button onClick={() => setSelected(new Set())} disabled={!!progress}
+                                className="px-3 py-1.5 rounded-md border border-slate-300 bg-white text-sm text-slate-700 hover:bg-slate-100 disabled:opacity-50">
+                                Clear
+                            </button>
+                            {!confirming && (
+                                <button onClick={() => setConfirming(true)}
+                                    className="px-3 py-1.5 rounded-md bg-emerald-600 text-sm text-white hover:bg-emerald-700">
+                                    Approve selected
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                    {confirming && (
+                        <div className="space-y-2 border-t border-slate-200 pt-3">
+                            <p className="text-sm text-slate-700">
+                                Each selected problem gets its own approval, recorded as &ldquo;Bulk approval from the review list&rdquo;
+                                and kept in its history. Approved problems are shown to students. Only problems whose automatic
+                                check passed can be selected.
+                            </p>
+                            <textarea id="bulk-comment" value={bulkComment} onChange={(e) => setBulkComment(e.target.value)}
+                                placeholder="Comment (optional), added to every approval" rows={2} maxLength={1000}
+                                className="w-full rounded-md border border-slate-200 bg-white p-2 text-sm" />
+                            <label className="flex items-center gap-2 text-sm text-slate-800">
+                                <input id="bulk-read" type="checkbox" checked={bulkRead} onChange={(e) => setBulkRead(e.target.checked)} />
+                                I have read these {selected.size} problems and their solutions.
+                            </label>
+                            <div className="flex items-center gap-2">
+                                <button onClick={runBulk} disabled={!bulkRead || !!progress}
+                                    className="px-3 py-1.5 rounded-md bg-emerald-600 text-sm text-white hover:bg-emerald-700 disabled:opacity-50">
+                                    {progress ? `Approving ${progress.done}/${progress.total}…` : `Approve ${selected.size} problems`}
+                                </button>
+                                {!progress && (
+                                    <button onClick={() => setConfirming(false)} className="px-3 py-1.5 text-sm text-slate-600 hover:text-slate-900">
+                                        Cancel
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+
             <div className="rounded-lg border border-slate-200 bg-white overflow-x-auto">
                 <Table>
                     <TableHeader>
                         <TableRow>
+                            <TableHead className="w-10">
+                                <input type="checkbox" aria-label="Select every problem that can be bulk approved"
+                                    title="Select every problem shown that can be bulk approved (automatic check passed)"
+                                    checked={allEligibleSelected} disabled={eligibleShown.length === 0 || !!progress} onChange={toggleAll} />
+                            </TableHead>
                             <TableHead>Problem</TableHead>
                             <TableHead>Label</TableHead>
                             <TableHead>Automatic check</TableHead>
@@ -156,13 +287,18 @@ export default function ReviewListPage() {
                     </TableHeader>
                     <TableBody>
                         {loading ? (
-                            <TableRow><TableCell colSpan={5} className="py-10 text-center text-slate-500">
+                            <TableRow><TableCell colSpan={6} className="py-10 text-center text-slate-500">
                                 <Loader2 className="inline w-5 h-5 animate-spin mr-2" /> Loading…
                             </TableCell></TableRow>
                         ) : shown.length === 0 ? (
-                            <TableRow><TableCell colSpan={5} className="py-10 text-center text-slate-500">No problems here.</TableCell></TableRow>
+                            <TableRow><TableCell colSpan={6} className="py-10 text-center text-slate-500">No problems here.</TableCell></TableRow>
                         ) : shown.map((r) => (
-                            <TableRow key={r.id}>
+                            <TableRow key={r.id} className={selected.has(r.id) ? "bg-emerald-50/50" : undefined}>
+                                <TableCell className="w-10">
+                                    <input type="checkbox" aria-label={`Select ${r.title}`}
+                                        title={bulkEligible(r) ? "Select for bulk approval" : "Review this problem on its own page (automatic check not passed, already reviewed, or changed since the check)"}
+                                        checked={selected.has(r.id)} disabled={!bulkEligible(r) || !!progress} onChange={() => toggle(r.id)} />
+                                </TableCell>
                                 <TableCell className="max-w-md">
                                     <Link href={`/admin/reviews/${r.id}`} className="font-medium text-slate-900 hover:underline">{r.title}</Link>
                                     <div className="text-xs text-slate-500 mt-0.5">{r.source || "No source"}{r.isReviewed ? " · visible to students as approved" : ""}</div>
