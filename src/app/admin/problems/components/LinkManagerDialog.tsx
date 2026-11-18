@@ -45,8 +45,12 @@ export function LinkManagerDialog({
                             <div>
                                 <h3 className="font-semibold text-sm text-slate-700 mb-3">나가는 링크 (이 문제에서 →)</h3>
                                 {(() => {
+                                    // Links are rows of problem_hierarchies (parent -> child). Outgoing: this problem's children.
                                     const currentProblem = problems.find(p => p.id === problemId);
-                                    const outgoingLinks = currentProblem?.linkedProblems || [];
+                                    const outgoingLinks = [...new Set([
+                                        ...(currentProblem?.linkedProblems || []),
+                                        ...problems.filter(p => p.id !== problemId && p.parentProblemId === problemId).map(p => p.id),
+                                    ])];
 
                                     if (outgoingLinks.length === 0) {
                                         return <p className="text-sm text-slate-500 italic">링크가 없습니다</p>;
@@ -82,9 +86,12 @@ export function LinkManagerDialog({
                             <div>
                                 <h3 className="font-semibold text-sm text-slate-700 mb-3">들어오는 링크 (→ 이 문제로)</h3>
                                 {(() => {
+                                    // Incoming: this problem's parent. (The old filter listed the children here and
+                                    // deleted the link the wrong way round, so nothing was removed in the database.)
+                                    const currentProblem = problems.find(p => p.id === problemId);
                                     const incomingProblems = problems.filter(p =>
-                                        p.linkedProblems?.includes(problemId) ||
-                                        p.id !== problemId && p.parentProblemId === problemId
+                                        p.id !== problemId &&
+                                        (p.id === currentProblem?.parentProblemId || p.linkedProblems?.includes(problemId))
                                     );
 
                                     if (incomingProblems.length === 0) {

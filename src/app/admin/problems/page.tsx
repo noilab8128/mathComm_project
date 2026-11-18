@@ -819,8 +819,25 @@ export default function ProblemManagementPage() {
     const sourceId = e.dataTransfer.getData("text/plain");
 
     if (sourceId && sourceId !== targetProblemId) {
-      setPendingLink({ parentId: sourceId, childId: targetProblemId });
-      setShowLinkDialog(true);
+      // The dropped-on problem becomes the child. Refuse a link that would make a loop (the child is already
+      // above the parent) or that already exists; the server checks the same in the database.
+      let cur = problems.find(p => p.id === sourceId);
+      const seen = new Set<string>();
+      let makesLoop = false;
+      while (cur?.parentProblemId && !seen.has(cur.id)) {
+        if (cur.parentProblemId === targetProblemId) { makesLoop = true; break; }
+        seen.add(cur.id);
+        cur = problems.find(p => p.id === cur!.parentProblemId);
+      }
+      const target = problems.find(p => p.id === targetProblemId);
+      if (makesLoop) {
+        showToast("Not linked: the dropped-on problem is already above this one, so the link would make a loop.", "error");
+      } else if (target?.parentProblemId === sourceId) {
+        showToast("These problems are already linked.", "error");
+      } else {
+        setPendingLink({ parentId: sourceId, childId: targetProblemId });
+        setShowLinkDialog(true);
+      }
     }
     setDraggedProblemId(null);
     setDropTargetId(null);
@@ -870,33 +887,26 @@ export default function ProblemManagementPage() {
   };
 
   const handleDeleteLink = async (sourceId: string, targetId: string) => {
+    // sourceId = parent, targetId = child (problem_hierarchies). Delete in the database first.
     try {
-      // Update local state
-      setProblems(prev => prev.map(p => {
-        if (p.id === sourceId) {
-          return {
-            ...p,
-            linkedProblems: p.linkedProblems?.filter(id => id !== targetId)
-          };
-        }
-        if (p.id === targetId && p.parentProblemId === sourceId) {
-          return {
-            ...p,
-            parentProblemId: undefined
-          };
-        }
-        return p;
-      }));
-
-      // Delete from DB (Hierarchy)
       if (isDbConnected) {
         await problemHierarchiesAPI.delete(sourceId, targetId);
       }
 
+      setProblems(prev => prev.map(p => {
+        if (p.id === sourceId) {
+          return { ...p, linkedProblems: p.linkedProblems?.filter(id => id !== targetId) };
+        }
+        if (p.id === targetId && p.parentProblemId === sourceId) {
+          return { ...p, parentProblemId: undefined };
+        }
+        return p;
+      }));
+
       showToast("Link removed", "success");
     } catch (error: any) {
       console.error('Failed to delete link:', error);
-      showToast("Failed to delete link", "error");
+      showToast(`Failed to delete link: ${error?.message || "unknown error"}`, "error");
     }
   };
 

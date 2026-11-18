@@ -115,6 +115,35 @@ export async function createHierarchyLink(link: {
     sequenceOrder: number;
     depth: number;
 }) {
+    if (link.parentProblemId === link.childProblemId) throw new BadRequest("A problem cannot be linked to itself");
+
+    // Refuse a link that already exists, or one that would make a loop: walk up from the new parent and
+    // stop if the new child is already above it.
+    const { data: rows, error: readError } = await supabaseAdmin
+        .from("problem_hierarchies")
+        .select("parent_problem_id, child_problem_id");
+    if (readError) throw readError;
+    const parentsOf = new Map<string, string[]>();
+    for (const r of rows || []) {
+        const list = parentsOf.get(r.child_problem_id as string) || [];
+        list.push(r.parent_problem_id as string);
+        parentsOf.set(r.child_problem_id as string, list);
+    }
+    if ((parentsOf.get(link.childProblemId) || []).includes(link.parentProblemId)) {
+        throw new BadRequest("These problems are already linked");
+    }
+    const seen = new Set<string>();
+    const stack = [link.parentProblemId];
+    while (stack.length > 0) {
+        const id = stack.pop() as string;
+        if (id === link.childProblemId) {
+            throw new BadRequest("This link would make a loop: the child problem is already above the parent");
+        }
+        if (seen.has(id)) continue;
+        seen.add(id);
+        stack.push(...(parentsOf.get(id) || []));
+    }
+
     const { data, error } = await supabaseAdmin
         .from("problem_hierarchies")
         .insert([{

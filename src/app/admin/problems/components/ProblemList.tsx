@@ -92,6 +92,25 @@ export function ProblemList({
     onSortChange,
 }: ProblemListProps) {
 
+    // Top-level rows. A problem is shown at the top when it has no parent, when its parent is not loaded
+    // (another page or filtered out), or when its parent chain loops back to it (bad links: it must stay
+    // visible so the link can be removed). Before this, such problems disappeared from the list.
+    const byId = new Map(problems.map(p => [p.id, p]));
+    const inLoop = (problem: Problem) => {
+        const seen = new Set<string>();
+        let cur = problem;
+        while (cur.parentProblemId && byId.has(cur.parentProblemId)) {
+            if (cur.parentProblemId === problem.id) return true;
+            if (seen.has(cur.id)) return false; // a loop above this problem, not through it
+            seen.add(cur.id);
+            cur = byId.get(cur.parentProblemId);
+        }
+        return false;
+    };
+    const isTopLevel = (problem: Problem) =>
+        !problem.parentProblemId || !byId.has(problem.parentProblemId) || inLoop(problem);
+    const topLevel = problems.filter(isTopLevel);
+
     const getDifficultyColor = (diff: number) => {
         if (diff <= 3) return "bg-green-100 text-green-800 border-green-200";
         if (diff <= 6) return "bg-yellow-100 text-yellow-800 border-yellow-200";
@@ -104,7 +123,7 @@ export function ProblemList({
                 <CardContent className="p-0">
                     <ScrollArea className="h-[600px]">
                         <div className={viewMode === "learning-path" ? "p-6" : "space-y-2 p-4"}>
-                            {problems.filter(p => !p.parentProblemId).length === 0 ? (
+                            {topLevel.length === 0 ? (
                                 <div className="text-center text-slate-500 py-8">
                                     <p className="text-sm">No problems found</p>
                                 </div>
@@ -191,8 +210,11 @@ export function ProblemList({
                                         </TableHeader>
                                         <TableBody>
                                             {(() => {
-                                                const renderProblemRow = (problem: Problem, depth: number = 0): React.ReactNode[] => {
-                                                    const childProblems = problems.filter(p => p.parentProblemId === problem.id);
+                                                const renderProblemRow = (problem: Problem, depth: number = 0, path: Set<string> = new Set()): React.ReactNode[] => {
+                                                    // `path` holds the rows above this one, so looped links cannot recurse forever.
+                                                    const childPath = new Set(path).add(problem.id);
+                                                    const childProblems = problems.filter(p =>
+                                                        p.parentProblemId === problem.id && !childPath.has(p.id) && !isTopLevel(p));
 
                                                     // Group by stage/solution
                                                     const groups = new Map<string, Problem[]>();
@@ -271,6 +293,12 @@ export function ProblemList({
                                                                     <span className={depth > 0 ? "text-slate-600" : "text-slate-900"}>
                                                                         {problem.title}
                                                                     </span>
+
+                                                                    {inLoop(problem) && (
+                                                                        <Badge variant="secondary" className="text-xs bg-red-100 text-red-700" title="This problem's parent links form a loop. Remove one link in Manage Links.">
+                                                                            Link loop
+                                                                        </Badge>
+                                                                    )}
 
                                                                     {problem.isGenerated && (
                                                                         <Badge variant="secondary" className={`text-xs ${problem.isReviewed ? "bg-green-100 text-green-700" : "bg-orange-100 text-orange-700"}`}>
@@ -361,7 +389,7 @@ export function ProblemList({
                                                             }
 
                                                             groupProblems.forEach(child => {
-                                                                rows.push(...renderProblemRow(child, depth + 1));
+                                                                rows.push(...renderProblemRow(child, depth + 1, childPath));
                                                             });
                                                         });
                                                     }
@@ -370,9 +398,7 @@ export function ProblemList({
                                                 };
 
                                                 // Only render root problems at the top level
-                                                return problems
-                                                    .filter(p => !p.parentProblemId)
-                                                    .map(root => renderProblemRow(root));
+                                                return topLevel.map(root => renderProblemRow(root));
                                             })()}
                                         </TableBody>
                                     </Table>

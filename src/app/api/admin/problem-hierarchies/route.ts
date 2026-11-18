@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth';
-import { createHierarchyLink, deleteHierarchyLink, errorMessage } from '@/lib/adminProblemWrites';
+import { BadRequest, createHierarchyLink, deleteHierarchyLink, errorMessage } from '@/lib/adminProblemWrites';
 
 // POST   /api/admin/problem-hierarchies  { parentProblemId, childProblemId, parentSolutionId, stageName,
 //                                          sequenceOrder, depth } -> { data: link }   (problemHierarchiesAPI.create)
@@ -32,6 +32,7 @@ export async function POST(req: Request) {
         });
         return NextResponse.json({ data }, { status: 201 });
     } catch (e) {
+        if (e instanceof BadRequest) return NextResponse.json({ error: e.message }, { status: 400 });
         console.error('Admin create hierarchy link failed:', e);
         return NextResponse.json({ error: errorMessage(e) }, { status: 500 });
     }
