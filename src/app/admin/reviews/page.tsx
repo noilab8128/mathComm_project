@@ -59,6 +59,8 @@ function bulkEligible(row: ReviewRow): boolean {
 
 const BULK_BATCH = 10; // problems per request (hosting time limit)
 
+const TOOL_BUTTON = "inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-slate-300 bg-white text-sm text-slate-700 hover:bg-slate-100";
+
 interface CheckState {
     configured: boolean;
     run: { status: string; conclusion: string | null; createdAt: string; url: string; event: string } | null;
@@ -117,26 +119,23 @@ function AutoCheck({ onFinished }: { onFinished: () => void }) {
 
     const running = waiting || (state?.run && state.run.status !== "completed");
     return (
-        <div className="flex flex-col items-end gap-1 text-sm">
-            <div className="flex items-center gap-3">
-                <span className="text-slate-500">Last automatic check: {when(state?.lastCheckedAt ?? null)}</span>
+        <>
+            <span className="text-sm text-slate-500">Last automatic check: {when(state?.lastCheckedAt ?? null)}</span>
                 {state?.configured ? (
-                    <button onClick={start} disabled={!!running}
-                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-slate-300 bg-white text-slate-700 hover:bg-slate-100 disabled:opacity-60">
+                    <button onClick={start} disabled={!!running} className={`${TOOL_BUTTON} disabled:opacity-60`}>
                         {running ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
                         {running ? "Checking…" : "Run automatic check"}
                     </button>
                 ) : state ? (
                     <span className="text-xs text-slate-400" title="Set GITHUB_DISPATCH_TOKEN on the server to start checks from here">Runs every night</span>
                 ) : null}
-            </div>
             {message && (
-                <span className="text-xs text-slate-600">
+                <span className="order-last basis-full text-xs text-slate-600">
                     {message}{" "}
                     {state?.run?.url && <a href={state.run.url} target="_blank" rel="noreferrer" className="underline">GitHub run</a>}
                 </span>
             )}
-        </div>
+        </>
     );
 }
 
@@ -236,7 +235,7 @@ export default function ReviewListPage() {
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-wrap items-end justify-between gap-4">
+            <div className="space-y-3">
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight text-slate-900">Problem reviews</h1>
                     <p className="text-sm text-slate-500 mt-1">
@@ -244,9 +243,9 @@ export default function ReviewListPage() {
                         on its current content. Every review is kept.
                     </p>
                 </div>
-                <div className="flex flex-col items-end gap-2">
+                <div className="flex flex-wrap items-center gap-3">
                     <AutoCheck onFinished={load} />
-                    <button onClick={load} className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900">
+                    <button onClick={load} className={TOOL_BUTTON}>
                         <RefreshCw className="w-4 h-4" /> Refresh list
                     </button>
                 </div>
