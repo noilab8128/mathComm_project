@@ -295,6 +295,12 @@ console.anthropic.com에서 API 키를 만들고 **월 사용 한도**를 설정
 - 공개 저장소이므로 로그와 요약에는 개수만 남김. 보고서 파일은 올리지 않음
 - 설정: 저장소 Secrets `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, Workflow permissions 읽기 전용, 버튼용 `GITHUB_DISPATCH_TOKEN`(Netlify 환경 변수). 자세한 순서는 `scripts/verify/README.md`
 
+**AI 검사 (7단계, 2026-11-19)**
+- 계획의 "Claude" 대신 **OpenAI API**로 진행하기로 결정 (기존 결제 사용, 문제를 만든 모델과 다른 회사 모델로 교차 확인). 학생 채점 키와 분리한 OpenAI Project의 키 `OPENAI_API_KEY_VERIFY`
+- L2 독립 재계산 + L4 애매함을 한 요청으로 (`scripts/verify/ai_check.py`, `.github/workflows/verify-problems-ai.yml`). 결과는 **경고만** (숨기지 않음), 정확도를 본 뒤 조정
+- 시험: 10문제를 `gpt-6.2-sol`과 `gpt-6.2-astra`로 비교 → 모델 결정 → 243개 1회 → 매일 밤 바뀐 문제만
+- 비용 상한: 1회 최대 30문제·추정 $3, OpenAI Project 월 예산
+
 **일괄 승인 (2026-11-19)**
 - 리뷰 목록에서 체크박스로 여러 문제를 골라 **Approve selected** → "이 문제들과 풀이를 읽었음" 확인 → 승인
 - 고를 수 있는 문제: 현재 내용으로 자동 검사 **통과(passed)**, 리뷰 대기(pending / needs_recheck), 내가 아직 승인하지 않은 문제. 경고·실패·수정 요청·반려는 각 문제 화면에서 리뷰

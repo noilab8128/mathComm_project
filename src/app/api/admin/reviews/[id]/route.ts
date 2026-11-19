@@ -51,6 +51,9 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
             issues: (c.details?.issues || []) as { rule: string; severity: string; message: string }[],
             checkedAt: c.created_at,
             forCurrentContent: c.content_hash === hash,
+            // AI layers (scripts/verify/ai_check.py): which model, and what it answered
+            model: (c.model as string | null) ?? null,
+            ai: (c.details?.ai ?? null) as { answer?: string; confidence?: string; method?: string } | null,
         }));
 
         const names = await reviewerNames((reviewsRes.data || []).map((r) => r.reviewer_id));

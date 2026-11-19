@@ -50,6 +50,20 @@ python3 scripts/verify/report.py --no-l1    # DB 검사만 (markdown 대조와 �
 3. (리뷰 화면 버튼용) 저장소 주인 계정으로 fine-grained token 만들기: 이 저장소만, **Actions: Read and write**.
    Netlify 환경 변수 `GITHUB_DISPATCH_TOKEN`에 넣고 다시 배포 (로컬 테스트는 `.env.local`에도). 토큰이 없으면 버튼 대신 "Runs every night"만 보입니다.
 
+## 7단계: AI 검사 (OpenAI, `ai_check.py`)
+
+| 검사 | 내용 | 결과 |
+|---|---|---|
+| L2 독립 재계산 | 모델이 **문제 본문만** 받아(정답은 주지 않음) Code Interpreter로 코드를 짜서 풀고, 우리가 그 답을 DB 정답과 비교 | 다르면 **경고** (`AI_ANSWER_DIFF`) |
+| L4 애매함 | 같은 요청에서 다르게 읽을 수 있는 경우와 그때의 답 | 답이 달라지는 "likely" 해석이 있으면 **경고** |
+
+- **경고만 합니다.** 문제를 숨기지 않습니다. 리뷰 화면에 AI 답, 방법, 다른 해석이 보이고, 경고가 있는 문제는 일괄 승인 대상에서 빠집니다.
+- 내용이 바뀌면 AI 결과는 사라지고(`report.py --save`가 지움), 다음 밤에 다시 검사합니다.
+- 실행: `.github/workflows/verify-problems-ai.yml` (매일 03:40 KST, 새로 들어오거나 바뀐 문제만, 1회 최대 30개·$3)
+  - 시험: Actions → **Verify problems (AI)** → Run workflow → `sample` 10. 같은 문제로 다른 모델을 비교하려면 `recheck` 체크
+- 키: GitHub Secret `OPENAI_API_KEY_VERIFY` (학생 채점 키와 분리한 OpenAI Project, 월 예산 설정). 기본 모델은 `gpt-6.2-sol`, 저장소 변수 `AI_CHECK_MODEL`로 바꿀 수 있음
+- 로그에는 개수만 나오고, 답이 들어 있는 결과 파일은 실행 서버에만 남습니다.
+
 ## 결과 파일
 
 | 파일 | 내용 |

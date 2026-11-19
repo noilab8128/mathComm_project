@@ -1,0 +1,94 @@
+# AI problem check (problem verification plan v2, stage 7): scripts/verify/ai_check.py with the OpenAI API.
+# L2: the model solves the problem on its own (Code Interpreter) and we compare its answer with the stored one.
+# L4: other plausible readings of the problem. Results are warnings on /admin/reviews; nothing is hidden by them.
+#
+# When: every night after the regular check (only new or changed problems), or by hand:
+#   Actions -> "Verify problems (AI)" -> Run workflow
+#     pilot:   sample = 10 (and recheck to compare another model on the same problems)
+#     exact:   ids = id1,id2
+# Cost guards: at most `limit` problems and `max_cost` USD (estimated) per run, plus the monthly budget of the
+# separate OpenAI project whose key is in OPENAI_API_KEY_VERIFY.
+# The repository is public, so logs are public: ai_check.py prints counts only; answers stay on the runner.
+# No pull_request trigger: workflows started from forks never get these secrets.
+
+name: Verify problems (AI)
+
+on:
+  schedule:
+    - cron: "40 18 * * *"   # 18:40 UTC = 03:40 KST, after "Verify problems"
+  workflow_dispatch:
+    inputs:
+      model:
+        description: "OpenAI model"
+        type: choice
+        options: [gpt-6.2-sol, gpt-6.2-astra]
+        default: gpt-6.2-sol
+      sample:
+        description: "Pilot: number of problems spread over all ladders (empty = new or changed problems)"
+        required: false
+        default: ""
+      ids:
+        description: "Exact problem ids, comma-separated (optional)"
+        required: false
+        default: ""
+      recheck:
+        description: "Check again problems that already have an AI result"
+        type: boolean
+        default: false
+      limit:
+        description: "At most this many problems"
+        default: "30"
+      max_cost:
+        description: "Stop when the estimated cost passes this (USD)"
+        default: "3"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-problems
+  cancel-in-progress: false
+
+jobs:
+  ai-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install the OpenAI SDK
+        run: python -m pip install --quiet openai
+
+      - name: Check with AI and save results
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          OPENAI_API_KEY_VERIFY: ${{ secrets.OPENAI_API_KEY_VERIFY }}
+          MODEL: ${{ github.event.inputs.model || vars.AI_CHECK_MODEL || 'gpt-6.2-sol' }}
+          SAMPLE: ${{ github.event.inputs.sample }}
+          IDS: ${{ github.event.inputs.ids }}
+          RECHECK: ${{ github.event.inputs.recheck }}
+          LIMIT: ${{ github.event.inputs.limit || '30' }}
+          MAX_COST: ${{ github.event.inputs.max_cost || '3' }}
+        run: |
+          if [ -z "$OPENAI_API_KEY_VERIFY" ]; then
+            echo "::error::Repository secret OPENAI_API_KEY_VERIFY is not set."
+            exit 1
+          fi
+          set -o pipefail
+          args=(--save --model "$MODEL" --limit "$LIMIT" --max-cost "$MAX_COST" --out "$RUNNER_TEMP/verify-reports")
+          [ -n "$SAMPLE" ] && args+=(--sample "$SAMPLE")
+          [ -n "$IDS" ] && args+=(--ids "$IDS")
+          [ "$RECHECK" = "true" ] && args+=(--recheck)
+          python -u scripts/verify/ai_check.py "${args[@]}" | tee "$RUNNER_TEMP/console.txt"
+          {
+            echo "### AI problem check ($MODEL)"
+            echo
+            echo '```'
+            cat "$RUNNER_TEMP/console.txt"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

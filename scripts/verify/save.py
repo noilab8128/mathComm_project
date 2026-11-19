@@ -19,6 +19,8 @@ from backup_supabase import SSL_CONTEXT
 STATUS_TABLE = "problem_verification_status"
 HISTORY_TABLE = "problem_verifications"
 L1_RULES = {"MD_ANSWER_DIFF", "NOT_IN_MD", "VERIFY_SCRIPT_FAIL"}
+OWN_LAYERS = {"L0", "L1"}  # written here; other layers (L2/L4: scripts/verify/ai_check.py) are kept while the hash holds
+RANK = {"pass": 0, "warn": 1, "fail": 2}
 AUTO_STATUS = {"pass": "passed", "warn": "warning", "fail": "failed"}
 CHUNK = 500
 
@@ -60,6 +62,10 @@ class Writer:
             self._send("POST", f"/{table}?on_conflict={on_conflict}", rows[i:i + CHUNK],
                        "resolution=merge-duplicates,return=minimal")
 
+    def patch(self, table, query, body):
+        """PATCH /table?query (query: PostgREST filters such as problem_id=eq.<id>)."""
+        self._send("PATCH", f"/{table}?{query}", body, "return=minimal")
+
     def insert(self, table, rows):
         for i in range(0, len(rows), CHUNK):
             self._send("POST", f"/{table}", rows[i:i + CHUNK], "return=minimal")
@@ -85,10 +91,18 @@ def save(rest, writer, results, run_id, l1_ran):
         summary = {"L0": layer_status(l0)}
         if l1_ran and (r.get("source") or "").endswith("Ladders v2"):
             summary["L1"] = layer_status(l1)
-        base = {"problem_id": r["id"], "content_hash": r["content_hash"], "auto_status": AUTO_STATUS[r["status"]],
+        old = existing.get(r["id"])
+        overall = r["status"]
+        # AI layers checked the same content: keep their result, and let it count in the overall status.
+        if old is not None and old["content_hash"] == r["content_hash"]:
+            for layer, value in ((old.get("auto_summary") or {}).items()):
+                if layer not in OWN_LAYERS and value in RANK:
+                    summary[layer] = value
+                    if RANK[value] > RANK[overall]:
+                        overall = value
+        base = {"problem_id": r["id"], "content_hash": r["content_hash"], "auto_status": AUTO_STATUS[overall],
                 "auto_summary": summary, "last_checked_at": now, "updated_at": now}
 
-        old = existing.get(r["id"])
         if old is None:
             new_rows.append({**base, "review_status": "pending", "approvals": 0,
                              "required_approvals": required_approvals(r)})

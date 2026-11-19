@@ -13,7 +13,10 @@ import { AUTO_STYLE, REVIEW_STYLE, DECISION_LABEL, DECISION_STYLE } from "../sty
 // Problem reviews: one problem. Admins and reviewers. Plan: Archive/docs/PROBLEM_VERIFICATION_PLAN_v2.md §3 and §6.
 
 interface Issue { rule: string; severity: "fail" | "warn" | "info"; message: string }
-interface Layer { layer: string; status: "pass" | "warn" | "fail"; issues: Issue[]; checkedAt: string; forCurrentContent: boolean }
+interface Layer {
+    layer: string; status: "pass" | "warn" | "fail"; issues: Issue[]; checkedAt: string; forCurrentContent: boolean;
+    model?: string | null; ai?: { answer?: string; confidence?: string; method?: string } | null;
+}
 interface Review {
     id: string; reviewerId: string | null; reviewerName: string; decision: string; comment: string | null;
     autoStatus: string | null; createdAt: string; forCurrentContent: boolean;
@@ -274,7 +277,10 @@ export default function ReviewDetailPage() {
                 {layers.length === 0 ? <p className="text-sm text-slate-500">No results yet.</p> : layers.map((l) => (
                     <div key={l.layer} className="rounded-md border border-slate-200 p-3">
                         <div className="flex items-center justify-between gap-2">
-                            <div className="font-medium text-slate-800">{LAYER_NAMES[l.layer] ?? l.layer}</div>
+                            <div className="font-medium text-slate-800">
+                                {LAYER_NAMES[l.layer] ?? l.layer}
+                                {l.model && <span className="ml-2 text-xs font-normal text-slate-500">{l.model}</span>}
+                            </div>
                             <div className="flex items-center gap-2">
                                 {!l.forCurrentContent && <span className="text-xs text-violet-700">earlier content</span>}
                                 <Badge className={l.status === "fail" ? "bg-red-600 text-white" : l.status === "warn" ? "bg-amber-500 text-white" : "bg-emerald-600 text-white"}>
@@ -282,6 +288,12 @@ export default function ReviewDetailPage() {
                                 </Badge>
                             </div>
                         </div>
+                        {l.ai?.answer && (
+                            <p className="mt-2 text-sm text-slate-700">
+                                AI answer: <strong>{l.ai.answer}</strong>{l.ai.confidence ? ` (${l.ai.confidence} confidence)` : ""}
+                                {l.ai.method && <span className="block text-xs text-slate-500 mt-0.5">{l.ai.method}</span>}
+                            </p>
+                        )}
                         {l.issues.length > 0 && (
                             <ul className="mt-2 space-y-1">
                                 {l.issues.map((i, k) => (
