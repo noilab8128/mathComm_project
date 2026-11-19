@@ -29,6 +29,27 @@ python3 scripts/verify/report.py --no-l1    # DB 검사만 (markdown 대조와 �
 - 검사 기록은 내용이나 결과가 바뀐 경우에만 추가되므로, 여러 번 실행해도 쌓이지 않습니다.
 - 필요 승인 수: 지금은 모든 문제 1명 (2026-11-18 결정). 나중에 Challenge를 2명으로 바꿀 때는 `save.py`의 `CHALLENGE_APPROVALS = 2`와 `supabase/sql/problem_verification.sql` 7번 SQL로 기존 행을 고침
 
+## 6단계: 자동 실행 (GitHub Actions)
+
+`.github/workflows/verify-problems.yml`이 `report.py --save`를 GitHub에서 실행합니다.
+
+| 언제 | 방법 |
+|---|---|
+| 매일 밤 | 03:00 KST (18:00 UTC) 자동 |
+| 리뷰 화면에서 | `/admin/reviews` 오른쪽 위 **Run automatic check** (약 2분 뒤 목록이 새로 고쳐짐) |
+| GitHub에서 | Actions → **Verify problems** → **Run workflow** |
+
+- 저장소가 공개라서 실행 로그도 공개입니다. 로그와 요약에는 **개수만** 나오고, 정답이 들어 있는 보고서 파일은 실행 서버에만 남고 올리지 않습니다.
+- `pull_request`로는 실행되지 않습니다(fork에서 비밀 값을 쓸 수 없게).
+
+**처음 한 번 설정**
+1. GitHub 저장소 → Settings → Secrets and variables → Actions → **New repository secret**
+   - `SUPABASE_URL`: `.env.local`의 `NEXT_PUBLIC_SUPABASE_URL` 값
+   - `SUPABASE_SERVICE_ROLE_KEY`: `.env.local`의 같은 이름 값
+2. Settings → Actions → General → Workflow permissions: **Read repository contents and packages permissions**
+3. (리뷰 화면 버튼용) 저장소 주인 계정으로 fine-grained token 만들기: 이 저장소만, **Actions: Read and write**.
+   Netlify 환경 변수 `GITHUB_DISPATCH_TOKEN`에 넣고 다시 배포 (로컬 테스트는 `.env.local`에도). 토큰이 없으면 버튼 대신 "Runs every night"만 보입니다.
+
 ## 결과 파일
 
 | 파일 | 내용 |

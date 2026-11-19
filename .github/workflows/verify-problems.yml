@@ -1,0 +1,62 @@
+# Automatic problem check (problem verification plan v2, stage 6).
+# Runs scripts/verify/report.py --save against the live Supabase DB: L0 rules, L1 markdown comparison and the
+# verify scripts; results go to problem_verification_status / problem_verifications (shown on /admin/reviews).
+#
+# When: every night, by hand (Actions tab -> "Verify problems" -> Run workflow), or from the "Run automatic check"
+# button on /admin/reviews (src/app/api/admin/reviews/recheck/route.ts, workflow_dispatch).
+#
+# The repository is public, so Actions logs are public: report.py prints counts only, and the report files
+# (which contain answers) stay on the runner and are not uploaded.
+# Needs repository secrets SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (Settings -> Secrets and variables -> Actions).
+# No pull_request trigger: workflows started from forks never get these secrets.
+
+name: Verify problems
+
+on:
+  schedule:
+    - cron: "0 18 * * *"   # 18:00 UTC = 03:00 KST
+  workflow_dispatch:
+    inputs:
+      requested_by:
+        description: "Who asked for this run (filled in by the review page)"
+        required: false
+        default: "manual"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-problems
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check and save results
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          REQUESTED_BY: ${{ github.event.inputs.requested_by || github.event_name }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+            echo "::error::Repository secrets SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are not set."
+            exit 1
+          fi
+          set -o pipefail
+          echo "Requested by: $REQUESTED_BY"
+          python -u scripts/verify/report.py --save --out "$RUNNER_TEMP/verify-reports" | tee "$RUNNER_TEMP/console.txt"
+          {
+            echo "### Problem check"
+            echo
+            echo '```'
+            grep -v '^Report: ' "$RUNNER_TEMP/console.txt"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

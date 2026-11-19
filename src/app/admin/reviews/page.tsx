@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -59,6 +59,87 @@ function bulkEligible(row: ReviewRow): boolean {
 
 const BULK_BATCH = 10; // problems per request (hosting time limit)
 
+interface CheckState {
+    configured: boolean;
+    run: { status: string; conclusion: string | null; createdAt: string; url: string; event: string } | null;
+    lastCheckedAt: string | null;
+}
+
+function when(iso: string | null) {
+    return iso ? new Date(iso).toLocaleString() : "never";
+}
+
+/** Automatic check: last time it ran, and a button that starts it on GitHub Actions (stage 6). */
+function AutoCheck({ onFinished }: { onFinished: () => void }) {
+    const [state, setState] = useState<CheckState | null>(null);
+    const [message, setMessage] = useState("");
+    const [waiting, setWaiting] = useState(false);
+
+    const read = async (): Promise<CheckState | null> => {
+        const res = await fetch("/api/admin/reviews/recheck");
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data) return null;
+        setState(data);
+        return data;
+    };
+    useEffect(() => { read(); }, []);
+
+    // While a run is queued or running, look again every 15 seconds; reload the list when it ends.
+    useEffect(() => {
+        if (!waiting) return;
+        const started = Date.now();
+        const timer = setInterval(async () => {
+            const now = await read();
+            const run = now?.run;
+            if (run && run.status === "completed" && new Date(run.createdAt).getTime() >= started - 120_000) {
+                setWaiting(false);
+                setMessage(run.conclusion === "success" ? "Check finished. The list is up to date." : `Check ended: ${run.conclusion}. See the run on GitHub.`);
+                onFinished();
+            } else if (Date.now() - started > 15 * 60_000) {
+                setWaiting(false);
+                setMessage("The check is taking longer than expected. See the run on GitHub.");
+            }
+        }, 15_000);
+        return () => clearInterval(timer);
+    }, [waiting, onFinished]);
+
+    const start = async () => {
+        setMessage("");
+        const res = await fetch("/api/admin/reviews/recheck", { method: "POST" });
+        const data = await res.json().catch(() => ({}));
+        if (res.status === 202 || res.status === 409) {
+            setWaiting(true);
+            setMessage(res.status === 409 ? data.error : "Check started. It takes about two minutes.");
+        } else {
+            setMessage(data.error || `Could not start the check (${res.status})`);
+        }
+    };
+
+    const running = waiting || (state?.run && state.run.status !== "completed");
+    return (
+        <div className="flex flex-col items-end gap-1 text-sm">
+            <div className="flex items-center gap-3">
+                <span className="text-slate-500">Last automatic check: {when(state?.lastCheckedAt ?? null)}</span>
+                {state?.configured ? (
+                    <button onClick={start} disabled={!!running}
+                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-slate-300 bg-white text-slate-700 hover:bg-slate-100 disabled:opacity-60">
+                        {running ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                        {running ? "Checking…" : "Run automatic check"}
+                    </button>
+                ) : state ? (
+                    <span className="text-xs text-slate-400" title="Set GITHUB_DISPATCH_TOKEN on the server to start checks from here">Runs every night</span>
+                ) : null}
+            </div>
+            {message && (
+                <span className="text-xs text-slate-600">
+                    {message}{" "}
+                    {state?.run?.url && <a href={state.run.url} target="_blank" rel="noreferrer" className="underline">GitHub run</a>}
+                </span>
+            )}
+        </div>
+    );
+}
+
 interface BulkOutcome { id: string; title: string | null; outcome: "approved" | "skipped" | "error"; reason?: string }
 
 function sortKey(row: ReviewRow) {
@@ -81,7 +162,7 @@ export default function ReviewListPage() {
     const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
     const [bulkResults, setBulkResults] = useState<BulkOutcome[] | null>(null);
 
-    const load = async () => {
+    const load = useCallback(async () => {
         setLoading(true);
         setError("");
         try {
@@ -94,8 +175,8 @@ export default function ReviewListPage() {
         } finally {
             setLoading(false);
         }
-    };
-    useEffect(() => { load(); }, []);
+    }, []);
+    useEffect(() => { load(); }, [load]);
 
     const sources = useMemo(() => [...new Set(rows.map((r) => r.source || "(no source)"))].sort(), [rows]);
     const counts = useMemo(() => Object.fromEntries(FILTERS.map((f) => [f.key, rows.filter((r) => matches(r, f.key)).length])), [rows]);
@@ -163,9 +244,12 @@ export default function ReviewListPage() {
                         on its current content. Every review is kept.
                     </p>
                 </div>
-                <button onClick={load} className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900">
-                    <RefreshCw className="w-4 h-4" /> Refresh
-                </button>
+                <div className="flex flex-col items-end gap-2">
+                    <AutoCheck onFinished={load} />
+                    <button onClick={load} className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900">
+                        <RefreshCw className="w-4 h-4" /> Refresh list
+                    </button>
+                </div>
             </div>
 
             <div className="flex flex-wrap gap-2">

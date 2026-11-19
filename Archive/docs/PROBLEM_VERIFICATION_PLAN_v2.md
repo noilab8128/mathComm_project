@@ -290,6 +290,11 @@ console.anthropic.com에서 API 키를 만들고 **월 사용 한도**를 설정
 4. 리뷰어가 다시 리뷰
 - 아직 없는 것: 수정 요청 알림(이메일), 화면에서 바로 재검사하는 버튼(6단계 자동화와 함께), 수정 담당자 지정
 
+**자동 실행 (6단계, 2026-11-19)**
+- `.github/workflows/verify-problems.yml`: 매일 03:00 KST, GitHub에서 수동 실행, 리뷰 화면의 **Run automatic check** 버튼(`/api/admin/reviews/recheck`가 workflow_dispatch 호출)
+- 공개 저장소이므로 로그와 요약에는 개수만 남김. 보고서 파일은 올리지 않음
+- 설정: 저장소 Secrets `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, Workflow permissions 읽기 전용, 버튼용 `GITHUB_DISPATCH_TOKEN`(Netlify 환경 변수). 자세한 순서는 `scripts/verify/README.md`
+
 **일괄 승인 (2026-11-19)**
 - 리뷰 목록에서 체크박스로 여러 문제를 골라 **Approve selected** → "이 문제들과 풀이를 읽었음" 확인 → 승인
 - 고를 수 있는 문제: 현재 내용으로 자동 검사 **통과(passed)**, 리뷰 대기(pending / needs_recheck), 내가 아직 승인하지 않은 문제. 경고·실패·수정 요청·반려는 각 문제 화면에서 리뷰
