@@ -2,8 +2,7 @@
 # L2: the model solves the problem on its own (Code Interpreter) and we compare its answer with the stored one.
 # L4: other plausible readings of the problem. Results are warnings on /admin/reviews; nothing is hidden by them.
 #
-# When: by hand only for now (the nightly schedule below is commented out), later every night after the regular
-# check (only new or changed problems):
+# When: every night after the regular check (only new or changed problems), or by hand:
 #   Actions -> "Verify problems (AI)" -> Run workflow
 #     pilot:   sample = 10 (and recheck to compare another model on the same problems)
 #     exact:   ids = id1,id2
@@ -15,10 +14,8 @@
 name: Verify problems (AI)
 
 on:
-  # Nightly run is OFF until the full first pass and the container cost are settled (decision 2026-11-19).
-  # To turn it on, uncomment these two lines:
-  # schedule:
-  #   - cron: "40 18 * * *"   # 18:40 UTC = 03:40 KST, after "Verify problems"
+  schedule:
+    - cron: "40 18 * * *"   # 18:40 UTC = 03:40 KST, after "Verify problems"
   workflow_dispatch:
     inputs:
       model:
