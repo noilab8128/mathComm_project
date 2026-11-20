@@ -3,21 +3,50 @@ import OpenAI from 'openai';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { recordSubmission } from "@/lib/submissions";
+import { rateLimit } from "@/lib/rate-limit";
+import { supabaseAdmin } from "@/lib/supabase-admin";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+// Each grading is a paid OpenAI call: signed-in students only, a few per 10 minutes, and a size limit.
+const gradeLimiter = rateLimit({ windowMs: 10 * 60 * 1000, maxRequests: 10 });
+const MAX_SOLUTION = 20000; // same as the explanation limit of /api/check-answer
+
 export async function POST(request: NextRequest) {
   try {
-    const { problemId, problemContent, studentSolution } = await request.json();
-
-    if (!problemContent || !studentSolution) {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Please sign in to submit a solution.' }, { status: 401 });
+    }
+    if (!gradeLimiter.check(`grade-solution:${session.user.id}`).success) {
       return NextResponse.json(
-        { error: 'Both problem content and student solution are required' },
+        { error: 'Too many submissions in a short time. Take a moment and try again in a few minutes.' },
+        { status: 429 }
+      );
+    }
+
+    const { problemId, studentSolution } = await request.json();
+    if (typeof problemId !== 'string' || !problemId || typeof studentSolution !== 'string' || !studentSolution.trim()) {
+      return NextResponse.json({ error: 'A problem and a solution are required' }, { status: 400 });
+    }
+    if (studentSolution.length > MAX_SOLUTION) {
+      return NextResponse.json(
+        { error: `The solution is too long (at most ${MAX_SOLUTION.toLocaleString('en')} characters).` },
         { status: 400 }
       );
     }
+
+    // The problem text comes from the database, not from the browser, so the grader always sees the real problem
+    // (a request could otherwise send any text and have it graded against the problem's id).
+    const { data: problem, error: problemError } = await supabaseAdmin
+      .from('problems').select('content').eq('id', problemId).maybeSingle();
+    if (problemError) throw problemError;
+    if (!problem?.content) {
+      return NextResponse.json({ error: 'Problem not found' }, { status: 404 });
+    }
+    const problemContent = problem.content;
 
     if (!process.env.OPENAI_API_KEY) {
       return NextResponse.json(
@@ -96,7 +125,6 @@ Grade the solution now and respond in strict JSON format.`;
 
     // PERSISTENCE LOGIC (shared with /api/check-answer, see lib/submissions.ts)
     try {
-      const session = await getServerSession(authOptions);
       if (session?.user?.id) {
         await recordSubmission({
           userId: session.user.id,
