@@ -91,7 +91,7 @@ export default function CookiePolicyPage() {
                   If you have any questions about our use of cookies or other technologies, please email us at:
                 </p>
                 <p className="mt-2 text-slate-800 font-medium">
-                  {/* [INSERT PRIVACY/SUPPORT EMAIL HERE, e.g., privacy@mathcomm.example.com] */}
+                  <a href="mailto:noi.lab.8128@gmail.com" className="underline">noi.lab.8128@gmail.com</a>
                 </p>
               </div>
             </div>

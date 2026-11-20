@@ -114,7 +114,7 @@ export default function PrivacyPage() {
                   If you have any questions or concerns about this Privacy Policy or our data practices, please contact our Data Protection Officer:
                 </p>
                 <ul className="mt-2 text-slate-700 font-medium">
-                  <li>Email: {/* [INSERT PRIVACY/DPO EMAIL HERE, e.g., privacy@mathcomm.example.com] */}</li>
+                  <li>Email: <a href="mailto:noi.lab.8128@gmail.com" className="underline">noi.lab.8128@gmail.com</a></li>
                   <li>Address: {/* [INSERT COMPANY ADDRESS HERE] */}</li>
                 </ul>
               </div>

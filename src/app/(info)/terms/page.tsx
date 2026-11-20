@@ -135,7 +135,7 @@ export default function TermsPage() {
                 If you have any questions about these Terms, please contact us at:
               </p>
               <ul className="mt-2 text-slate-700 font-medium">
-                <li>Email: {/* [INSERT LEGAL/SUPPORT EMAIL HERE, e.g., legal@mathcomm.example.com] */}</li>
+                <li>Email: <a href="mailto:noi.lab.8128@gmail.com" className="underline">noi.lab.8128@gmail.com</a></li>
                 <li>Address: {/* [INSERT COMPANY ADDRESS HERE] */}</li>
               </ul>
             </div>

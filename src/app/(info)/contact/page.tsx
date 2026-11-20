@@ -38,14 +38,9 @@ export default function ContactPage() {
               For general questions, partnerships, or business inquiries, please send us an email. We aim to respond within 24-48 hours.
             </p>
             <div className="space-y-3">
-              {/* [INSERT CONTACT EMAILS HERE] */}
               <div className="flex flex-col">
-                <span className="text-sm font-medium text-slate-500 uppercase tracking-wider">General Inquiries</span>
-                <a href="mailto:hello@mathcomm.example.com" className="text-lg font-medium text-slate-600 hover:underline">hello@mathcomm.example.com</a>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-sm font-medium text-slate-500 uppercase tracking-wider">Support</span>
-                <a href="mailto:support@mathcomm.example.com" className="text-lg font-medium text-slate-600 hover:underline">support@mathcomm.example.com</a>
+                <span className="text-sm font-medium text-slate-500 uppercase tracking-wider">General inquiries and support</span>
+                <a href="mailto:noi.lab.8128@gmail.com" className="text-lg font-medium text-slate-600 hover:underline">noi.lab.8128@gmail.com</a>
               </div>
             </div>
           </div>
@@ -93,7 +88,7 @@ export default function ContactPage() {
               <div>
                 <h3 className="text-lg font-semibold text-slate-800 mb-2">I forgot my password. How can I reset it?</h3>
                 <p className="text-slate-600">
-                  Password reset by email is not available yet. If you signed up with Google or Facebook, sign in with that button instead. Otherwise, contact the Math Quest team from the email address of your account and we will help you.
+                  Password reset by email is not available yet. If you signed up with Google or Facebook, sign in with that button instead. Otherwise, email noi.lab.8128@gmail.com from the address of your account and we will help you.
                 </p>
               </div>
               {/* FAQ Item 3 */}
