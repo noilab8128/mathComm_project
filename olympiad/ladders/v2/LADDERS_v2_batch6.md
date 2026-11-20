@@ -87,6 +87,7 @@ Prove that the n − R smallest of n numbers with sum R add up to at most (n −
   (n − R)R/n.
 
 **Hints**
+- Example: Two kittens with bowls of 0.3 and 1.7 kg share 2 kg. Giving 0 and 2 kg has total error 0.3 + 0.3 = 0.6; giving 1 and 1 kg has 0.7 + 0.7 = 1.4. So the smallest total error is 0.6.
 - Step 1: Two bowls are halfway between whole numbers; one must be rounded up and one down.
 - Step 2: First give each kitten the whole part of its bowl size. How many kilograms are left, and who should get them?
 - Step 3: All seven fractional parts are equal, so it does not matter who gets the 3 extra kilograms.
@@ -174,6 +175,7 @@ Prove that a sequence of whole numbers that is bounded takes some value infinite
   taken infinitely often.
 
 **Hints**
+- Example: A single number x₁ = 2 does not have the property: S₁ = 2 = 1² + 1 works, but S₂ = 4 = a³ + 1 would need a³ = 3, and no whole number a does that.
 - Step 1: Work out 2 · 25 and 3 · 25, then compare the total with 5³.
 - Step 2: Divide both sides by kⁿ and compare what happens as n grows.
 - Step 3: Compute 55 · 6¹⁰, then compare it with a¹¹ for a few small values of a.
@@ -264,6 +266,7 @@ Prove that every swap of two different neighbouring letters changes the disorder
   because each letter outside the two keeps its position relative to both.
 
 **Hints**
+- Example: The word bca has disorder 2 (the pairs b…a and c…a are out of order), and 2 swaps sort it: bca → bac → abc.
 - Step 1: Every pair of letters must change its order, and one swap changes the order of one pair.
 - Step 2: For each letter, count the letters after it that come earlier in the alphabet.
 - Step 3: Each swap changes the disorder by exactly 1. Find the disorder of bcacab.
@@ -290,14 +293,14 @@ their sums are exactly 0, 1, …, n; comparing overlapping windows then forces a
 zeros followed by u ones).
 
 **Setup:** For a whole number n ≥ 2, a **climbing sequence** has n² + n digits, each 0 or 1, with this property: for
-every i from 0 to n² − n, the n digits in places i + 1, …, i + n add up to less than the n digits in places
-i + n + 1, …, i + 2n.
+every i from 0 to n² − n, the sum of the n digits in places i + 1, …, i + n is less than the sum of the n digits in
+places i + n + 1, …, i + 2n.
 
 | Step | Level | Problem | Answer |
 |---|---|---|---|
 | 1 | MATHCOUNTS | For n = 2 (six digits), how many climbing sequences are there? | **1** |
 | 2 | AMC 8 | For n = 3 (twelve digits), the four separate blocks of places 1–3, 4–6, 7–9 and 10–12 have increasing sums. What do these four sums add up to? | **6** |
-| 3 | AMC 10 | For n = 3, in which place is the first digit 1? | **6** |
+| 3 | AMC 10 | For n = 3, in which place does the first 1 appear? | **6** |
 | 4 | AMC 10 | For n = 5, how many digits 1 does a climbing sequence have? | **15** |
 | **Challenge** | AIME | For n = 30, how many of the first 500 digits of a climbing sequence are 1? | **126** |
 
@@ -361,6 +364,7 @@ Prove that n + 1 strictly increasing whole numbers between 0 and n must be exact
   increasing order then fixes them as 0, 1, …, n.
 
 **Hints**
+- Example: For n = 2 (six digits): in 010111 the digits in places 1–2 add up to 1, and those in places 3–4 also add up to 1, which is not less. So 010111 is not climbing.
 - Step 1: The three blocks of two digits must have sums 0, 1, 2. Where can the single 1 of the middle block go?
 - Step 2: Four strictly increasing whole numbers between 0 and 3: which ones can they be?
 - Step 3: Inside each block, the ones must come after the zeros.
@@ -445,6 +449,7 @@ Prove that the scale factors t₁, t₂, t₃ of the three small triangles add u
   areas PBC, PCA, PAB add up to area(ABC).
 
 **Hints**
+- Example: In an equilateral triangle with side 6, take P at the centre. The three lines through P parallel to the sides make three small equilateral triangles with side 2 that meet at P; their sides add up to 2 + 2 + 2 = 6, the side of the big triangle.
 - Step 1: Use Heron's formula for the area, then area = inradius × half-perimeter.
 - Step 2: Every length in a scaled triangle, including the inradius, is multiplied by the same factor.
 - Step 3: The scale factors of the three small triangles add up to 1.

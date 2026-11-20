@@ -93,21 +93,22 @@ Prove that 4S(n) = n²(n − 1) holds exactly when n + 1 is prime.
 **Idea card:** SL2017-N3 (for a composite n = ab, n − 1 copies of a and one 0 leave no safe start; for a prime n,
 chaining "bad" blocks around the circle n times gives k × total divisible by n with 0 < k < n, which is impossible).
 
-**Setup:** n beads sit in a circle, each with a whole number on it, and the total of all n numbers is **not**
-divisible by n. Start at some bead and walk once around the circle clockwise, writing down the n running totals (the
-first number, the first two added, and so on). The start is **safe** if none of these n running totals is
-divisible by n. A number n ≥ 2 is **good** if every such necklace of n beads has at least one safe start.
+**Setup:** n beads sit in a circle. Each bead has a number from 0, 1, 2, … on it, and the same number may appear on
+several beads. The sum of all n numbers is **not** divisible by n. Pick a starting bead and go once around the circle
+clockwise. After each bead, write down the sum of all the numbers passed so far (including that bead); these are the
+n **partial sums**. The start is **safe** if none of these n partial sums is divisible by n. A number n ≥ 2 is **good**
+if every such necklace of n beads has at least one safe start.
 
 | Step | Level | Problem | Answer |
 |---|---|---|---|
-| 1 | MATHCOUNTS | Four beads carry 1, 1, 1, 2 in this order around the circle (total 5). How many of the 4 starts are safe? | **1** |
-| 2 | AMC 8 | Six beads carry 2, 2, 2, 2, 2, 0 (total 10, not divisible by 6). How many of the 6 starts are safe? | **0** |
+| 1 | MATHCOUNTS | Four beads carry 1, 1, 1, 2 in this order around the circle (sum 5). How many of the 4 starts are safe? | **1** |
+| 2 | AMC 8 | Six beads carry 2, 2, 2, 2, 2, 0 (sum 10, not divisible by 6). How many of the 6 starts are safe? | **0** |
 | 3 | AMC 10 | Twelve beads carry 11 copies of a number a and one 0, where 2 ≤ a ≤ 11. For how many of these values of a is there no safe start? | **7** |
-| 4 | AMC 8 | Seven beads have total 10. Ana walks around the circle in jumps; each jump covers a block of beads whose sum is divisible by 7. After 7 jumps she has gone around the circle k whole times, so her jumps add up to 10k. What is the smallest positive k for which 10k is divisible by 7? | **7** |
+| 4 | AMC 8 | The numbers on seven beads add up to 10. Ana walks around the circle in jumps; each jump covers a block of beads whose sum is divisible by 7. After 7 jumps she has gone around the circle k whole times, so her jumps add up to 10k. What is the smallest positive k for which 10k is divisible by 7? | **7** |
 | **Challenge** | AIME | What is the sum of all good numbers n from 2 to 100? | **1060** |
 
 **Problem analysis** *(members only)*
-- A start fails as soon as one running total is divisible by n, so a "bad" necklace is one where every start fails.
+- A start fails as soon as one partial sum is divisible by n, so a "bad" necklace is one where every start fails.
 - To break a composite n = ab, make every start reach a multiple of n quickly: with n − 1 copies of a, any b
   consecutive copies of a add up to ab = n.
 - For a prime n, suppose every start fails. Then from every bead there is a block (starting there) whose sum is a
@@ -118,7 +119,7 @@ divisible by n. A number n ≥ 2 is **good** if every such necklace of n beads h
 - So the good numbers are exactly the primes, and the Challenge is the sum of the primes up to 100.
 
 **Logic flow** *(members only)*
-1. **Test a small necklace (Step 1).** Write out the running totals from each start. *Why:* it makes "safe" concrete.
+1. **Test a small necklace (Step 1).** Write out the partial sums from each start. *Why:* it makes "safe" concrete.
 2. **Break composite n (Step 2).** Use n − 1 copies of a and one 0 with n = ab: every start reaches a block of b
    copies of a, which adds up to n. *Why:* it shows composite numbers are not good.
 3. **Which a work (Step 3).** The construction fails only when a has a common factor with n; for n = 12 that is
@@ -130,8 +131,8 @@ divisible by n. A number n ≥ 2 is **good** if every such necklace of n beads h
 **Our full solution**
 Composite n = ab (1 < a, b < n): put a on n − 1 beads and 0 on one bead; the total (n − 1)a leaves remainder n − a
 when divided by n, so it is not divisible by n. From any start, the walk passes b copies of a in a row (with the 0
-possibly among them), so some running total equals ab = n: no start is safe.
-Prime n: suppose no start is safe. From each bead i, let ℓᵢ be the number of beads up to the first running total
+possibly among them), so some partial sum equals ab = n: no start is safe.
+Prime n: suppose no start is safe. From each bead i, let ℓᵢ be the number of beads up to the first partial sum
 divisible by n; ℓᵢ ≤ n − 1, because the full total is not divisible by n. Jump from bead i to the bead ℓᵢ places
 later. Within n jumps some bead repeats, giving a cycle of m ≤ n jumps that goes around the circle a whole number k of
 times: k × n = (sum of the ℓ's) ≤ m(n − 1) < n², so 1 ≤ k ≤ n − 1. The beads covered add up to
@@ -142,7 +143,7 @@ Computer check: every necklace with numbers 0..n − 1 for n ≤ 7 (good exactly
 primes up to 100.
 
 **Short solutions**
-- Step 1: starting at the first 1 the totals are 1, 2, 3, 5: none divisible by 4, so this start is safe. The other
+- Step 1: starting at the first 1 the partial sums are 1, 2, 3, 5: none divisible by 4, so this start is safe. The other
   starts reach 4 (1, 2, 4 / 1, 3, 4 / 2, 3, 4). One safe start.
 - Step 2: from any start, three consecutive 2s appear before the walk ends, and 2 + 2 + 2 = 6.
 - Step 3: the necklace has no safe start exactly when a shares a factor with 12: a = 2, 3, 4, 6, 8, 9, 10 (7 values).
@@ -158,7 +159,7 @@ primes up to 100.
 - Ladder J "Root or Add Three" (draft v0.3): another problem decided by remainders.
 
 **Explore** — *Status: not searched in the literature yet.*
-Call a start "very safe" if no running total is divisible by n, including the last one. For a prime n, what is the
+Call a start "very safe" if no partial sum is divisible by n, including the last one. For a prime n, what is the
 smallest possible number of safe starts?
 
 **Proof problem** *(not graded)*
@@ -254,7 +255,7 @@ A, B, C then the numbers are (A + B − C)/2, (A + C − B)/2, (B + C − A)/2; 
 2k² − 4k, 2k² + 1, 2k² + 4k).
 
 **Setup:** A **square triple** is three different positive whole numbers x < y < z such that x + y, x + z and y + z are
-all perfect squares. For example 6, 19, 30 is a square triple: 25, 36 and 49 are squares.
+all perfect squares. For example 2, 34, 47 is a square triple: 36, 49 and 81 are squares.
 
 | Step | Level | Problem | Answer |
 |---|---|---|---|

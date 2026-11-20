@@ -180,7 +180,7 @@ Let M(n, k) be the number of those sequences that never touch lamps n + 1 to 2n.
 |---|---|---|---|
 | 1 | MATHCOUNTS | With 2 lamps (n = 1) and k = 3 switches, how many sequences end with lamp 1 on and lamp 2 off? | **4** |
 | 2 | AMC 8 | With n = 2 (lamps 1 to 4) and k = 4, how many sequences end with lamps 1 and 2 on and never touch lamps 3 and 4? | **8** |
-| 3 | AMC 10 | Each of the sequences in Step 2 can be changed into a sequence of the full problem by moving some switches of lamp 1 to lamp 3 and of lamp 2 to lamp 4 (an even number for each), and every full sequence arises exactly once this way: M(2, 4) × 2⁴⁻² of them. What is N(2, 4)? | **32** |
+| 3 | AMC 10 | Each of the M(2, 4) sequences (lamps 1 and 2 end on, lamps 3 and 4 never touched) can be changed into a sequence of the full problem by moving some switches of lamp 1 to lamp 3 and of lamp 2 to lamp 4 (an even number for each), and every full sequence arises exactly once this way: M(2, 4) × 2⁴⁻² of them. What is N(2, 4)? | **32** |
 | 4 | AMC 10 | How many sequences of 5 switches on 3 lamps switch every lamp an odd number of times? | **60** |
 | **Challenge** | AIME | What is N(3, 9)? | **314880** |
 
@@ -323,9 +323,9 @@ through J parallel to KL meets line AC at M.
 | Step | Level | Problem | Answer |
 |---|---|---|---|
 | 1 | MATHCOUNTS | Triangle ABC has AB = 13, BC = 14, CA = 15. What is AL (the length from A to the touching point on AC)? | **7** |
-| 2 | AMC 8 | In the same triangle, D on AC has BD = BA = 13. What is AD? Give your answer as a fraction. | **66/5** |
-| 3 | AMC 10 | In the same triangle, the circle inside BCD touches CD at T. What is DT? Give your answer as a fraction. | **2/5** |
-| 4 | AMC 10 | In the same triangle, triangle DMJ is isosceles with JD = JM, and T is the foot of the perpendicular from J, so DM = 2 × DT. What is AM? | **14** |
+| 2 | AMC 8 | Triangle ABC has AB = 13, BC = 14, CA = 15, and D on AC has BD = BA = 13. What is AD? Give your answer as a fraction. | **66/5** |
+| 3 | AMC 10 | Triangle ABC has AB = 13, BC = 14, CA = 15, and D on AC has BD = BA. The circle inside BCD touches CD at T. What is DT? Give your answer as a fraction. | **2/5** |
+| 4 | AMC 10 | Triangle ABC has AB = 13, BC = 14, CA = 15. The circle inside BCD touches CD at T. Triangle DMJ is isosceles with JD = JM, and T is the foot of the perpendicular from J, so DM = 2 × DT. What is AM? | **14** |
 | **Challenge** | AIME | Triangle ABC has AB = 37, BC = 40, CA = 45. What is AM? | **42** |
 
 **Problem analysis** *(members only)*

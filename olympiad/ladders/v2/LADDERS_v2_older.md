@@ -36,6 +36,7 @@
 5. **Apply (Challenge).** 2026 − 7 − 1 = 2018.
 
 **Hints**
+- Example: Two kids: Ana has 5 candies and Ben has 1. Ana gives Ben 1 candy (4 and 2), then another (3 and 3). Now no kid has 2 more than another, so the game ends after 2 moves.
 - Step 1: The total number of candies never changes. When the game ends, how far apart can two kids' amounts be?
 - Step 2: The total is 15. At the end everyone has nearly the same amount.
 - Step 3: 20 candies among 6 kids: at the end everyone has q or q + 1 candies.
@@ -82,6 +83,7 @@ the new K is K + S and the new S is K × (⌈d/2⌉ − 1) + S × ⌊d/2⌋. The
 the rule matches a direct count for every number up to 3000.
 
 **Hints**
+- Example: From the list 1, 2, 3, 5, 8, the number 10 can be written as 2 + 8 or as 2 + 3 + 5 (each number at most once, order does not matter): 2 ways.
 - Step 1: Write the sequence out; each number is the sum of the two before it.
 - Step 2: Take the largest number from the list that fits into 100, subtract it, and repeat.
 - Step 3: Without 13, the numbers 1 + 2 + 3 + 5 + 8 add up to only 19.
@@ -112,6 +114,7 @@ the rule matches a direct count for every number up to 3000.
 4. **Apply (Challenge).** Class minimums mod 7 with 11s and 13s; the largest is 37, so 30.
 
 **Hints**
+- Example: With unlimited 2¢ and 5¢ coins, 1¢ and 3¢ cannot be paid, but every amount from 4¢ on can (4 = 2 + 2, 5, 6 = 2 + 2 + 2, 7 = 2 + 5, then keep adding 2¢ coins). So 3¢ is the largest amount that cannot be paid.
 - Step 1: List the amounts you can make with 3 and 5 up to 15. Once three amounts in a row work, adding 3s covers everything after.
 - Step 2: List the amounts from 1 to 20 and cross out the ones you can pay with 4 and 7.
 - Step 3: Sort amounts by their remainder when divided by 5. In each class, find the smallest one you can pay using 8s.
@@ -149,6 +152,7 @@ so s = 11 and b = 0 (result 1111); the pairs a + c = 11 are a = 2, …, 9: 8 num
 odd. So the answer is 225 + 8 = **233**. Computer check: all 900 three-digit numbers.
 
 **Hints**
+- Example: 23 + 32 = 55 is a palindrome after 1 step. For 64: 64 + 46 = 110, and the reverse of 110 is 011 = 11, so 110 + 11 = 121, a palindrome after 2 steps.
 - Step 1: Reverse and add, and after each step check whether the result reads the same both ways.
 - Step 2: Keep going: 87 + 78 = 165, then 165 + 561, and so on.
 - Step 3: 10a + b plus 10b + a = 11(a + b). Which multiples of 11 are palindromes?
@@ -174,6 +178,7 @@ odd. So the answer is 225 + 8 = **233**. Computer check: all 900 three-digit num
 4. **Apply (Challenge).** At most 20, and a computer-found example reaches 20.
 
 **Hints**
+- Example: On a 2 × 2 grid all 4 points can hold dots, since no three of them lie on a line. On bigger grids, three dots in one row, column or diagonal are not allowed, and neither are three dots on a steeper line, like (0, 0), (1, 2), (2, 4).
 - Step 1: Each of the 3 rows can hold at most 2 dots. Can you reach that bound without three dots on a diagonal?
 - Step 2: Each row holds at most 2 dots. Try a pattern that looks the same after a quarter turn.
 - Step 3: Put 2 dots in every row and every column, then check the diagonals and the other slanted lines.
@@ -203,6 +208,7 @@ odd. So the answer is 225 + 8 = **233**. Computer check: all 900 three-digit num
 5. **Apply (Challenge).** 2025² = 3⁸ × 5⁴: 4 × 5 = 20.
 
 **Hints**
+- Example: x² + y² = 2 has the 4 points (1, 1), (1, −1), (−1, 1), (−1, −1), and the circle of radius 1 has the 4 points (1, 0), (−1, 0), (0, 1), (0, −1).
 - Step 1: Find every way to write 25 as a sum of two squares (0 counts), then add the signs and the order.
 - Step 2: 50 = 1 + 49 = 25 + 25. How many sign and order choices does each give?
 - Step 3: Find every way to write 65 as a² + b² with a < b; there are two.
@@ -234,6 +240,7 @@ odd. So the answer is 225 + 8 = **233**. Computer check: all 900 three-digit num
 7. **Apply (Challenge).** Pieces touch only for m = 0, 1, 2: 4 + 22 + 13 + 18 × 22 = 435.
 
 **Hints**
+- Example: 15 + 7 = 22 has one carry (5 + 7 = 12), and s(15) + s(7) − s(22) = 6 + 7 − 4 = 9.
 - Step 1: Add 999 + 1 in columns and count the carries.
 - Step 2: Add the two numbers in columns and count the carries; each carry costs 9.
 - Step 3: s(A) + s(B) − s(A + B) = 9 × (number of carries).

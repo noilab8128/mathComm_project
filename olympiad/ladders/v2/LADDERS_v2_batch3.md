@@ -163,8 +163,8 @@ with centre O; call its radius r. Sides: a = BC, b = CA, c = AB.
 | Step | Level | Problem | Answer |
 |---|---|---|---|
 | 1 | MATHCOUNTS | Triangle ABC has sides 13, 14, 15 (BC = 14). Its circumradius is R = abc/(4 × area). What is 8R? | **65** |
-| 2 | AMC 8 | In the same triangle, OA₀ is perpendicular to BC, so OA₀² = R² − (a/2)². What is 64 × OA₀²? | **1089** |
-| 3 | AMC 10 | In the same triangle, A₀H² = 4R² − a²/4 − (b² + c²)/2. What is 64 × A₀H²? | **1156** |
+| 2 | AMC 8 | Triangle ABC has AB = 13, BC = 14, CA = 15. OA₀ is perpendicular to BC, so OA₀² = R² − (a/2)². What is 64 × OA₀²? | **1089** |
+| 3 | AMC 10 | Triangle ABC has AB = 13, BC = 14, CA = 15. Then A₀H² = 4R² − a²/4 − (b² + c²)/2. What is 64 × A₀H²? | **1156** |
 | 4 | AMC 10 | Each of the six points is at distance r from O, with r² = OA₀² + A₀H². What is 64r² for the 13-14-15 triangle? | **2245** |
 | **Challenge** | AIME | Triangle ABC has sides 7, 8, 9. What is 4r²? | **53** |
 

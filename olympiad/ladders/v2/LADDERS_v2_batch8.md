@@ -76,6 +76,7 @@ Prove that cₙ = cₙ₋₁ + cₙ₋₂ for n ≥ 2.
   they are the sparse subsets of {1, …, n − 2}. The two kinds do not overlap.
 
 **Hints**
+- Example: The sparse subsets of {1, 2, 3} are ∅, {1}, {2}, {3} and {1, 3}; {1, 2} and {2, 3} are not sparse.
 - Step 1: List them: the empty set, the single numbers, then the pairs that are not neighbours.
 - Step 2: A sparse set either avoids the largest number or contains it and avoids the one below it.
 - Step 3: Count the sparse subsets of {1, …, 6} with the same rule, then divide by 64.
@@ -107,7 +108,7 @@ two of its sides have equal length. A side is **two-coloured** if its two ends h
 |---|---|---|---|
 | 1 | MATHCOUNTS | In a regular 7-gon, how many isosceles triangles with vertices among the corners have a given corner as the top (where the two equal sides meet)? | **3** |
 | 2 | AMC 8 | How many isosceles triangles have their three vertices among the corners of a regular 13-gon? | **78** |
-| 3 | AMC 10 | In a regular 13-gon, how many isosceles triangles contain a given pair of vertices? | **3** |
+| 3 | AMC 10 | In a regular 13-gon, how many isosceles triangles have both of two given vertices among their corners? | **3** |
 | 4 | AMC 8 | A triangle has vertex colours red, red, blue. How many of its sides are two-coloured? | **2** |
 | **Challenge** | AIME | Add up the number of two-coloured sides over all isosceles triangles of the coloured 13-gon. What is the total? | **165** |
 
@@ -165,6 +166,7 @@ Prove that a triangle whose vertices use at most two colours has an even number 
   every change switches between them, so the number of changes is even.
 
 **Hints**
+- Example: In a regular pentagon with corners numbered 0 to 4, the isosceles triangles with top at corner 0 are 0-1-4 and 0-2-3: the other two corners are equally far from 0 on both sides.
 - Step 1: The other two corners must be at the same distance from the top on both sides.
 - Step 2: Count by the top: each corner has 6 symmetric pairs, and no triangle is equilateral.
 - Step 3: The pair can be the base, or one of its ends can be the top.
@@ -188,7 +190,7 @@ Prove that a triangle whose vertices use at most two colours has an even number 
 **Idea card:** SL2010-A4 (the rules x₂ₖ = −xₖ and x₂ₖ₋₁ = (−1)^(k+1) xₖ make every block of four terms add up to twice an earlier
 term, so S₄ₖ = 2Sₖ and S₄ₖ₊₂ = S₄ₖ; together with the parity of Sₙ this controls all partial sums).
 
-**Setup:** A sequence of signs is defined by x₁ = 1 and, for k ≥ 1, x₂ₖ = −xₖ and x₂ₖ₊₁ = (−1)ᵏ x_{k+1}. (So
+**Setup:** A sequence of signs is defined by x₁ = 1 and, for k ≥ 1, x₂ₖ = −xₖ and x₂ₖ₊₁ = (−1)ᵏ xₖ₊₁. (So
 x₁, …, x₈ = 1, −1, 1, 1, 1, −1, −1, −1.) Let Sₙ = x₁ + x₂ + … + xₙ.
 
 | Step | Level | Problem | Answer |
@@ -250,6 +252,7 @@ Prove that S₄ₖ = 2Sₖ for every k ≥ 1.
   S₄ₖ = 2(x₁ + … + xₖ) = 2Sₖ.
 
 **Hints**
+- Example: x₉ is x₂ₖ₊₁ with k = 4, so x₉ = (−1)⁴ x₅ = x₅ = 1, and x₁₀ = −x₅ = −1. Also S₃ = 1 − 1 + 1 = 1.
 - Step 1: Add the first six signs from the setup.
 - Step 2: Use S₄ = 2 and S₁₆ = 2S₄.
 - Step 3: Odd n can never give 0. Check the even ones.
@@ -281,7 +284,7 @@ the points cut the plane into regions. The lines **separate** the colours if no 
 |---|---|---|---|
 | 1 | MATHCOUNTS | Four points around a circle are coloured red, blue, red, blue in order. What is the smallest number of lines that separate the colours? | **2** |
 | 2 | MATHCOUNTS | 60 points are numbered 1 to 60 around a circle; point k is blue when k has no common factor with 60 (other than 1), and red otherwise. How many points are blue? | **16** |
-| 3 | AMC 10 | For the 60 points of Step 2, what is the smallest number of lines that separate the colours? | **16** |
+| 3 | AMC 10 | 60 points are numbered 1 to 60 around a circle; point k is blue when k has no common factor with 60 (other than 1), and red otherwise. What is the smallest number of lines that separate the colours? | **16** |
 | **Challenge** | AIME | 105 points are numbered 1 to 105 around a circle; point k is blue when k has no common factor with 105 (other than 1), and red otherwise. What is the smallest number of lines that separate the colours? | **33** |
 
 **Problem analysis** *(members only)*
@@ -334,6 +337,7 @@ Prove that a straight line meets the boundary of a convex polygon in at most two
   only points of the line on the boundary.
 
 **Hints**
+- Example: Six points coloured red, red, blue, blue, red, blue around the circle. Going once around (back to the start), the colour changes 4 times. The two blue runs (places 3–4 and place 6) can each be cut off by one line, so 2 lines separate the colours.
 - Step 1: Count how many times the colour changes as you go around the circle.
 - Step 2: Count the numbers from 1 to 60 with no factor 2, 3 or 5.
 - Step 3: Can two neighbouring numbers both be odd? So how many runs of blue points are there?
@@ -411,6 +415,7 @@ Prove that there is exactly one n ≥ 1 with zₙ < Aₙ ≤ zₙ₊₁, for any
   the last with dₙ > 0.
 
 **Hints**
+- Example: With z₀ = 10 instead of 2026: A₂ = (10 + 1 + 4)/2 = 7.5 lies between z₂ = 4 and z₃ = 9, and d₂ = 10 + 1 + 4 − 2 × 4 = 7.
 - Step 1: Use 1² + 2² + … + n² = n(n + 1)(2n + 1)/6.
 - Step 2: Add z₀ + z₁ + z₂ + z₃ and subtract 3 · z₃.
 - Step 3: Put n = 10 into n(zₙ − zₙ₊₁).

@@ -249,7 +249,7 @@ Check it for Zeta: F = 30, n = 15, e = 3 → 45 ≥ 31. It is verified in many s
 **DNA source (loose):** IMO-SL-2015-N4 (a repeated process: does it stabilize?).
 
 **Rule:** Reverse the digits of a number and add. Repeat until you get a palindrome (reads the same both ways).
-Example: 57 + 75 = 132, 132 + 231 = 363.
+Example: 39 + 93 = 132, 132 + 231 = 363.
 
 | Step | Level | Problem | Answer |
 |---|---|---|---|

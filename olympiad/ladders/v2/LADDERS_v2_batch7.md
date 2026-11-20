@@ -78,6 +78,7 @@ Prove that a knight on a black square only attacks white squares.
   or by 1 − 2 = −1, both odd, so the colour always changes.
 
 **Hints**
+- Example: On a 3 × 3 board a knight in a corner attacks two squares and a knight in the centre attacks none. A knight on a black square attacks only white squares, so knights placed only on black squares never attack each other.
 - Step 1: Knights on black squares can never attack each other. Each round uses at most two black squares.
 - Step 2: Start from a corner square: it has only two knight moves. Follow the moves around.
 - Step 3: Horst gets half of the black squares; Queenie answers each knight inside its 4 × 4 block.
@@ -106,9 +107,9 @@ all red points.
 
 | Step | Level | Problem | Answer |
 |---|---|---|---|
-| 1 | MATHCOUNTS | Three points form a triangle, and each is red with probability 1/2. Add up x^a (1 − x)^b over the empty set, the 3 single points, the 3 segments and the triangle, where a is the number of corners and b the number of points outside, with x = 1/2. | **1** |
+| 1 | MATHCOUNTS | Three points form a triangle, and each is red with probability 1/2. Add up xᵃ(1 − x)ᵇ with x = 1/2 over the empty set, the 3 single points, the 3 segments and the triangle, where a is the number of its corners and b = 3 − a is the number of the other points. | **1** |
 | 2 | AMC 8 | How many of the 10 triangles with three pentagon corners contain the centre O? | **5** |
-| 3 | AMC 10 | What is the probability that the red hull is exactly the triangle formed by three given pentagon corners that contain O? Give your answer as a fraction. | **8/243** |
+| 3 | AMC 10 | What is the probability that the red hull is exactly the triangle formed by three given pentagon corners, where that triangle contains O? Give your answer as a fraction. | **8/243** |
 | 4 | AMC 10 | What is the probability that the red hull is exactly the triangle formed by O and two given pentagon corners? Give your answer as a fraction. | **8/729** |
 | **Challenge** | AIME | The probability that the red hull is a triangle is a fraction m/n in lowest terms. Find m + n. | **323** |
 
@@ -164,6 +165,7 @@ Prove that for any finite set of points, no three on a line, the probabilities P
   add up to 1.
 
 **Hints**
+- Example: Three points forming a triangle, each red with probability 2/3: the red hull is exactly the segment between two given points when those two are red and the third is not, which has probability (2/3) × (2/3) × (1/3) = 4/27.
 - Step 1: Each of the eight sets has probability (1/2)³; there are eight sets.
 - Step 2: Which corner triangles have all three corners on one side of a line through O?
 - Step 3: The three corners must be red, the two other corners must not, and O can be anything.
@@ -239,6 +241,7 @@ Prove that a² + b² + c² ≥ 1 for all such x, y, z.
 - Solution: a² + b² + c² = (s − 1)² + 1 ≥ 1.
 
 **Hints**
+- Example: x = 4 gives a = 4/(4 − 1) = 4/3, and x = 1/2 gives a = (1/2)/(1/2 − 1) = −1.
 - Step 1: Multiply out a(x − 1) = x and solve for x.
 - Step 2: Work out a, b, c first: 2, 3/2 and (1/6)/(1/6 − 1).
 - Step 3: Substitute a + b + c = 5/2 into a + b + c − 1 = ab + bc + ca.
@@ -319,6 +322,7 @@ Prove that F₁ + F₃ + … + F₂ₘ₋₁ = F₂ₘ.
 - Solution: F₂ⱼ₋₁ = F₂ⱼ − F₂ⱼ₋₂, so the sum telescopes to F₂ₘ − F₀ = F₂ₘ.
 
 **Hints**
+- Example: The set {0, 1, 3} has the differences 1, 2 and 3, so with only 3 elements it measures F₂ = 1, F₃ = 2 and F₄ = 3.
 - Step 1: Add the four numbers and compare the total with the Fibonacci numbers.
 - Step 2: A connected graph with no cycle is a tree.
 - Step 3: Which of F₂, …, F₈ have odd index (F₂ = F₁)? Join one pair of points for each; can those edges make a cycle?
@@ -402,6 +406,7 @@ Prove that every prime power pʳ with r ≥ 2 is chain-like.
 - Solution: the divisors are pⁱ for i = 0, …, r, and pⁱ⁺¹ + pⁱ⁺² = pⁱ(p + p²) is a multiple of pⁱ.
 
 **Hints**
+- Example: 15 has the divisors 1, 3, 5, 15. Here 1 divides 3 + 5, but 3 does not divide 5 + 15 = 20, so 15 is not chain-like.
 - Step 1: List the divisors of each number and test every consecutive triple.
 - Step 2: The divisors read from the top are 40 divided by the divisors read from the bottom.
 - Step 3: Only prime powers work. Look at the three divisors just below n/pᵃ⁻¹ when n has two different primes.

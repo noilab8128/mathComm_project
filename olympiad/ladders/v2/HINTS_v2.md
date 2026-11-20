@@ -11,6 +11,7 @@
 ### Ladder P1 — The Cheapest Bakery
 
 **Hints**
+- Example: Baking 3 loaves in oven 1 costs 3 × 3² = 27 coins, and 4 loaves cost 3 × 4² = 48, so the 4th loaf there has extra cost 48 − 27 = 21. If oven 0 holds 2 loaves, a 3rd loaf there has extra cost 3² − 2² = 5 instead.
 - Step 1: Compare the cost of 5 loaves in oven 2 with the cost of 4 loaves in oven 2.
 - Step 2: Write the extra costs of the first few loaves in each oven (oven 0: 1, 3, 5, …; oven 1: 3, 9, 15, …) and pick the smallest ones.
 - Step 3: Write 45 as 3ⁱ × (an odd number) in every possible way.
@@ -25,6 +26,7 @@
 ### Ladder P2 — The Floor Table
 
 **Hints**
+- Example: For n = 3 the entries are ⌊ij/4⌋: row 1 is 0, 0, 0; row 2 is 0, 1, 1; row 3 is 0, 1, 2 (for example ⌊3 × 3/4⌋ = ⌊9/4⌋ = 2). So S(3) = 5.
 - Step 1: Write the 4 × 4 table of ⌊ij/5⌋ row by row; many small entries are 0.
 - Step 2: Column 3 holds ⌊3i/7⌋ for every row i. Pair row i with row 7 − i.
 - Step 3: Column j has 6 pairs, each adding up to j − 1. Add the 12 columns: 6 × (0 + 1 + … + 11).
@@ -38,7 +40,8 @@
 ### Ladder P3 — The Safe Start
 
 **Hints**
-- Step 1: From each start, write the 4 running totals and check which are divisible by 4.
+- Example: Take n = 3 and beads 1, 1, 2 (sum 4, not divisible by 3). Starting at the first 1, the partial sums are 1, 1 + 1 = 2, 1 + 1 + 2 = 4: none is divisible by 3, so this start is safe. Starting at the second 1, they are 1, 1 + 2 = 3, 1 + 2 + 1 = 4: 3 is divisible by 3, so this start is not safe.
+- Step 1: From each start, write the 4 partial sums and check which are divisible by 4.
 - Step 2: From each start, look for a block of beads in a row, beginning at the start, whose sum is a multiple of 6.
 - Step 3: If a and 12 have a common factor g, then 12/g copies of a add up to a multiple of 12. Check each a.
 - Step 4: Do 10 and 7 have a common factor? If not, what must divide k?
@@ -50,6 +53,7 @@
 ### Ladder P4 — Primes That Add Up
 
 **Hints**
+- Example: For n = 5, P(5) = (2 + 3)(2 + 5)(3 + 5) = 5 × 7 × 8 = 280 and R(5) = 2 × 3 × 5 = 30. Since 280/30 is not a whole number, R(5) does not divide P(5).
 - Step 1: The primes up to 7 are 2, 3, 5, 7. List the six sums p + q and multiply them.
 - Step 2: A sum p + q with p < q ≤ 13 is less than 26, so it must equal 13 exactly.
 - Step 3: Among r − 4, r − 2 and r, one is always a multiple of 3.
@@ -62,6 +66,7 @@
 ### Ladder P5 — Square Triples
 
 **Hints**
+- Example: If x + y = 25, x + z = 64 and y + z = 81, adding gives 2(x + y + z) = 170, so x + y + z = 85. Then x = 85 − 81 = 4, y = 85 − 64 = 21, z = 85 − 25 = 60, and 4, 21, 60 is a square triple.
 - Step 1: 6 + z and 19 + z are two squares that differ by 13. Which squares differ by 13?
 - Step 2: Add all three equations to get x + y + z, then subtract y + z.
 - Step 3: Put k = 5 into the three formulas and add.
@@ -74,6 +79,7 @@
 ### Ladder P6 — The Half That Never Ends
 
 **Hints**
+- Example: For M = 3: a₀ = 7/2 = 3.5 and ⌊3.5⌋ = 3, so a₁ = 3.5 × 3 = 10.5. Then ⌊10.5⌋ = 10, so a₂ = 10.5 × 10 = 105, a whole number. So T(3) = 2.
 - Step 1: a₁ = (11/2) × 5. Keep applying the rule until the result is a whole number.
 - Step 2: b₁ = 11 × 10/2.
 - Step 3: Start with b₀ = 195. How many factors of 2 does 195 − 3 have?
@@ -86,6 +92,7 @@
 ### Ladder P7 — Lanterns on a Pyramid
 
 **Hints**
+- Example: A pyramid of 3 rows with lit lanterns: the top one, the left one in row 2, the right one in row 3. From the left lantern of row 2 a path can only reach the left or middle lantern of row 3, so no path passes all three lit lanterns; the best paths pass 2.
 - Step 1: Try the possible paths, or compute labels row by row as in Step 2.
 - Step 2: Fill in the labels row by row from the top. The top lantern is lit, so its label is 1.
 - Step 3: Find the guarantee for very small pyramids (1 row, 2 rows, 3 rows, …) and watch what happens each time the number of rows doubles.
@@ -98,6 +105,7 @@
 ### Ladder P8 — Divisors That Leave 1
 
 **Hints**
+- Example: m = 20 has the divisors 1, 2, 4, 5, 10, 20, with remainders 1, 2, 1, 2, 1, 2 when divided by 3. So τ(20) = 6 and τ₁(20) = 3.
 - Step 1: List the divisors of 40 and their remainders when divided by 3.
 - Step 2: 2 and 5 both leave remainder 2 when divided by 3, so 2ᵃ × 5ᵇ leaves 1 exactly when a + b is even.
 - Step 3: Count all divisors of 810 = 2 × 3⁴ × 5, then the ones with no factor 3 and an even number of factors from 2 and 5.
@@ -110,6 +118,7 @@
 ### Ladder P9 — Switching Lamps
 
 **Hints**
+- Example: With 4 lamps (n = 2) and k = 2 switches, the sequences that end with lamps 1 and 2 on and lamps 3 and 4 off are 'lamp 1, then lamp 2' and 'lamp 2, then lamp 1'. So N(2, 2) = 2, and since neither touches lamps 3 or 4, M(2, 2) = 2 as well.
 - Step 1: Lamp 1 must be switched an odd number of times and lamp 2 an even number of times.
 - Step 2: Lamps 1 and 2 are each switched an odd number of times, 4 switches in total.
 - Step 3: Multiply your answer to Step 2 by 2⁴⁻².
@@ -122,6 +131,7 @@
 ### Ladder P10 — Functions That Grow Slowly
 
 **Hints**
+- Example: The constant function f(n) = 1 is slow: f(m + n) = 1 and f(m) + f(f(n)) − 1 = 1 + 1 − 1 = 1. The function f(n) = 5n is not slow: with m = n = 1, f(2) = 10, but f(1) + f(f(1)) − 1 = 5 + 25 − 1 = 29.
 - Step 1: f(9) ≥ f(5) + f(f(4)) − 1, and f(f(4)) is at least 1.
 - Step 2: f(6) ≥ f(3) + f(f(3)) − 1 = 5 + f(5) − 1.
 - Step 3: For each function, test small m and n first; one failing pair rules it out.
@@ -134,6 +144,7 @@
 ### Ladder P11 — The Halfway Point
 
 **Hints**
+- Example: In a triangle with AB = 5, BC = 6, CA = 9, the circle inside touches AC at the point L with AL = (AB + AC − BC)/2 = (5 + 9 − 6)/2 = 4.
 - Step 1: The distance from A to the touching point is (AB + AC − BC)/2.
 - Step 2: Drop the altitude from B to AC; D is the reflection of A in its foot. Find cos A with the law of cosines.
 - Step 3: In triangle BCD, the distance from D to the touching point is (DB + DC − BC)/2, with DC = 15 − AD.
@@ -146,6 +157,7 @@
 ### Ladder P12 — The Closest Climb
 
 **Hints**
+- Example: For the list 3, 1, 2, the non-decreasing list 2, 2, 2 has distances 1, 1, 0, so its error is 1. No choice does better: x₁ ≤ x₂ while 3 − 1 = 2, so |x₁ − 3| + |x₂ − 1| is at least 2 and one of the two distances is at least 1.
 - Step 1: Look for a large number that comes before a small one.
 - Step 2: If an earlier number exceeds a later one by d, the list must satisfy xₚ ≤ xᵣ. How close can both be?
 - Step 3: Compute x₁, x₂, … one at a time with the rule.
@@ -158,6 +170,7 @@
 ### Ladder P13 — Every Power of Two
 
 **Hints**
+- Example: x = 1/11 = 0.090909…: every digit in an even place is 9. The 2nd, 4th, 8th, 16th, … places are all even, so y = 0.999…, which repeats with period 1.
 - Step 1: The digits of 1/7 repeat every 6 places. Find the 2nd, 4th, 8th and 16th digits.
 - Step 2: Compute 2¹⁰ = 1024 and divide by 5.
 - Step 3: Compute 2, 4, 8, 16, 32, … modulo 13 until you reach 1.
@@ -170,6 +183,7 @@
 ### Ladder P14 — Six Points on a Circle
 
 **Hints**
+- Example: In an equilateral triangle with side 2√3, the points O and H are the same, R = 2, and OA₀ = A₀H = 1. The circle with centre A₀ through H has radius 1 and meets BC at the two points 1 away from A₀; each is √(1² + 1²) = √2 from O, so r² = 2.
 - Step 1: The area of the 13-14-15 triangle is 84 (Heron's formula).
 - Step 2: R = 65/8 and a/2 = 7.
 - Step 3: Put R² = 4225/64, a = 14, b = 15 and c = 13 into the formula.
@@ -182,6 +196,7 @@
 ### Ladder P15 — Equal Divisor Counts
 
 **Hints**
+- Example: 2 and 9 form a balanced pair: d(2) = 2 and d(9) = 3 are different, but with s = 3 we get d(6) = 4 and d(27) = 4.
 - Step 1: 12 = 2² × 3 and 18 = 2 × 3². The number of divisors is the product of (exponent + 1).
 - Step 2: If n divides k, then sn is a proper divisor of sk. For the other pairs, try small s by hand.
 - Step 3: Try s = 3ʲ for small j, to balance the exponents of 2 and 3 in 8s and 12s.
@@ -194,6 +209,7 @@
 ### Ladder P16 — Powers on Both Sides
 
 **Hints**
+- Example: For n = 2 the equation is m² + 18 = 7m, that is m² − 7m + 18 = 0. Its discriminant 49 − 72 is negative, so there is no solution with n = 2.
 - Step 1: For m² − Sm + P = 0, the two roots add up to S.
 - Step 2: Find two numbers with sum 63 and product 486.
 - Step 3: 2¹⁸ − 1 = (2⁹ − 1)(2⁹ + 1) = 511 × 513. Factor each.
@@ -206,6 +222,7 @@
 ### Ladder P17 — Heads Up
 
 **Hints**
+- Example: On a 2 × 2 grid every move flips the top-left and bottom-right coins and one of the other two. The top-left coin needs an odd number of moves, but the other two coins each need an odd number of flips, which takes an even number of moves. So a 2 × 2 grid can never be made all heads.
 - Step 1: One move flips only 3 of the 6 coins.
 - Step 2: Write the label of every cell of the 4 × 4 grid and count each label.
 - Step 3: For each grid, count the cells of each label and compare their parities.
@@ -218,6 +235,7 @@
 ### Ladder P18 — The Coins of Oslo
 
 **Hints**
+- Example: With n = 2 and k = 2, start from ACCA. The 2nd coin is C, and its longest run of C's is CC in places 2–3; moving it to the left end gives CCAA, whose first 2 coins are the same metal.
 - Step 1: Find the run containing the 5th coin, move it to the front, and repeat.
 - Step 2: The 9th coin is always in the last run. Watch how the runs rotate.
 - Step 3: For small k the first run can hold the k-th coin forever; for large k the last run can. Try each k on a few rows.
@@ -230,6 +248,7 @@
 ### Ladder P19 — Coins of Powers of Two
 
 **Hints**
+- Example: For n = 2 the coins are worth 2² − 1 = 3 and 2² − 2 = 2. Every amount from 2 on can be paid (2, 3, 2 + 2, 2 + 3, and so on, adding 2's), but 1 cannot, so f(2) = 1.
 - Step 1: Try every amount from 1 upward. Once 4 amounts in a row can be paid, adding 4s covers everything after.
 - Step 2: Even amounts made with 14, 12 and 8 are twice amounts made with 7, 6 and 4 (Step 1).
 - Step 3: An odd amount must use the coin 15. Which odd amount minus 15 is the bad even amount from Step 2?
@@ -242,6 +261,7 @@
 ### Ladder P20 — Sheets That Double
 
 **Hints**
+- Example: With 3 sheets: 1, 1, 1 (sum 3). A step on the sheets with 1 and 1 gives 2, 2, 1: the sum grows by 1 + 1 = 2, to 5. In general a step on a and b raises the sum by a + b, so it pays to combine small numbers.
 - Step 1: Each step adds a + b to the sum, which is at least 2.
 - Step 2: Each step multiplies the product by at least 4. Can every step multiply it by exactly 4?
 - Step 3: AM–GM: for a fixed product, the sum is smallest when all the numbers are equal.
@@ -254,6 +274,7 @@
 ### Ladder P21 — Weights of Three
 
 **Hints**
+- Example: With the weights 1, 3 and 9, the placement '9 on the left, then 1 on the right, then 3 on the right' is allowed (9 against 4 at the end). Starting '1 on the left, then 9 on the right' is not allowed: the right pan would be heavier.
 - Step 1: Try both orders (the weight 1 first, or the other first) and check the pans each time.
 - Step 2: 27 is heavier than 1 + 3 + 9. Once it is on the left, can the right pan ever be heavier?
 - Step 3: Split the count by which weight is placed first.

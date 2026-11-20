@@ -5,6 +5,8 @@ Nothing else about the problems changes (statements, answers, steps, extras and 
 
 Each "### Ladder <key> — <name>" block may contain:
   **Hints**              - <label>: <hint>        (several lines per label = hints revealed one at a time)
+                         - Example: <text>        (a worked example of the setup with other numbers; shown as the
+                                                   first hint of every problem of the ladder, decision 2026-11-20)
   **Problem analysis**   - bullets                -> ladder_guides.analysis   (members only)
   **Logic flow**         1. **Title (Step 2).** … -> ladder_guides.flow       (members only; "(Bridge)" also links)
   **Our full solution**  paragraph                -> the Challenge's solution text after its "Answer: …" line
@@ -16,6 +18,8 @@ statement or setup, not the answer).
 Run (from olympiad/):
   python3 ladders/import_guides_hints.py ladders/v2/HINTS_v2.md ladders/v2/LADDERS_v2_older.md            # check only
   python3 ladders/import_guides_hints.py ladders/v2/HINTS_v2.md ladders/v2/LADDERS_v2_older.md --apply    # write
+  option: --hints-only   write only the hints, never the analysis, flow or full solutions (they may have been
+                         edited on the site since)
 Needs the tables from supabase/sql/problem_hints.sql and supabase/sql/ladder_guides.sql.
 """
 
@@ -50,7 +54,7 @@ def ladder_blocks(md):
 def hint_items(text):
     out = {}
     for item in bullet_items(text):
-        m = re.match(r"^(Step \d+|Bridge|Challenge):\s*(.+)$", item)
+        m = re.match(r"^(Step \d+|Bridge|Challenge|Example):\s*(.+)$", item)
         if not m:
             sys.exit(f"Bad hint line: {item!r}")
         out.setdefault(m.group(1), []).append(plain(m.group(2)))
@@ -78,6 +82,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("files", nargs="+")
     ap.add_argument("--apply", action="store_true")
+    ap.add_argument("--hints-only", action="store_true", help="write only the hints")
     args = ap.parse_args()
 
     ladders = [lb for f in args.files for lb in ladder_blocks(open(f, encoding="utf-8").read())]
@@ -95,6 +100,7 @@ def main():
             sys.exit(f"{name}: no live Challenge titled '{name} — Challenge'")
         labels = ["Challenge"] + [h["stage_name"] for h in hier if h["parent_problem_id"] == root["id"]]
         hints = hint_items(section(body, "Hints"))
+        examples = [f"Example: {h}" for h in hints.pop("Example", [])]
         for label in labels:
             p = by_title.get(f"{name} — {label}")
             problems_seen += 1
@@ -108,13 +114,20 @@ def main():
                 if answer and leaks(h, answer.replace(",", "")) and (name, label) not in ALLOWED:
                     print(f"  LEAK?    {name} — {label} (answer {answer}): {h}")
                     problems_ok = False
-            if got:
-                hint_rows.append({"problem_id": p["id"], "hints": got})
+            for h in examples:
+                # An example uses other numbers than the problems, so a match is usually a coincidence: shown, not
+                # blocking; read each one before --apply
+                if answer and leaks(h, answer.replace(",", "")):
+                    print(f"  CHECK    {name} — {label} (answer {answer}) also appears in the example")
+            if got or examples:
+                hint_rows.append({"problem_id": p["id"], "hints": examples + got})
         for label in hints:
             if label not in labels:
                 print(f"  UNKNOWN  {name} — {label}: no such live problem")
                 problems_ok = False
 
+        if args.hints_only:
+            continue
         analysis = [plain(a) for a in bullet_items(section(body, "Problem analysis"))]
         flow = flow_items(section(body, "Logic flow"))
         if analysis and flow:

@@ -17,7 +17,7 @@ fixed point O; adding over all polygons gives a bound that does not depend on th
 reach it).
 
 **Setup:** A farm has fence posts at the points of a square grid, 1 metre apart: 2n rows of 2n posts. The farmer
-builds n² four-sided pens: each pen is a quadrilateral whose four corners are posts, and every post is a corner of
+builds n² four-sided pens: each pen is a quadrilateral (its four sides do not cross) whose four corners are posts, and every post is a corner of
 exactly one pen. Pens may overlap. The total area is the sum of the areas of the n² pens. O is the centre of the grid.
 
 | Step | Level | Problem | Answer |
@@ -89,6 +89,7 @@ Prove that every triangle OAB has area at most ¼(OA² + OB²).
   ½ · OA · OB ≤ ¼(OA² + OB²).
 
 **Hints**
+- Example: With n = 1 there are 2 rows of 2 posts and one pen: the unit square through all four posts, so the total area is 1. With O = (0, 0) the posts are at (±1/2, ±1/2).
 - Step 1: The area is ½ · OA · OB · sin(angle AOB). When is the sine largest?
 - Step 2: All four sides have the same length. Find the square of one side.
 - Step 3: Add the x² parts and the y² parts separately; by symmetry they are equal.
@@ -172,6 +173,7 @@ Prove that u(1 − u) ≤ 1/4 for every real number u.
 - Solution: 1/4 − u(1 − u) = u² − u + 1/4 = (u − 1/2)² ≥ 0.
 
 **Hints**
+- Example: Five numbers around a circle: 1/3, 1/3, 1/3, 0, 0. Any three neighbours add up to at most 1, and the sum of every number times the number two places after it is (1/3)(1/3) + 0 + 0 + 0 + 0 = 1/9.
 - Step 1: Only every second product is nonzero.
 - Step 2: The conditions give a ≤ 1 − (b + c) and d ≤ 1 − (b + c).
 - Step 3: Put u = b + c and find the largest value of u(1 − u).
@@ -249,6 +251,7 @@ Prove that x³ + y³ + z³ − 3xyz = (x + y + z)(x² + y² + z² − xy − yz 
 - Solution: expanding, the terms x²y, xy², … cancel in pairs and −xyz appears three times, leaving x³ + y³ + z³ − 3xyz.
 
 **Hints**
+- Example: For the numbers 1, 2, 3: x + y + z = 6 and x² + y² + z² = 14. Since (x + y + z)² = x² + y² + z² + 2(xy + yz + zx), we get 36 = 14 + 2(xy + yz + zx), so xy + yz + zx = 11 (indeed 2 + 6 + 3).
 - Step 1: Square x + y + z.
 - Step 2: Use x³ + y³ + z³ − 3xyz = (x + y + z)(x² + y² + z² − xy − yz − zx).
 - Step 3: Each of x, y, z is a root of t³ − 3t² + 2t − 1 = 0, so t⁴ = 3t³ − 2t² + t. Add over x, y, z.
@@ -335,6 +338,7 @@ Prove that E(a, b, c) = (a − b)(b − c)(a − c)(a + b + c).
   so E = (b − c)(a − b)(a − c)(a + b + c).
 
 **Hints**
+- Example: E(1, 1, 2) = 1·1·(1² − 1²) + 1·2·(1² − 2²) + 2·1·(2² − 1²) = 0 − 6 + 6 = 0. In fact E(a, b, c) = 0 whenever two of a, b, c are equal.
 - Step 1: Work out the three products one at a time.
 - Step 2: E is 0 when a = b or a = c. Which value of a makes a + b + c = 0?
 - Step 3: Count the complement: triples whose three remainders mod 7 are all different. Each remainder appears 3 times from 1 to 21.
@@ -420,6 +424,7 @@ Prove that ab ≤ (a² + b²)/2 for all real numbers a and b.
 - Solution: (a² + b²)/2 − ab = (a − b)²/2 ≥ 0.
 
 **Hints**
+- Example: On a 2 × 2 board with only the top-left cell red, there is exactly one red corner: C₁ = top-right, C₂ = top-left, C₃ = bottom-left.
 - Step 1: Each red cell sees 3 white cells in its row and 3 in its column.
 - Step 2: Try every whole number x from 0 to 6.
 - Step 3: A red cell with a white cells in its row and b in its column is the middle of a · b red corners, and a · b ≤ (a² + b²)/2. Then find a colouring with 4 white cells in every row and column.

@@ -16,7 +16,7 @@
 | **AMC 8** | 5 | Like MATHCOUNTS Sprint; #20–25 need two steps, careful casework or a clever count, still no heavy algebra | AMC 8 2025 #7 (counting with "at least"), #14 (mean and median), #17 (flows between cities) |
 | **AMC 10** | 6 | High-school algebra (remainder theorem, Vieta, quadratics), counting with cases, geometry with similar triangles and circles; #11–20 combine two facts; #21–25 need a key idea | AMC 10A 2025 #7 (remainder theorem for a cubic), #12 (counting with conditions), #21 (largest sum-free subset), #23 (angle bisector meets altitude) |
 | **AMC 12** | 7 | AMC 10 plus trigonometry, logarithms, complex numbers, sequences and series, harder counting and expected value | AMC 12 2024–2025 #15–25 bands |
-| **AIME** | 8 | **Integer answer 0–999.** #1–5: one idea done carefully; #6–10: two ideas combined; #11–15: a deep idea plus long, careful work | AIME 2026 I #4 (a + b + ab, one factoring trick), #8 (divisors of a power by residue), #13 (binomial sums modulo a prime) |
+| **AIME** | 8 | #1–5: one idea done carefully; #6–10: two ideas combined; #11–15: a deep idea plus long, careful work | AIME 2026 I #4 (a + b + ab, one factoring trick), #8 (divisors of a power by residue), #13 (binomial sums modulo a prime) |
 
 ## 2. How to choose the label of a step
 
@@ -33,11 +33,6 @@
 ## 3. Rules for the Challenge
 
 - The Challenge is labelled **AIME** (or AMC 12 when no deep idea is needed).
-- **New Challenges labelled AIME have an integer answer from 0 to 999**, like the real AIME (from 2026-10-24).
-  When the natural answer is a fraction m/n, ask for m + n; when it is a large number, ask for a remainder or a
-  smaller case.
-- Older ladders (P1–P21) were made before this rule; several have Challenge answers above 999. They stay as they
-  are unless they are reworked.
 
 ## 4. Floor
 
