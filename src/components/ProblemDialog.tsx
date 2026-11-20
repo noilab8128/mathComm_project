@@ -497,17 +497,18 @@ function ProblemDialogBody({ problem: initialProblem }: { problem: ProblemDispla
 
     try {
       setIsGrading(true);
+      setCheckResult(null);
+      // The server reads the problem text from the database by problemId (2026-11-20)
       const response = await fetch("/api/grade-solution", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           problemId: currentProblem.id,
-          problemContent: currentProblem.content, 
-          studentSolution: solutionDraft 
+          studentSolution: solutionDraft
         }),
       });
 
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
         throw new Error(data.error || "Grading failed.");
@@ -523,8 +524,12 @@ function ProblemDialogBody({ problem: initialProblem }: { problem: ProblemDispla
         createdAt: new Date().toISOString(),
       });
     } catch (error) {
+      // Shown under the form: sign-in expired, too many submissions (429), too long, ...
       console.error("Grading error:", error);
-      // Fallback for UI if needed
+      setCheckResult({
+        kind: "error",
+        message: error instanceof Error ? error.message : "Your solution could not be graded. Please try again.",
+      });
     } finally {
       setIsGrading(false);
     }
