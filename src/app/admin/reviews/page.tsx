@@ -313,6 +313,9 @@ export default function ReviewListPage() {
                     </p>
                 </div>
                 <Automation />
+                <Link href="/admin/reviews/history" className="inline-flex text-sm text-slate-600 underline hover:text-slate-900">
+                    Automatic check history
+                </Link>
                 <div className="flex flex-wrap items-center gap-3">
                     <AutoCheck onFinished={load} />
                     <button onClick={load} className={TOOL_BUTTON}>

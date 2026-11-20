@@ -58,3 +58,13 @@ export async function setWorkflowEnabled(token: string, repo: string, file: stri
         throw new Error(`GitHub refused (${res.status}). Check the token and its permissions. ${text.slice(0, 200)}`);
     }
 }
+
+/** The latest runs of a workflow (newest first). */
+export async function listRuns(token: string, repo: string, file: string, perPage = 10): Promise<WorkflowRun[]> {
+    const res = await github(`/repos/${repo}/actions/workflows/${file}/runs?per_page=${perPage}`, token);
+    if (!res.ok) throw new Error(`GitHub answered ${res.status} when reading the workflow runs`);
+    const data = await res.json();
+    return (data.workflow_runs || []).map((r: { status: string; conclusion: string | null; created_at: string; html_url: string; event: string }) => ({
+        status: r.status, conclusion: r.conclusion, createdAt: r.created_at, url: r.html_url, event: r.event,
+    }));
+}
