@@ -105,6 +105,10 @@ Grade the solution now and respond in strict JSON format.`;
           gradingResult,
           totalScore: gradingResult.totalScore,
           isCorrect: gradingResult.isCorrect,
+          // XP only for the first correct solution, like the number answers (/api/check-answer): later
+          // submissions after "solve again" and wrong attempts are saved but give no XP (decision 2026-11-20).
+          rewardRepeatSolves: false,
+          rewardWrongAnswers: false,
         });
       }
     } catch (persistError) {
