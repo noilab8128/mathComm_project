@@ -25,15 +25,26 @@ export default function SettingsPage() {
     const [newPassword, setNewPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
 
-    // Initialize state from session
+    // Nickname comes from the session; gender, country and language from the profile API (they are not kept in
+    // the session, which every page receives).
     useEffect(() => {
-        if (session?.user) {
-            setNickname(session.user.nickname || "");
-            setGender(session.user.gender || "");
-            setCountry(session.user.country || "");
-            setLanguage(session.user.language || "en");
-        }
+        if (session?.user) setNickname(session.user.nickname || "");
     }, [session]);
+    const signedIn = !!session?.user;
+    useEffect(() => {
+        if (!signedIn) return;
+        let cancelled = false;
+        fetch("/api/user/profile")
+            .then((res) => (res.ok ? res.json() : null))
+            .then((data) => {
+                if (cancelled || !data?.profile) return;
+                setGender(data.profile.gender || "");
+                setCountry(data.profile.country || "");
+                setLanguage(data.profile.language || "en");
+            })
+            .catch(() => {});
+        return () => { cancelled = true; };
+    }, [signedIn]);
 
     if (!session) {
         return (

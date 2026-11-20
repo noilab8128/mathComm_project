@@ -30,7 +30,7 @@ async function loadUserClaims(userId: string) {
         supabaseAdmin
             .schema("next_auth")
             .from("users")
-            .select("nickname, gender, country, language, is_onboarded, image")
+            .select("nickname, is_onboarded, image")
             .eq("id", userId)
             .maybeSingle(),
         supabaseAdmin.from("user_roles").select("role").eq("user_id", userId).maybeSingle(),
@@ -41,9 +41,6 @@ async function loadUserClaims(userId: string) {
     return {
         role: (roleRow as { role?: string } | null)?.role || "user",
         nickname: profile?.nickname ?? undefined,
-        gender: profile?.gender ?? undefined,
-        country: profile?.country ?? undefined,
-        language: profile?.language ?? undefined,
         is_onboarded: profile?.is_onboarded === true,
         image: profile?.image ?? undefined,
     };
@@ -55,9 +52,11 @@ async function refreshClaims(token: JWT): Promise<JWT> {
         const claims = await loadUserClaims(token.sub);
         token.role = claims.role;
         token.nickname = claims.nickname;
-        token.gender = claims.gender;
-        token.country = claims.country;
-        token.language = claims.language;
+        // Gender, country and language are no longer kept in the session (security item C4): every page receives the
+        // session, and only the settings page needs them (it reads /api/user/profile). Remove them from older tokens.
+        delete token.gender;
+        delete token.country;
+        delete token.language;
         token.is_onboarded = claims.is_onboarded;
         if (claims.image !== undefined) token.picture = claims.image;
         token.claimsCheckedAt = Date.now();
@@ -163,9 +162,6 @@ export const authOptions: NextAuthOptions = {
                 session.user.id = token.sub as string;
                 session.user.role = (token.role as string) || 'user';
                 session.user.nickname = token.nickname as string;
-                session.user.gender = token.gender as string;
-                session.user.country = token.country as string;
-                session.user.language = token.language as string;
                 session.user.is_onboarded = token.is_onboarded as boolean;
             }
             return session;

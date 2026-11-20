@@ -9,9 +9,6 @@ declare module "next-auth" {
             image?: string | null;
             role?: string;
             nickname?: string;
-            gender?: string;
-            country?: string;
-            language?: string;
             is_onboarded?: boolean;
         };
     }

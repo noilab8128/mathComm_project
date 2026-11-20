@@ -22,7 +22,7 @@ export async function GET() {
         const { data: userRaw } = await adminSupabase
             .schema("next_auth")
             .from("users")
-            .select("id, interested_categories, category_levels")
+            .select("id, interested_categories, category_levels, gender, country, language")
             .eq("email", session.user.email)
             .maybeSingle();
 
@@ -65,6 +65,8 @@ export async function GET() {
         }));
 
         return NextResponse.json({
+            // For the settings page only (not kept in the session since 2026-11-20)
+            profile: { gender: userRaw.gender ?? "", country: userRaw.country ?? "", language: userRaw.language ?? "en" },
             interested_categories: userRaw.interested_categories || [],
             category_levels: userRaw.category_levels || {},
             user_category_levels: userCategoryLevels,
