@@ -2,47 +2,18 @@ import { NextResponse } from 'next/server';
 import { requireReviewer } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { apiErrorMessage } from '@/lib/verification';
+import { CHECK_WORKFLOWS, github, githubSettings, latestRun as latestWorkflowRun } from '@/lib/githubActions';
 
 // GET  /api/admin/reviews/recheck -> { configured, run, lastCheckedAt }   state of the automatic check
 // POST /api/admin/reviews/recheck -> starts the "Verify problems" GitHub Actions workflow (.github/workflows/verify-problems.yml)
 // Admins and reviewers only. Plan: Archive/docs/PROBLEM_VERIFICATION_PLAN_v2.md stage 6.
 //
-// Server settings (Netlify environment variables, and .env.local for local testing):
-//   GITHUB_DISPATCH_TOKEN  fine-grained token of the repository owner: this repository only, "Actions: Read and write"
-//   GITHUB_REPOSITORY      optional, default noilab8128/mathComm_project
-// The token stays on the server; the browser only sees the run's state.
+// GitHub settings and calls: src/lib/githubActions.ts. The token stays on the server; the browser only sees the run's state.
 
-const WORKFLOW = 'verify-problems.yml';
+const WORKFLOW = CHECK_WORKFLOWS.regular.file;
 const REF = 'main';
-
-function settings() {
-    const token = process.env.GITHUB_DISPATCH_TOKEN;
-    const repo = process.env.GITHUB_REPOSITORY || 'noilab8128/mathComm_project';
-    return token ? { token, repo } : null;
-}
-
-async function github(path: string, token: string, init?: RequestInit) {
-    return fetch(`https://api.github.com${path}`, {
-        ...init,
-        headers: {
-            Accept: 'application/vnd.github+json',
-            Authorization: `Bearer ${token}`,
-            'X-GitHub-Api-Version': '2022-11-28',
-            ...(init?.body ? { 'Content-Type': 'application/json' } : {}),
-        },
-        cache: 'no-store',
-    });
-}
-
-type Run = { status: string; conclusion: string | null; createdAt: string; url: string; event: string };
-
-async function latestRun(token: string, repo: string): Promise<Run | null> {
-    const res = await github(`/repos/${repo}/actions/workflows/${WORKFLOW}/runs?per_page=1`, token);
-    if (!res.ok) throw new Error(`GitHub answered ${res.status} when reading the workflow runs`);
-    const data = await res.json();
-    const r = data.workflow_runs?.[0];
-    return r ? { status: r.status, conclusion: r.conclusion, createdAt: r.created_at, url: r.html_url, event: r.event } : null;
-}
+const settings = githubSettings;
+const latestRun = (token: string, repo: string) => latestWorkflowRun(token, repo, WORKFLOW);
 
 async function lastCheckedAt(): Promise<string | null> {
     const { data, error } = await supabaseAdmin.from('problem_verification_status')

@@ -139,6 +139,75 @@ function AutoCheck({ onFinished }: { onFinished: () => void }) {
     );
 }
 
+interface AutomationState {
+    configured: boolean;
+    canChange: boolean;
+    workflows: {
+        key: "regular" | "ai"; name: string; schedule: string; state: string; enabled: boolean;
+        run: { status: string; conclusion: string | null; createdAt: string; url: string; event: string } | null;
+    }[];
+}
+
+/** Nightly automatic checks (GitHub Actions): on/off state, last run, and on/off buttons for admins. */
+function Automation() {
+    const [state, setState] = useState<AutomationState | null>(null);
+    const [busy, setBusy] = useState<string | null>(null);
+    const [message, setMessage] = useState("");
+
+    const read = useCallback(async () => {
+        const res = await fetch("/api/admin/reviews/automation");
+        const data = await res.json().catch(() => null);
+        if (res.ok && data) setState(data);
+        else setMessage(data?.error || "Could not read the automatic checks.");
+    }, []);
+    useEffect(() => { read(); }, [read]);
+
+    const toggle = async (key: "regular" | "ai", enabled: boolean, name: string) => {
+        if (!enabled && !confirm(`Turn off "${name}"? It will not run at night, and it cannot be started by hand, until it is turned on again.`)) return;
+        setBusy(key);
+        setMessage("");
+        const res = await fetch("/api/admin/reviews/automation", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ workflow: key, enabled }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) setMessage(data.error || `Could not change it (${res.status})`);
+        await read();
+        setBusy(null);
+    };
+
+    if (!state?.configured) return null;
+    return (
+        <div className="rounded-md border border-slate-200 bg-white">
+            {state.workflows.map((w) => (
+                <div key={w.key} className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-slate-100 px-3 py-2 last:border-b-0 text-sm">
+                    <span className="font-medium text-slate-900 min-w-48">{w.name}</span>
+                    <span className="text-slate-500">{w.schedule}</span>
+                    <Badge className={w.enabled ? "bg-emerald-100 text-emerald-800" : "bg-slate-200 text-slate-700"}>
+                        {w.enabled ? "On" : w.state === "disabled_inactivity" ? "Off (inactive repository)" : "Off"}
+                    </Badge>
+                    <span className="text-xs text-slate-500">
+                        Last run: {w.run ? (
+                            <a href={w.run.url} target="_blank" rel="noreferrer" className="underline">
+                                {new Date(w.run.createdAt).toLocaleString()} · {w.run.status === "completed" ? w.run.conclusion : w.run.status}
+                            </a>
+                        ) : "none"}
+                    </span>
+                    {state.canChange && (
+                        <button onClick={() => toggle(w.key, !w.enabled, w.name)} disabled={busy !== null}
+                            className={`ml-auto ${TOOL_BUTTON} disabled:opacity-60`}>
+                            {busy === w.key ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                            {w.enabled ? "Turn off" : "Turn on"}
+                        </button>
+                    )}
+                </div>
+            ))}
+            {message && <p className="px-3 py-2 text-xs text-red-700">{message}</p>}
+        </div>
+    );
+}
+
 interface BulkOutcome { id: string; title: string | null; outcome: "approved" | "skipped" | "error"; reason?: string }
 
 function sortKey(row: ReviewRow) {
@@ -243,6 +312,7 @@ export default function ReviewListPage() {
                         on its current content. Every review is kept.
                     </p>
                 </div>
+                <Automation />
                 <div className="flex flex-wrap items-center gap-3">
                     <AutoCheck onFinished={load} />
                     <button onClick={load} className={TOOL_BUTTON}>

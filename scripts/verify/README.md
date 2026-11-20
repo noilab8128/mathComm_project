@@ -50,6 +50,8 @@ python3 scripts/verify/report.py --no-l1    # DB 검사만 (markdown 대조와 �
 3. (리뷰 화면 버튼용) 저장소 주인 계정으로 fine-grained token 만들기: 이 저장소만, **Actions: Read and write**.
    Netlify 환경 변수 `GITHUB_DISPATCH_TOKEN`에 넣고 다시 배포 (로컬 테스트는 `.env.local`에도). 토큰이 없으면 버튼 대신 "Runs every night"만 보입니다.
 
+**켜기/끄기**: `/admin/reviews` 위쪽 상자에서 두 자동 검사(정규 검사, AI 검사)의 상태(On/Off)와 마지막 실행을 볼 수 있고, 관리자는 **Turn off / Turn on**으로 켜고 끌 수 있습니다(GitHub Actions의 workflow 켜기/끄기와 같음). 끄면 밤 실행과 직접 실행이 모두 멈춥니다.
+
 ## 7단계: AI 검사 (OpenAI, `ai_check.py`)
 
 | 검사 | 내용 | 결과 |
