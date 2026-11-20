@@ -183,10 +183,34 @@ function Automation() {
             {state.workflows.map((w) => (
                 <div key={w.key} className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-slate-100 px-3 py-2 last:border-b-0 text-sm">
                     <span className="font-medium text-slate-900 min-w-48">{w.name}</span>
-                    <span className="text-slate-500">{w.schedule}</span>
-                    <Badge className={w.enabled ? "bg-emerald-100 text-emerald-800" : "bg-slate-200 text-slate-700"}>
-                        {w.enabled ? "On" : w.state === "disabled_inactivity" ? "Off (inactive repository)" : "Off"}
-                    </Badge>
+                    <span className="text-slate-500 min-w-44">{w.schedule}</span>
+                    {/* One control that shows the state: a switch for admins, a read-only label for reviewers */}
+                    {state.canChange ? (
+                        <button
+                            type="button"
+                            role="switch"
+                            aria-checked={w.enabled}
+                            aria-label={`Nightly run of ${w.name}`}
+                            title={w.enabled ? "Nightly run is ON. Click to turn it off." : "Nightly run is OFF. Click to turn it on."}
+                            onClick={() => toggle(w.key, !w.enabled, w.name)}
+                            disabled={busy !== null}
+                            className="inline-flex items-center gap-2 disabled:opacity-60"
+                        >
+                            <span className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${w.enabled ? "bg-emerald-500" : "bg-slate-300"}`}>
+                                <span className={`inline-block h-5 w-5 rounded-full bg-white shadow transition-transform ${w.enabled ? "translate-x-5" : "translate-x-0.5"}`} />
+                            </span>
+                            <span className={`w-10 text-left text-sm font-semibold ${w.enabled ? "text-emerald-700" : "text-slate-500"}`}>
+                                {busy === w.key ? <Loader2 className="w-4 h-4 animate-spin" /> : w.enabled ? "ON" : "OFF"}
+                            </span>
+                        </button>
+                    ) : (
+                        <Badge className={w.enabled ? "bg-emerald-100 text-emerald-800" : "bg-slate-200 text-slate-700"}>
+                            {w.enabled ? "ON" : "OFF"}
+                        </Badge>
+                    )}
+                    {w.state === "disabled_inactivity" && (
+                        <span className="text-xs text-amber-700">GitHub turned it off after a long time without activity</span>
+                    )}
                     <span className="text-xs text-slate-500">
                         Last run: {w.run ? (
                             <a href={w.run.url} target="_blank" rel="noreferrer" className="underline">
@@ -194,13 +218,6 @@ function Automation() {
                             </a>
                         ) : "none"}
                     </span>
-                    {state.canChange && (
-                        <button onClick={() => toggle(w.key, !w.enabled, w.name)} disabled={busy !== null}
-                            className={`ml-auto ${TOOL_BUTTON} disabled:opacity-60`}>
-                            {busy === w.key ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                            {w.enabled ? "Turn off" : "Turn on"}
-                        </button>
-                    )}
                 </div>
             ))}
             {message && <p className="px-3 py-2 text-xs text-red-700">{message}</p>}
