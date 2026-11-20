@@ -37,12 +37,15 @@ async function adminWrite<T = unknown>(method: 'POST' | 'PATCH' | 'DELETE', url:
 }
 
 // Helper Functions
+// Reads here use the public key from the browser, so they never ask for `solutions` (answers): since 2026-11-20
+// solutions are readable only with the service key (supabase/sql/solutions_private.sql). Answers are checked on the
+// server (/api/check-answer); the admin editor reads them through /api/admin/problems.
 export const problemsAPI = {
   // Get all problems
   async getAll() {
     const { data, error } = await supabase
       .from('problems')
-      .select('*, solutions(*)')
+      .select('*')
       .order('created_at', { ascending: false });
 
     if (error) throw error;
@@ -61,7 +64,7 @@ export const problemsAPI = {
     sortBy?: 'newest' | 'oldest' | 'difficulty_asc' | 'difficulty_desc';
   }) {
     // Note: 'count' option in select is not fully typed in v2 perfectly with join, but usually works
-    let query = supabase.from('problems').select('*, solutions(*)', { count: 'exact' });
+    let query = supabase.from('problems').select('*', { count: 'exact' });
 
     if (filters?.onlyRoots) {
       // In new schema, roots are those not present as child_problem_id in hierarchy
@@ -137,7 +140,7 @@ export const problemsAPI = {
     const { data, error } = await supabase
       .from('problem_hierarchies')
       .select(`
-        child_problem:problems!child_problem_id(*, solutions(*))
+        child_problem:problems!child_problem_id(*)
       `)
       .in('parent_problem_id', parentIds);
 
@@ -152,7 +155,7 @@ export const problemsAPI = {
   async getById(id: string) {
     const { data, error } = await supabase
       .from('problems')
-      .select('*, solutions(*)')
+      .select('*')
       .eq('id', id)
       .single();
 
@@ -223,7 +226,7 @@ export const problemHierarchiesAPI = {
   // Get hierarchy chain for a parent/solution
   async getChain(parentProblemId: string, parentSolutionId?: string) {
     let query = supabase.from('problem_hierarchies')
-      .select('*, child_problem:problems!child_problem_id(*, solutions(*))')
+      .select('*, child_problem:problems!child_problem_id(*)')
       .eq('parent_problem_id', parentProblemId)
       .order('sequence_order', { ascending: true });
 
