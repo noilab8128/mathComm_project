@@ -1,7 +1,8 @@
 # 문제 생성 방법
 
 - 작성: 2026-10-21
-- 대상: Math Quest 사다리 문제 (지금 사이트의 28개 사다리, 145문제와 앞으로 만들 문제)
+- 수정: 2026-11-20. 단계 문장 점검(3.3, 4장), 예시 힌트(3.4), 이미 올라간 문제 고치기·지우기(6.2–6.4)를 더함
+- 대상: Math Quest 사다리 문제 (지금 사이트의 48개 사다리, 238문제와 앞으로 만들 문제)
 - 자세한 규칙: [LADDER_RULES_v2.md](../olympiad/ladders/LADDER_RULES_v2.md) (영어, 규칙 원문)
 - 관련: [OPERATING_POLICY.md](OPERATING_POLICY.md) 6.5–6.6, [SKILL_TREE_RULES.md](SKILL_TREE_RULES.md) 2.3,
   문제 검증 계획(`Archive/docs/PROBLEM_VERIFICATION_PLAN.md`)
@@ -34,9 +35,10 @@ Supabase에 올리기 (import 스크립트) → 사이트
 |---|---|---|
 | ① 아이디어 카드 | 문제 하나의 핵심 아이디어를 우리 말로 정리한 카드 | `olympiad/data/idea_cards/` (git 제외), Supabase `idea_cards` |
 | ② 사다리 설계 | Challenge, 풀이, 분석, 흐름, 단계, 힌트, 링크 | `olympiad/ladders/v2/LADDERS_v2_batchN.md` |
-| ③ 검증 | 모든 답과 숫자 재계산 | `olympiad/ladders/v2/verify_v2_batchN.py` |
+| ③ 검증 | 모든 답과 숫자 재계산, 문장 점검, 예시 힌트 숫자 확인 | `verify_v2_batchN.py`, `lint_ladders.py`, `verify_hint_examples.py` |
 | ④ 사람 검토 | 문제 → 정답표 → 풀이 순서의 PDF | `olympiad/ladders/build_review_pdf.py` |
-| ⑤ 올리기 | 문제, 정답, 단계 연결, 분석·흐름, 링크, 힌트 | `import_ladders_v2.py`, `import_guides_hints.py` |
+| ⑤ 올리기 | 문제, 정답, 단계 연결, 분석·흐름, 링크, 힌트 | `import_ladders_v2.py`(새 사다리만), `import_guides_hints.py --hints-only` |
+| 고치기 | 이미 올라간 문제의 문장 | `patch_live_text.py` (6.2장) |
 
 ---
 
@@ -99,12 +101,27 @@ AMC 8 …)이 아닙니다(2026-10-10 결정).
 3. 난이도가 꼭 올라갈 필요는 없습니다. 풀이 순서가 먼저입니다.
 4. **각 문제가 혼자 읽혀야** 합니다. "2단계의 답을 써서"라고 쓰지 않고 필요한 사실을 문장에 적습니다.
 5. 숫자는 **그 단계를 해야만 나오는 값**을 묻습니다. 앞 단계의 사실만 쓰고, 뒤 단계의 사실은 쓰지 않습니다.
+6. **사실을 주면 이유도 함께** 적습니다. "It is known that", "It turns out that"으로 공식이나 점화식을 그냥 주지
+   않습니다(규칙 5.9, 2026-10-25). 한 단계가 구체적인 경우(n = 12)를 하고 뒤 단계가 일반 공식을 쓰면, 뒤 단계에
+   "같은 생각을 모든 n에 하면 이 공식이 나온다"는 연결을 적습니다.
+7. **사이트에서는 단계마다 Setup과 그 단계 문장만 보입니다** (2026-11-20). 그래서
+   - "of Step 2", "in Step 2", "the same list"처럼 다른 단계를 가리키면 안 됩니다. 필요한 조건(색칠 규칙, 삼각형의
+     세 변 등)을 그 단계에 다시 씁니다. ("Cutting Colours Step 3"을 AI가 "정해지지 않음"이라고 한 원인)
+   - "the same triangle"은 그 삼각형이 Setup에 정의되어 있을 때만 씁니다.
+8. **Setup의 예시가 단계의 답이면 안 됩니다.** Square Triples의 예시 6, 19, 30이 Step 1의 답이었고, Reverse and
+   Add의 예시 57이 Step 1의 질문이었습니다.
+9. **애매함 점검** (사람이 읽고 확인. 스크립트로는 못 잡음):
+   - 한 낱말은 한 뜻으로만. Safe Start에서 "total"(전체 합)과 "running total"(누적 합)이 섞여 학생이 이해하지 못함 →
+     "sum"과 "partial sum"으로 나누고, 누적 합을 "지금까지 지나온 수를 모두 더한 값"으로 풀어 씀
+   - 0을 포함하는지, 같은 수를 여러 번 써도 되는지 명시 ("whole number"만으로는 애매함)
+   - 도형 조건 (사각형의 변이 서로 교차하지 않는지 등)
+   - 수식은 유니코드로 (xₖ₊₁, xᵃ). `x_{k+1}`, `x^a`처럼 쓰면 사이트에 그대로 보임
 
 ### 3.4 함께 쓰는 것
 | 항목 | 내용 |
 |---|---|
 | 짧은 풀이 | 단계마다 몇 줄. 정답 확인 후 저장됩니다 |
-| 힌트 | 단계 1개, Challenge 2개. 다음 할 일을 가리키되 답을 말하지 않음. 무료, 회원 전용 |
+| 힌트 | **힌트 1 = 예시**: 사다리마다 Setup을 다른 숫자로 직접 해 보는 예시 하나(`- Example:` 한 줄). 그 사다리의 모든 문제에 첫 힌트로 보임. 단계 문제와 같은 숫자를 쓰면 답이 되므로 다른 숫자로. **힌트 2부터 = 방향**: 단계 1개, Challenge 2개. 다음 할 일을 가리키되 답을 말하지 않음. 무료, 회원 전용 (2026-11-20) |
 | 비슷한 올림피아드 문제 | 대회·연도·번호와 우리 말로 한 문장(인용만) |
 | 연구 문제 | Explore 질문(상태를 정직하게 표시), 어울리면 유명한 미해결 문제 |
 | 사이트 안의 비슷한 문제 | 같은 세부 분야나 같은 카드를 쓴 다른 사다리 |
@@ -123,7 +140,12 @@ AMC 8 …)이 아닙니다(2026-10-10 결정).
   다시 계산합니다. 하나라도 틀리면 고치기 전에는 다음 단계로 가지 않습니다.
 - Challenge는 가능하면 **두 가지 방법**으로 확인합니다(예: 전부 세기 + 우리 풀이의 공식).
 - 일반 규칙("항상", "모든 n")은 넓은 범위에서 직접 확인합니다(예: n ≤ 3000의 모든 수).
-- 힌트는 `import_guides_hints.py`가 **힌트 안에 그 문제의 답이 들어 있지 않은지** 확인합니다.
+- 힌트는 `import_guides_hints.py`가 **힌트 안에 그 문제의 답이 들어 있지 않은지** 확인합니다. 예시 힌트에서 작은
+  숫자(1, 2, 3 …)가 겹치는 것은 `CHECK`로 보여 주기만 하므로 하나씩 읽고 우연인지 판단합니다.
+- **예시 힌트의 숫자**는 `ladders/v2/verify_hint_examples.py`에 확인 코드를 더해 다시 계산합니다.
+- **문장 점검**: `python3 ladders/lint_ladders.py <사다리 파일들> [HINTS_v2.md]` → `0 error(s)`가 되어야 올립니다.
+  다른 단계 가리키기, `x_{k+1}` 같은 LaTeX, "It is known that", 예시 힌트 없음은 error, "the same triangle"과
+  Setup에 단계 답이 나오는 경우는 warning(읽고 판단). 3.3장 9번의 애매함은 사람이 읽어서 확인합니다.
 - 실행 (`olympiad/`에서): `python3 ladders/v2/verify_v2_batch4.py` → 마지막 줄이 `45/45 checks pass` 같은 모양.
 
 **검증이 실제로 잡은 것 (예)**
@@ -132,6 +154,8 @@ AMC 8 …)이 아닙니다(2026-10-10 결정).
 - 답은 맞지만 풀이 설명이 틀렸던 것 (J)
 - 단계 답으로 Challenge 답을 추측할 수 있었던 것 (P)
 - 답을 거의 알려 주는 힌트 2개
+- (2026-10-25) 공식을 이유 없이 준 단계 8개 (Floor Table Step 5 등)
+- (2026-11-20) 다른 단계를 봐야 풀리는 단계 10개, 애매한 문장 7곳, Setup이 Step 1의 답을 알려 준 2곳
 
 검증 결과: P1 28/28, 묶음 1–4 45/45 · 40/40 · 37/37 · 45/45, 예전 사다리 7개 25/25.
 
@@ -156,17 +180,55 @@ python3 ladders/build_review_pdf.py ladders/v2/LADDERS_v2_batch4.md ladders/v2/r
 
 | 명령 | 하는 일 |
 |---|---|
-| `python3 ladders/import_ladders_v2.py ladders/v2/LADDERS_v2_batchN.md` | 미리보기 (`import_v2_preview.json`) |
-| `… --apply` | 문제·정답·단계 연결(`problem_hierarchies`), 분석·흐름(`ladder_guides`), 링크(`ladder_extras`) 저장. 이미 있는 사다리는 문제는 건너뛰고 분석·흐름·링크만 새로 씀 |
-| `… --only P17,P18` | 일부 사다리만 |
-| `… --remove` | 이 스크립트가 넣은 문제를 모두 삭제 (출처 `MathQuest Ladders v2`) |
-| `python3 ladders/import_guides_hints.py ladders/v2/HINTS_v2.md ladders/v2/LADDERS_v2_older.md --apply` | 힌트(`problem_hints`)와 예전 사다리의 분석·흐름 저장. 먼저 답 노출 검사 |
+| `python3 ladders/import_ladders_v2.py ladders/v2/LADDERS_v2_batchN.md --only P42,P43` | 미리보기 (`import_v2_preview.json`) |
+| `… --apply` | **새 사다리만** 올림: 문제·정답·단계 연결(`problem_hierarchies`), 분석·흐름(`ladder_guides`), 링크(`ladder_extras`). 반드시 `--only`로 새 사다리만 고름. 이미 있는 사다리에 쓰면 분석·흐름·링크를 파일 내용으로 다시 써서 사이트에서 고친 것이 사라질 수 있음 (Osang 요청, 2026-11-20) |
+| `… --remove` | 이 스크립트가 넣은 문제를 모두 삭제 (출처 `MathQuest Ladders v2`). 쓰기 전에 백업 |
+| `python3 ladders/import_guides_hints.py ladders/v2/HINTS_v2.md ladders/v2/LADDERS_v2_batch5.md … ladders/v2/LADDERS_v2_older.md --hints-only --apply` | 힌트(`problem_hints`)만 저장. **항상 `--hints-only`** (없으면 분석·흐름과 Challenge 풀이도 덮어씀). 힌트가 있는 파일을 모두 한 번에 줌. 먼저 답 노출 검사 |
 
 - 정답은 풀이의 첫 줄 `Answer: …`로 저장되고, 단답형 확인 버튼이 이것과 비교합니다(분수, 쉼표 허용).
 - 카테고리는 `subdomains.py`에서 자동으로 붙습니다.
 - 서비스 키(`olympiad/.env`)를 씁니다. 공개 키로는 쓸 수 없습니다.
 - **주의:** 지금은 올리는 즉시 학생에게 보입니다(`is_reviewed = false`로 표시만 됨). 문제 검증 계획의
   "승인된 문제만 공개"가 만들어지면 숨김 상태로 올리고 승인 후 공개하도록 바꿉니다(8장).
+
+### 6.1 새 사다리를 올리는 순서 (요약)
+
+1. 사다리 파일 작성 (3장): 단계 문장 규칙 3.3장 1–9번, 사다리마다 `- Example:` 힌트
+2. `verify_v2_batchN.py` 통과, `verify_hint_examples.py`에 예시 숫자 추가 후 통과
+3. `lint_ladders.py` → 0 error, warning은 읽고 판단. 3.3장 9번 애매함을 직접 읽어 확인
+4. `subdomains.py`에 세부 분야 등록, 검토 PDF 만들기
+5. `import_ladders_v2.py <파일> --only <새 사다리들> --apply`
+6. `import_guides_hints.py <힌트가 있는 모든 파일> --hints-only --apply`
+7. 다음 날 `/admin/reviews`에서 밤 검사(L0 형식, L1 원본 대조, L2·L4 AI 풀기) 경고를 확인하고 고침 (6.2장)
+
+### 6.2 이미 올라간 문제의 문장 고치기
+
+정답이 그대로인 문장 수정은 `patch_live_text.py`로 합니다. 사이트의 글이 **고치기 전 마크다운과 똑같을 때만**
+바꾸고, 누가 사이트에서 고친 글은 건너뛰고 알려 줍니다.
+
+```
+cp ladders/v2/LADDERS_v2_batchN.md <scratchpad>/old.md          # 1. 고치기 전 파일을 복사
+(마크다운 수정 → verify 스크립트 → lint_ladders.py)                # 2. 고치고 확인
+python3 ladders/patch_live_text.py <scratchpad>/old.md ladders/v2/LADDERS_v2_batchN.md --only P40          # 3. 미리보기
+python3 ladders/patch_live_text.py <scratchpad>/old.md ladders/v2/LADDERS_v2_batchN.md --only P40 --apply  # 4. 쓰기
+```
+
+- 문제 본문, 풀이(답 줄은 그대로여야 함), 분석·흐름을 바꿉니다. 정답이 바뀌는 수정은 거부하므로 별도 SQL로 합니다.
+- 바뀐 문제는 그날 밤 AI 검사를 다시 받습니다.
+- 예전 v0.1 사다리(Candy Game 등)는 마크다운 형식이 달라서, 사이트의 글에 옛 문장이 정확히 한 번 있을 때만
+  바꾸는 짧은 스크립트로 고쳤습니다(2026-11-20, Reverse and Add).
+
+### 6.3 문제 지우기
+
+1. 그 문제를 가리키는 것을 먼저 셉니다: `solutions`, `user_submissions`, `user_starts`, `activity_logs`,
+   `problem_reviews`, `problem_hints`, `problem_hierarchies`.
+2. 학생 기록이 있으면 누구의 기록인지 확인하고, 실제 학생이면 먼저 상의합니다.
+3. 지울 행을 모두 `olympiad/data/backups/`(git 제외)에 JSON으로 저장한 뒤 `problems`에서 지웁니다(나머지는 함께
+   지워짐). 예: 출처 없는 시험용 문제 5개, 2026-11-20 (`deleted_test_problems_2026-11-20.json`).
+
+### 6.4 힌트만 다시 올리기
+
+힌트 파일을 고친 뒤 6.1장 6번 명령을 다시 실행합니다. 문제마다 힌트 목록 전체를 바꿔 씁니다.
 
 ---
 
@@ -197,7 +259,15 @@ python3 ladders/build_review_pdf.py ladders/v2/LADDERS_v2_batch4.md ladders/v2/r
 **Research field:** …
 ```
 
-힌트는 `HINTS_v2.md`(또는 같은 블록의 `**Hints**`)에 `- Step 1: …`, `- Challenge: …` 형식으로 씁니다.
+힌트는 `HINTS_v2.md`(또는 같은 블록의 `**Hints**`)에 씁니다.
+
+```
+**Hints**
+- Example: (Setup을 다른 숫자로 직접 해 본 예시. 모든 문제의 힌트 1로 "Example: …"이라고 보임)
+- Step 1: …
+- Challenge: …        ← Challenge는 2개
+- Challenge: …
+```
 
 ---
 
@@ -229,3 +299,7 @@ python3 ladders/build_review_pdf.py ladders/v2/LADDERS_v2_batch4.md ladders/v2/r
 4. **정직한 표시.** Explore와 미해결 문제의 상태(알려짐 / 찾아보지 않음 / 미해결)를 사실대로 씁니다.
 5. **공개 저장소 주의.** 아이디어 카드, 검토 PDF, 정답 목록은 올리지 않습니다.
 6. **사이트에 IMO를 내세우지 않음.** 출처는 "비슷한 올림피아드 문제" 인용에서만 밝힙니다.
+7. **사이트에서 고친 것을 덮어쓰지 않음.** 이미 올라간 문제는 `patch_live_text.py`로만 고치고, import 스크립트는
+   새 사다리(`--only`)와 힌트(`--hints-only`)에만 씁니다.
+8. **지우기 전에 백업.** 지울 행을 먼저 파일로 저장합니다.
+9. **학생 입장에서 한 번 읽기.** 단계 하나만 보고 풀 수 있는지, 낱말이 한 뜻인지, 예시가 답을 알려 주지 않는지.
