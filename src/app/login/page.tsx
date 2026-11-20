@@ -226,9 +226,7 @@ function LoginContent() {
                 <div>
                     <div className="mb-1.5 flex items-center justify-between">
                         <label htmlFor="password" className="block text-sm font-medium text-slate-700">Password</label>
-                        {!isRegistering && (
-                            <a href="#" className="text-xs text-slate-500 hover:text-slate-900">Forgot password?</a>
-                        )}
+                        {/* "Forgot password?" is hidden until password reset by email exists (security item D1). */}
                     </div>
                     <input
                         id="password"

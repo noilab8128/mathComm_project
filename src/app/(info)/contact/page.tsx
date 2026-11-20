@@ -93,7 +93,7 @@ export default function ContactPage() {
               <div>
                 <h3 className="text-lg font-semibold text-slate-800 mb-2">I forgot my password. How can I reset it?</h3>
                 <p className="text-slate-600">
-                  You can reset your password by clicking the "Forgot Password" link on the login page. An email with instructions will be sent to your registered address.
+                  Password reset by email is not available yet. If you signed up with Google or Facebook, sign in with that button instead. Otherwise, contact the Math Quest team from the email address of your account and we will help you.
                 </p>
               </div>
               {/* FAQ Item 3 */}

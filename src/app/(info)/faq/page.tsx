@@ -33,7 +33,7 @@ export default function FAQPage() {
       faqs: [
         {
           question: 'I forgot my password. How can I reset it?',
-          answer: 'You can reset your password by clicking the "Forgot Password" link on the login page. An email with password reset instructions will be sent to your registered address.'
+          answer: 'Password reset by email is not available yet. If you signed up with Google or Facebook, sign in with that button instead. Otherwise, contact the Math Quest team from the email address of your account and we will help you.'
         },
         {
           question: 'How is my ranking calculated?',
