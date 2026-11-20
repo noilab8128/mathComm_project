@@ -45,11 +45,12 @@ from save import AUTO_STATUS, RANK, Writer  # noqa: E402
 DEFAULT_OUT = Path.home() / "mathquest-verify-reports"
 # USD per 1M tokens (input, output), OpenAI pricing page, 2026-11-19. Used only to estimate and cap a run's cost.
 PRICES = {"gpt-6.2-sol": (2.00, 10.00), "gpt-6.2-astra": (8.00, 40.00), "gpt-6.1-terra": (1.00, 5.00)}
-CONTAINER_USD = 0.03  # 1 GB Code Interpreter container, per session (at most one per problem)
+CONTAINER_USD = 0.03  # 1 GB Code Interpreter container, per session. One container is shared by the whole run.
 PAGE = 1000
 
 INSTRUCTIONS = """You check math competition problems for a learning website.
-Solve the problem below yourself, from scratch. Use the python tool to compute, enumerate small cases or check the
+Solve the problem below yourself, from scratch. The python sandbox may still hold files from earlier, unrelated
+problems: ignore them. Use the python tool to compute, enumerate small cases or check the
 result (for example with sympy or brute force) whenever that is possible; do not rely on memory of known answers.
 Then think about whether the problem can reasonably be read in another way (an unclear word, an included or
 excluded boundary, ordered vs unordered, etc.). For each such reading, give the answer under that reading.
@@ -149,29 +150,56 @@ class Checker:
         self.model, self.effort, self.max_output = model, effort, max_output
         self.structured = True  # Structured outputs together with Code Interpreter; turned off if the API refuses
         self.tokens_in = self.tokens_out = 0
+        # One Code Interpreter container for the whole run instead of a new one per problem (each container is
+        # billed per session). It expires after 20 idle minutes; a new one is made if that happens.
+        self.container_id = None
+        self.shared_container = True  # False if containers cannot be created: then one is made per request
+        self.containers = 0
 
-    def ask(self, problem_text):
+    def _container(self):
+        if not self.shared_container:
+            self.containers += 1
+            return {"type": "auto"}
+        if self.container_id is None:
+            try:
+                self.container_id = self.client.containers.create(name="mathquest-ai-check", memory_limit="1g").id
+                self.containers += 1
+            except Exception as e:  # fall back to one container per request
+                print(f"Shared container not available ({type(e).__name__}); using one per problem.")
+                self.shared_container = False
+                return self._container()
+        return self.container_id
+
+    def _create(self, kwargs):
         import openai
 
+        for attempt in range(3):
+            kwargs["tools"] = [{"type": "code_interpreter", "container": self._container()}]
+            try:
+                return self.client.responses.create(**kwargs)
+            except (openai.BadRequestError, openai.NotFoundError) as e:
+                if self.container_id and "container" in str(e).lower() and attempt < 2:
+                    self.container_id = None  # expired or gone: make a new one and try again
+                    continue
+                if isinstance(e, openai.BadRequestError) and self.structured and "text" in kwargs:
+                    # The JSON-schema format may not combine with Code Interpreter: ask for JSON in the text instead.
+                    self.structured = False
+                    kwargs.pop("text")
+                    continue
+                raise
+        raise RuntimeError("could not get a reply after retries")
+
+    def ask(self, problem_text):
         kwargs = dict(
             model=self.model,
             instructions=INSTRUCTIONS,
             input=problem_text,
-            tools=[{"type": "code_interpreter", "container": {"type": "auto"}}],
             reasoning={"effort": self.effort},
             max_output_tokens=self.max_output,
         )
         if self.structured:
             kwargs["text"] = {"format": {"type": "json_schema", "name": "problem_check", "schema": SCHEMA, "strict": True}}
-        try:
-            resp = self.client.responses.create(**kwargs)
-        except openai.BadRequestError:
-            if not self.structured:
-                raise
-            # The JSON-schema format may not combine with Code Interpreter: ask for JSON in the text instead.
-            self.structured = False
-            kwargs.pop("text")
-            resp = self.client.responses.create(**kwargs)
+        resp = self._create(kwargs)
         usage = getattr(resp, "usage", None)
         if usage:
             self.tokens_in += usage.input_tokens or 0
@@ -180,9 +208,9 @@ class Checker:
             raise RuntimeError(f"incomplete reply ({getattr(resp.incomplete_details, 'reason', '?')})")
         return parse_json(resp.output_text or "")
 
-    def cost(self, problems_done):
+    def cost(self):
         price_in, price_out = PRICES.get(self.model, (8.00, 40.00))  # unknown model: assume the dearest
-        return (self.tokens_in * price_in + self.tokens_out * price_out) / 1e6 + problems_done * CONTAINER_USD
+        return (self.tokens_in * price_in + self.tokens_out * price_out) / 1e6 + self.containers * CONTAINER_USD
 
 
 # ---- judging -------------------------------------------------------------------------------------------------------
@@ -253,7 +281,7 @@ def main():
     results, started = [], time.time()
 
     for n, t in enumerate(targets, 1):
-        if checker.cost(n - 1) > args.max_cost:
+        if checker.cost() > args.max_cost:
             print(f"Stopped: estimated cost passed ${args.max_cost:.2f} after {n - 1} problems.")
             break
         p = t["problem"]
@@ -300,7 +328,8 @@ def main():
           f"no stored number {counts['no_db_number']}, AI gave no number {counts['not_number']}; "
           f"ambiguous (likely) {counts['ambiguous']}; errors {counts['error']}")
     print(f"Structured output: {'yes' if checker.structured else 'no (JSON from text)'}")
-    print(f"Tokens: in {checker.tokens_in}, out {checker.tokens_out}; estimated cost ${checker.cost(len(results)):.2f}; "
+    print(f"Tokens: in {checker.tokens_in}, out {checker.tokens_out}; estimated cost ${checker.cost():.2f} "
+          f"({checker.containers} container{'s' if checker.containers != 1 else ''}); "
           f"{(time.time() - started) / max(1, len(results)):.0f} s per problem")
     print("Saved to the database." if writer else "Not saved (run with --save to store the results).")
 

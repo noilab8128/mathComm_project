@@ -62,6 +62,7 @@ python3 scripts/verify/report.py --no-l1    # DB 검사만 (markdown 대조와 �
 - 실행: `.github/workflows/verify-problems-ai.yml` (매일 03:40 KST, 새로 들어오거나 바뀐 문제만, 1회 최대 30개·$3)
   - 시험: Actions → **Verify problems (AI)** → Run workflow → `sample` 10. 같은 문제로 다른 모델을 비교하려면 `recheck` 체크
 - 키: GitHub Secret `OPENAI_API_KEY_VERIFY` (학생 채점 키와 분리한 OpenAI Project, 월 예산 설정). 기본 모델은 `gpt-6.2-sol`, 저장소 변수 `AI_CHECK_MODEL`로 바꿀 수 있음
+- 한 번 실행에 Code Interpreter 실행 환경(container)을 **하나만** 만들어 모든 문제에 같이 씁니다(요금이 실행 환경 단위라서). 20분 쓰지 않으면 만료되며, 그러면 새로 만듭니다.
 - 로그에는 개수만 나오고, 답이 들어 있는 결과 파일은 실행 서버에만 남습니다.
 
 ## 결과 파일
